@@ -180,17 +180,93 @@ console.log(obj.val);//1，obj的引用地址没有变化，变的只是o的东�
 第三步：删除该函数
 
 ```js
-Function.prototype.call2=function(context){
+Function.prototype.call2=function(context,...args){
      //首先,获取调用call的函数，可以用this获取
-     context.fn=this;
-     context.fn();
-     delete conext.fn();
+    let context=context||window;
+    context.fn=this;
+    let result= context.fn(...args);
+    delete conext.fn;
+    return result;
 }
 ```
 
+```js
+Function.prototype.apply=function(context,arr){
+    var conext=conext||window;
+    context.fn=this;
+    let result;
+    if(!arr){
+        result=conext.fn();
+    }else{
+        result=conext.fn(...arr)
+    }
+    delete conext.fn;
+    return result;
+}
+```
 
+## 手写bind
 
+bind会创建一个新的函数，当新的函数被调用时，bind()的第一个参数作为运行时的this,后续的参数作为参数
 
+1.返回一个函数
+
+2.可以传递参数
+
+```js
+Function.prototype.bind2=function(context){
+    if(typeof this!='function'){
+        throw new Error('this绑定不能为非函数的内容')
+    }
+    let self=this;
+    
+    let args=Array.prototype.slice.call(arguments,1);//arguments是类数组的对象
+    let fnop=function(){};
+    let fBound= function(){
+         let bindArgs=Array.prototype.slice.call(arguments,1);//arguments指的是bind的返回结果的函数的入参
+         return self.apply(this instanceof fBound?this:context，args.concat(bindArgs))//这里的this,指的是构造函数的this
+    }
+    fnop.prototype=this.prototype;//
+    fBound.prototype=new fnop();//继承构造函数的原型
+    return fBound;
+}
+
+```
+
+当bind返回的函数作为构造函数的时候，bind的指定this值会失效，但传入的参数生效
+
+## new
+
+1.new返回的结果是一个对象obj person.apply(obj,arguments)
+
+2.实例的__proto__ 指向构造函数的prototype
+
+```js
+function objectFactory(){
+    var obj=new Object();//创建一个空对象
+    Constructor=[].shift.call(arguments);
+    obj.__proto__=Constructor.prototype;//将新的对象的原型绑定到构造函数的原型上
+    var ret=Constructor.apply(obj,arguments)//将构造函数this指向新新对象
+    return typeof ret='object'?ret:obj;
+}
+```
+
+## 类数组对象 arguments
+
+```js
+var data=[];
+for(var i=0;i<3;i+=1){
+    (data[i]=function(){
+         console.log(arguments.callee.i)
+    }).i=i;//闭包
+}
+
+data[0]();//0
+data[1]();//1
+data[2]();//2
+```
+
+# promise规范及应用
 
 
 
