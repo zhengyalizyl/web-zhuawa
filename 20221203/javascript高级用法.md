@@ -266,9 +266,478 @@ data[1]();//1
 data[2]();//2
 ```
 
-# promise规范及应用
+## 创建对象的形式
+
+### 1.工厂模式
+
+```js
+function createPerson(name){
+    var  o=new Object();
+    o.name=name;
+    o.getName=function(){
+        console.log(this.name);
+    }
+    return o;
+}
+
+const person1=createPerson('zyl');
+const person2=createPerson('zyl1');
+```
+
+缺点：所有实例的原型都指向同一个原型，原型改变，会影响所有实例
+
+### 2.构造函数
+
+```js
+function Person(name){
+    this.name=name;
+    ths.getName=getName;
+}
+
+function getName(){
+    console.log(this.name)
+}
+
+const person1=new Person('zyl');
+const person2=new Person('zyl1');
+```
+
+### 3.原型模式
+
+```js
+function Person(name){
+    
+}
+
+Person.prototype.name='zyl';
+Person.prototype.getName=function(){
+    console.log(this.name)
+}
+const person1=new Person();
+```
+
+#### 3.1原型模式优化
+
+```js
+function Person(name){
+    
+}
+
+Person.prototype={
+     constructor:Person,
+     name:'zyl',
+     getName:function(){
+         console.log(this.name)
+     }
+}
+
+const person1=new Person();
+```
+
+### 4.组合模式
+
+```js
+function Person(name){
+    this.name=name;
+}
+
+Person.prototype.getName=function(){
+   console.log(this.name)
+}
+const person1=new Person();
+```
+
+## 继承的形式
+
+### 1.原型继承
+
+```js
+function Parent(){
+    this.name='zyl';
+}
+
+Parent.prototype.getName=function(){
+    console.log(this.name)
+}
+
+function Child(){}
+Child.prototype=new Parent();
+const child=new Child();
+console.log(child.getName())//zyl
+```
+
+### 2.构造函数
+
+```js
+function Parent(){
+    this.names=['zyl','zyl1'];
+}
+
+function Child(){
+    Parent.call(this);
+}
+
+const child1=new Child();
+child1.name.push('test');
+const child2=new Child();
+
+console.log(child1.name)//['zyl','zyl1','test']
+console.log(child2.name)//['zyl','zyl1']
+```
+
+### 3.组合继承
+
+```js
+function Parent(name){
+    this.name=name;
+    this.colors=["red",'green','blue'];
+}
+
+Parent.prototype.getName=function(){
+    console.log(this.name);
+}
+
+function Child(name,age){
+    Pareent.call(this,name);
+    this.age=age;
+}
+
+Child.prototype=new Parent();
+Child.prototype.constructor=Child();
+const child1=new Children('zyl',6666);
+child1.colors.push('white');
+
+console.log(child1.name,child1.age,chidl.colors)//zyl,6666,['red','green','blue','white']
+
+const child2=new Children('zyl1',9999);
+
+console.log(child2.name,child2.age,child2.colors)//zyl1,9999,['red','green','blue']
+```
+
+# 异步处理
+
+https://www.yuque.com/lpldplws/atomml/gtn6hvlf3fh1gl6e?singleDoc# 《前端异步处理规范及应用》 密码：cdik
+
+## promise
+
+```js
+let p1=new Promise((resolve,reject)=>{
+    resolve('success');
+    reject('fail');
+});
+console.log('p1',p1);
+let p2=new Promise((resolve,reject)=>{
+    reject('success');
+    resolve('fail');
+})
+console.log('p2',p2);
+let p3=new Promise((resolve,reject)=>{
+    throw 'error';
+})
+
+console.log('p3',p3);
+
+//p1 Promise{<fulfilled>:'success'}
+//p2 Promise{<rejected>:'success'}
+//p3 Promise{<rejected>:'error'}
+```
+
+1.执行reslove ->fullfilled
+
+2.执行reject ->rejected
+
+3.Promise 状态更改后不可改变
+
+4.throw=reject
+
+5.初始状态pending
+
+### 实现resolve reject
+
+```js
+class MyPromise{
+     constructor(executor){
+         //初始状态
+         this.initValue();
+         //初始化this指向
+         this.initBind();
+         //执行传入的函数
+         try{
+             executor(this.resolve,this.reject); 
+         }catch(e){
+             this.reject(e)
+         }
+        
+     }
+    
+    initValue(){
+        this.PromiseResult=null;
+        this.PromiseState='pending';
+    }
+    
+    initBind(){
+        this.reolve=this.resolve.bind(this);
+        this.reject=this.reject.bind(this); //绑定MyPromise的实例
+    }
+    
+    resolve(val){
+        if(this.PromiseState!=='pending'){ return}
+        this.PromiseResult=value;
+        this.PomiseState='fullfilled'
+    }
+    
+    reject(reason){
+         if(this.PromiseState!=='pending'){ return}
+         this.PromiseResult=reason;
+        this.PomiseState='rejected'
+    }
+    
+}
+```
+
+```js
+  then(onFulfilled,onRejected){
+    //参数校验，确保一定是函数
+    onFulfilled=typeof onFulfilled==='function'?onFulfilled:val=>val;
+    onRejected=typeof onRejected==='function'?onRejected:reason=>{throw reason};     
+if(this.PromiseState==='fulfilled'){
+        //如果当前为成功状态，执行第一个回调
+        onFulfilled(this.PromiseResult);
+    }else if(this.PromiseState==='rejected'){
+        //如果当前为失败状态，执行第二个回调
+        onRejected(this.PromiseResult)
+    }
+  }
+```
 
 
+
+1.then接收2个回调：res,err
+
+2.resolve->res, reject->err
+
+3.resolve reject在定时器中执行，等定时器执行后再进行then
+
+4.then支持链式，下次then会受到上次影响
+
+ then本身就会返回promise对象
+
+ 返回值为promise对象，success/fail->新的promise success/fail
+
+返回的值为非promise对象，返回success val
+
+```js
+class MyPromise {
+    constructor(executor) {
+        //初始状态
+        this.initValue();
+        //初始化this指向
+        this.initBind();
+        //执行传入的函数
+        try {
+            executor(this.resolve, this.reject);
+        } catch (e) {
+            this.reject(e)
+        }
+
+    }
+
+    initValue() {
+        this.PromiseResult = null;
+        this.PromiseState = 'pending';
+        this.onFulfilledCallbacks = []; //成功的回调
+        this.onRejectedCallbacks = []; //失败的回调
+    }
+
+    initBind() {
+        this.reolve = this.resolve.bind(this);
+        this.reject = this.reject.bind(this); //绑定MyPromise的实例
+    }
+
+    resolve(val) {
+        if (this.PromiseState !== 'pending') { return }
+        this.PromiseResult = value;
+        this.PomiseState = 'fullfilled'；
+
+        //执行保存的成功回调
+        while (this.onFulfilledCallbacks.length) {
+            this.onFulfilledCallbacks.shift()(this.PromiseResult)
+        }
+    }
+
+    reject(reason) {
+        if (this.PromiseState !== 'pending') { return }
+        this.PromiseResult = reason;
+        this.PomiseState = 'rejected';
+        //执行保存的成功回调
+        while (this.onRejectedCallbacks.length) {
+            this.onRejectedCallbacks.shift()(this.PromiseResult)
+        }
+    }
+
+    //如何保证then可以链式调用？返回promise对象，含有then
+    then(onFulfilled, onRejected) {
+        //参数校验，确保一定是函数
+        onFulfilled = typeof onFulfilled === 'function' ? onFulfilled : val => val;
+        onRejected = typeof onRejected === 'function' ? onRejected : reason => { throw reason };
+        let thenPromise = new MyPromise((resolve, reject) => {
+            setTimeout(() => {
+                const resolvePromise = (cb) => {
+                    try {
+                        const x = cb(this.PromiseResult);
+                        if (x === thenPromise) {
+                            throw new Error('不能返回自身')
+                        }
+                        //如果返回值是Promise success->success fail->fail
+                        if (x instanceof MyPromise) {
+                            //等同于，只有then才知道promise返回的结果是成功还是失败
+                            x.then(resolve, reject)
+                        } else {
+                            //返回的值是非Promise
+                            resolve(x)
+                        }
+                    } catch (e) {
+                        reject(e);
+                        throw new Error(e)
+                    }
+
+                }
+
+                if (this.PromiseState === 'fulfilled') {
+                    //如果当前为成功状态，执行第一个回调
+                    // onFulfilled(this.PromiseResult);
+                    resolvePromise(onFulfilled)
+                } else if (this.PromiseState === 'rejected') {
+                    //如果当前为失败状态，执行第二个回调
+                    // onRejected(this.PromiseResult)
+                    resolvePromise(onRejected)
+                } else if (this.PormiseState === 'pending') {
+                    this.onFulfilledCallbacks.push(onFulfilled.bind(this, onFulfilled));
+                    this.onRejectedCallbacks.push(onRejected.bind(this, onRejected))
+                }
+            }, 0)
+        })
+
+        return thenPromise;
+    }
+
+```
+
+-all
+
+1.接收promise数组，如果有非promise的值，返回成功
+
+2.全部promise都成功，返回成功结果
+
+3.如果有一个不成功，返回失败
+
+```js
+all(promiseList){
+    const result=[];
+    let count=0;
+    return new MyPromise((resolve,reject)=>{
+        const addData=(index,val)=>{
+            result[index]=val;
+            count+=1;
+            if(count===promise.length){
+                resolve(result)
+            }
+        };
+        promiseList.forEach((promise,index)=>{
+            if(promise instanceof MyPromise){
+                promise.then(res=>{
+                    addData(index,res)
+                },err=>reject(err))
+            }else {
+                addData(index,promise)
+            }
+        })
+    })
+}
+```
+
+-race
+
+1.接收promise数组，如果有非promise的值，返回成功
+
+2.返回最快得到结果的promise
+
+```js
+race(promiseList){
+    return new MyPromise((resolve,reject)=>{
+        promiseList.forEach((promise,index)=>{
+            if(promise instanceof MyPromise){
+                promise.then(res=>{
+                    resolve(res)
+                },err=>reject(err))
+            }else {
+              resolve(promise)
+            }
+        })
+    })
+}
+```
+
+-allSettled
+
+1.接收promise数组，如果有非promise的值，返回成功
+
+2.保存所有promise的结果，返回数组
+
+```js
+allSettled(promiseList) {
+    const result = [];
+    let count = 0;
+    return new MyPromise((resolve, reject) => {
+        const addData = (status, val, i) => {
+            result[i] = {
+                status,
+                val
+            }
+            count += 1;
+            if (count === promise.length) {
+                resolve(result)
+            }
+        };
+        promiseList.forEach((promise, i) => {
+            if (promise instanceof MyPromise) {
+                promise.then(res => {
+                    addData('fulfilled', res, i)
+                }, err => addData('rejectd', err, i))
+            } else {
+                addData('fulfilled', promise, i)
+            }
+        })
+    })
+}
+```
+
+-any
+
+1.接收promise数组，如果有非promise的值，返回成功
+
+2.如果有一个promise成功，返回成功结果
+
+3.如果全部失败，报错
+
+```js
+any(promiseList){
+    let count = 0;
+    return new MyPromise((resolve, reject) => {
+        promiseList.forEach((promise, index) => {
+            promise.then(res => {
+                resolve(res)
+            }, err => {
+                count += 1;
+                if (count === promise.length) {
+                    reject('error')
+                }
+            })
+
+        })
+    })
+}
+```
 
 
 
