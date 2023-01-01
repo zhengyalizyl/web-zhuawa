@@ -557,7 +557,7 @@ class MyPromise {
     resolve(val) {
         if (this.PromiseState !== 'pending') { return }
         this.PromiseResult = value;
-        this.PomiseState = 'fullfilled'；
+        this.PomiseState = 'fullfilled';
 
         //执行保存的成功回调
         while (this.onFulfilledCallbacks.length) {
@@ -721,18 +721,22 @@ allSettled(promiseList) {
 3.如果全部失败，报错
 
 ```js
-any(promiseList){
+any(promiseList) {
     let count = 0;
     return new MyPromise((resolve, reject) => {
         promiseList.forEach((promise, index) => {
-            promise.then(res => {
-                resolve(res)
-            }, err => {
-                count += 1;
-                if (count === promise.length) {
-                    reject('error')
-                }
-            })
+            if (promise instanceof MyPromise) {
+                promise.then(res => {
+                    resolve(res)
+                }, err => {
+                    count += 1;
+                    if (count === promise.length) {
+                        reject('error')
+                    }
+                })
+            } else {
+                resolve(promise)
+            }
 
         })
     })
