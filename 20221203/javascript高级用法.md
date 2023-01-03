@@ -743,8 +743,6 @@ any(promiseList) {
 }
 ```
 
-# 前端模块化开发
-
 https://www.yuque.com/lpldplws/atomml/gtn6hvlf3fh1gl6e?singleDoc# 《前端异步处理规范及应用》 密码：cdik
 
 ## async/await
@@ -902,7 +900,7 @@ next1.value.then(res1 => {
 ```js
 function generatorToAsync(generatorFn) {
     return function() {
-        const gen = generatorFn.apply(this, arguments);
+        const gen = generatorFn.apply(this, arguments);//this指向调用这个的实例
         return new Promise((resolve, reject) => {
             function go(key, arg) {
                 let res;
@@ -927,7 +925,7 @@ function generatorToAsync(generatorFn) {
 }                         
 ```
 
-
+# 前端模块化开发
 
 
 
