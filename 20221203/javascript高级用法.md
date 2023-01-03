@@ -403,7 +403,7 @@ function Child(name,age){
 }
 
 Child.prototype=new Parent();
-Child.prototype.constructor=Child();
+Child.prototype.constructor=Child;
 const child1=new Children('zyl',6666);
 child1.colors.push('white');
 
@@ -585,7 +585,7 @@ class MyPromise {
                 const resolvePromise = (cb) => {
                     try {
                         const x = cb(this.PromiseResult);
-                        if (x === thenPromise) {
+                        if (x === thenPromise&&x) {
                             throw new Error('不能返回自身')
                         }
                         //如果返回值是Promise success->success fail->fail
@@ -742,6 +742,192 @@ any(promiseList) {
     })
 }
 ```
+
+# 前端模块化开发
+
+https://www.yuque.com/lpldplws/atomml/gtn6hvlf3fh1gl6e?singleDoc# 《前端异步处理规范及应用》 密码：cdik
+
+## async/await
+
+```js
+function request(num){
+    return new Promise(()=>{
+        setTimeout(()=>{
+            console.log(num*2)
+        },1000)
+    })
+}
+
+async function fn(){
+    await request(1);
+    await request(2);
+}
+
+fn()//只会输出2
+```
+
+```js
+function request(num){
+        setTimeout(()=>{
+            console.log(num*2)
+        },1000)
+}
+
+async function fn(){
+    await request(1);
+    await request(2);
+}
+
+fn()//输出2
+//输出4
+```
+
+1.如果await后面跟的不是promise，是没法实现类似异步转同步的效果
+
+async/await
+
+1.await async一起用
+
+2.async返回的内容是promise,要不要返回值，看return
+
+3.await 接promise异步转同步，不接promise同步
+
+4.async/await 写法异步转同步
+
+## generator
+
+```js
+function fn(num){
+    console.log(num);
+    return num;
+}
+
+function *gen(){
+    yield fn(1);
+    yield fn(2);
+    yield fn(3);
+    return 4
+}
+
+const g=gen();
+console.log(g);//gen{<suspended>}
+console.log(g.next());//{value:1,done:false}
+console.log(g.next());//{value:2,done:false}
+console.log(g.next());//{value:3,done:false}
+console.log(g.next());//{value:4,done:true}
+```
+
+```js
+function fn(num){
+    return new Promise(reslove=>{
+        setTimeout(()=>{
+            resolve(num)
+        })
+    },1000)
+}
+
+function *gen(){
+    yield fn(1);
+    yield fn(2);
+    yield fn(3);
+    return 4
+}
+
+const g=gen();
+console.log(g);//gen{<suspended>}
+console.log(g.next());//{value:Promise,done:false}
+console.log(g.next());//{value:Promise,done:false}
+console.log(g.next());//{value:Promise,done:false}
+console.log(g.next());//{value:4,done:true}
+```
+
+```js
+function *gen(){
+    const num1=yield 1;
+    console.log(num1);
+    const num2=yield 2;
+    console.log(num2);
+    return 3;
+}
+const g=gen();
+consol.log(g.next());// {value:1,done:false}
+console.log(g.next(111));//111 {value:2,done:false}
+console.log(g.next(222));//222 {value:3,done:true}
+```
+
+Promise &next一起用
+
+1.yield后能跟promise
+
+2.next可以通过函数传参
+
+```js
+function fn(nums) {
+    return new Promise(resolve => {
+        setTimeout(() => {
+            resolve(nums * 2)
+        }, 1000)
+    })
+}
+
+function* gen() {
+    const num1 = yield fn(1);
+    const num2 = yield fn(num1);
+    const num3 = yield fn(num2);
+    return num3
+}
+
+const g = gen();
+const next1 = g.next();
+next1.value.then(res1 => {
+    console.log(next1); //{value: Promise(status:'fulfilled',value:2), done: false}
+    console.log(res1) //2
+    const next2 = g.next(res1);
+    next2.value.then(res2 => {
+        console.log(next2); //{value: Promise(status:'fulfilled',value:4), done: false}
+        console.log(res2); //4
+        const next3 = g.next(res2);
+        next3.value.then(res3 => {
+            console.log(next3); //{value:Promise(status:'fulfilled',value:8), done: false}
+            console.log(res3); //8
+            console.log(g.next(res3)); //{value:8,done:true}
+        });
+
+    })
+})
+```
+
+用generator实现async/await
+
+```js
+function generatorToAsync(generatorFn) {
+    return function() {
+        const gen = generatorFn.apply(this, arguments);
+        return new Promise((resolve, reject) => {
+            function go(key, arg) {
+                let res;
+                try {
+                    res = gen[key](arg);
+                } catch (err) {
+                    reject(err)
+                }
+                console.log(res);
+                const { value, done } = res;
+                if (done) {
+                    return resolve(value)
+                } else {
+                    //value可能是一个值，可能是promise,可能是成功或者失败
+                    return Promise.resolve(value).then(val => go('next', val), err => go('throw', err))
+                }
+            }
+
+            go('next')
+        })
+    }
+}                         
+```
+
+
 
 
 
