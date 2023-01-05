@@ -927,5 +927,438 @@ function generatorToAsync(generatorFn) {
 
 # 前端模块化开发
 
+## cmd和amd的区别
+
+1.amd是依赖前置，cmd依赖就近
+
+2.amd：返回return ,cmd：exports出去的
+
+## esm(es module  es6)
+
+在编译的时候，能确定模块的依赖关系，以及导入与导出
+
+Commons amd都是运行时
+
+### ES module和 commonjs区别
+
+1.commonjs 可以动态加载语句，代码发生在运行时，esm是静态编译期间就确定模块的依赖，不可以动态加载语句，只能声明在该文件的最顶部，代码发生在编译时
+
+2.commonjs输出的是值的拷贝，可以修改导出的值,一旦内部再修改这个值，则不会同步到外部。。esm输出的是值的引用，内部修改可以同步到外部，而且导入的值，不能进行修改，也就是只读
+
+common module.exports对象的属性
+
+esm更多的作为静态的定义
+
+```js
+//lib.js
+export let cnt=3;
+export function intCnt(){
+    cnt++;
+}
+
+import {cnt,intCnt} from './lib';
+console.log(cnt);//3
+intCnt();
+console.log(cnt);//4
+cnt=10;//抛出错误
+
+//lib.js
+//commonjs环境
+module.exports={
+     cnt:3,
+     intCnt:(){
+     cnt++;
+ }
+}
+let {cnt,intCnt}=require('./lib.js');
+console.log(cnt);//3
+intCnt();
+console.log(cnt);//3
+cnt=10;//不会报错
+```
+
+# 浏览器事件&请求
+
+stopPropagation:停止事件在dom层上的事件传播，包括捕获和冒泡
+
+preventDefault:停止点击a标签跳转url
+
+# JS垃圾回收与内存泄漏
+
+## GC策略
+
+可达性：通过某种方式能够访问或者说引用的内存地址，具有可达性的数据，不会被垃圾回收
+
+GC：js引擎周期性的寻找不具有可达性的内存空间进行释放
+
+周期性原因：开销太大
+
+### 1.标记清除 mark-sweep
+
+- 标记：针对所有的活动对象(被引用到的内存地址)进行标记
+- 清除：把没有标记的非活动对象 进行清除
+
+```js
+let name='zyl';
+let obj={
+    name:'zyl1'
+}
+```
+
+1.针对所有变量设置一个二进制的tag
+
+2.设置两个列表：进入当前上下文的变量列表与离开当前上下文的变量列表
+
+根对象开始遍历内存，对所有用到的对象进行标记
+
+1.打标，初始默认设置为垃圾设置为 0
+
+2.从根结点遍历，不是垃圾设置为1
+
+3.清理所有为0的垃圾，销毁内存空间
+
+4.标记为1会被重置为0
+
+优缺点：
+
+1.实现方式简单，二进制 tag
+
+- first-fit:直接返回找到的第一个大于等于新建内存块大小的内存
+
+- best-fit：遍历所有的空闲内存，返回最小的符合大小的区块
+
+- worst-fit:遍历所有空闲内存，返回最大的，分为size+以及另一块空的内存
+
+缺点：
+
+- 内存碎片化
+
+- 分配速度o(n)
+
+标记整理算法：mark-compact
+
+## 引用计数
+
+reference counting
+
+对象是不是不再需要 ->没有其它对象引用到它
+
+1.声明了一个变量且将一个引用类型赋值给改变量，cnt+1
+
+2.如果同一个值被赋值给别的变量+1
+
+3.被其他值覆盖，引用次数 -1
+
+4.直到为0，GC
+
+V8对GC做了优化
+
+分代式垃圾回收
+
+新生代：小的，新的，存在时间短 1-8M
+
+老生代
+
+## 内存泄漏
+
+# js运行机制
+
+## 进程
+
+https://www.yuque.com/lpldplws/atomml/wa93b6?singleDoc# 《阿里前端面试官带你深度模拟前端专家面试》 密码：xord
+
+1.进程：cpu资源分配的最小单位
+
+- 独立运行，运行中的程序
+- 有自己的资源空间
+
+线程
+
+2.cpu调度的最小单元
+
+3.协程
+
+调度和切换
+
+## 为什么js是单线程？
+
+操作dom ->单线程
+
+worker线程 web worker不能操作dom
+
+## chrome浏览器
+
+1.browser进程
+
+2.第三方插件进程
+
+3.GPU 3D进程
+
+4.renderer 渲染进程
+
+4.1 GUI渲染线程：parser Html Css Dom CSSOM ->render tree
+
+- repaint 重绘
+- reflow 回流/重排 resize
+
+4.2 js引擎线程
+
+- v8引擎 执行js脚本程序 解析js，远行代码
+
+GUI和js引擎是互斥的，相同的时间下，只能运行一个
+
+```js
+<script src="./script.js" async></script>
+<scipt src="./script.js" defer></script>
+```
+
+async和defer的区别？
+
+
+
+
+
+4.3 事件的触发线程
+
+- setTimeout ajax ->回调事件
+
+4.4 定时器的线程
+
+- setTimeout setInterval
+
+4.5 异步http请求的线程
+
+## event loop
+
+1.同步任务： js引擎的线程中，执行栈
+
+2.异步任务：可以执行的异步任务 事件的触发线程 任务队列
+
+## 宏任务和微任务
+
+### 宏任务
+
+1.正常代码块
+
+2.setTimeout
+
+3.setInterval
+
+4.setImmediate Node
+
+5.requestAnimationIframe 浏览器
+
+### 微任务
+
+在宏任务执行后立即执行的任务
+
+macrotask ->microtask ->GUI ->macrotask
+
+# ts
+
+所有类型检测和语法检测都是在编译的时候报错
+
+```ts
+enum Score{
+    BAD,
+    NG,
+    GOOD,
+    PERFECT
+}
+
+let scoNAme=Score[0]//BAD
+let scoVal=Score['BAD']//0
+
+
+//异构
+enum Enum{
+    A,//0
+    B,//1
+    C='C',
+    D='D',
+    E=6,
+    F,//7
+}
+//指出异构的枚举值
+//手写将其转化成js实现
+let Enum;
+function Enum;
+(function(Enum){
+    //正向
+    Enum['A']=0;
+    Enum['B']=1;
+    Enum['C']='C';
+    Enum['D']='D';
+    Enum['E']=6;
+    Enum['F']=7;
+    
+    //反向
+    Enum[0]='A';
+    Enum[1]='B';
+    Enum[6]='E';
+    Enum[7]='F';
+})(Enum||(Enum={}))
+```
+
+## any-绕过所有类型检查=>类型检查和变异检查全部失效
+
+```ts
+let anyValue:any=123;
+anyValue='anyVal';
+anyValue=false;
+let value1:boolean=anyValue;
+```
+
+## unkown-绕过了赋值检查=>禁止更改传递
+
+```ts
+let unknownValue:unknown;
+unknownValue=true;
+unknownValue=123;
+unknownValue='unknwonValue';
+let value1:unknown=unknownValue;//ok
+let value1:any=unknownValue;
+let value1:boolean=unknownValue;//报错
+```
+
+## void-声明函数的返回值
+
+```js
+function voidFunction():void{
+   console.log('void function')
+  }
+```
+
+## never -函数永不返回
+
+```tsx
+function error(msg:string):never{
+    throw new Error(msg)
+}
+
+function longlongLoop():never{
+     while(true){}
+}
+```
+
+## object/{} -对象
+
+```ts
+//ts将js的object分为两个接口来定义
+interface ObjectConstructor{
+    create(o:object|null):any
+}
+
+const proto={};
+Object.create(proto);
+Object.create(null);
+Object.create(undefined)//报错
+
+
+//Object.prototype上属性
+interface Object{
+    constructor:Function'
+    toString():string;
+    toLocaleString():string;
+    valueof():Object;
+    hasOwnProperty(v:PropertyKey):boolean;
+    isPrototypeOf(v:Object):boolean;
+}
+```
+
+## {} -空对象定义空属性
+
+```tsx
+const obj={};
+obj.prop='zyl';//报错
+//可以使用Object上所有方法
+obj.toString();
+```
+
+## interface
+
+对行为的一种抽象，具体行为由类实现
+
+只读和js的引用是不同的
+
+因为接口的只读是编译的时候执行的，而js是运行的时候执行的
+
+```ts
+let arr:number[]=[1,2,3];
+let r0:ReadonlyArray<number> =arr;
+
+ro[0]=12;//报错
+ro.push(5);//报错
+ro.length=100;//报错
+arr=ro;//报错
+```
+
+```tsx
+interface Class{
+    readOnly name:string;
+    time:number;
+    [propName:string]:any;
+}
+
+const c1={name:'js',time:1};
+const c2={name:'browser',time:3}
+const c3={name:'ts',level:1,time:2}
+```
+
+## 交叉类型
+
+```ts
+//合并冲突
+interface A{
+     c:string,
+    d:string,
+}
+
+interface B{
+    c:number,
+    e:string
+}
+
+type Ab=A&B；//会把c过滤掉
+let ab:AB={
+    d:'class',
+    e:'class'
+}
+```
+
+## 断言-类型声明、转换
+
+### 编译状态在产生作用
+
+```ts
+//尖括号形式声明
+let anyValue:any='hi zyl';
+let anyLength:number=(<string>anyValue).length;
+
+//as声明
+let anyValue:any='hi zyl';
+let anyLength:number=(anyValue as string).length;
+
+//非空-判断是否为空
+type ClassTime=()=>number;
+const start=(classTime:ClassTime|undefined)=>{
+    let number=classTime?();
+}
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
