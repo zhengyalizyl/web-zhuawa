@@ -1211,6 +1211,18 @@ next1.value.then(res1 => {
 
 用generator实现async/await
 
+ ```js
+ function HOC(generatorFn){
+     return asyncFn
+ }
+ 
+ function *gen(){}
+ const asyncFn=generatorToAsync(gen);
+ console.log(asyncFn)
+ ```
+
+
+
 ```js
 function generatorToAsync(generatorFn) {
     return function() {
@@ -1255,9 +1267,9 @@ Commons amd都是运行时
 
 ### ES module和 commonjs区别
 
-1.commonjs 可以动态加载语句，代码发生在运行时，esm是静态编译期间就确定模块的依赖，不可以动态加载语句，只能声明在该文件的最顶部，代码发生在编译时
+1.commonjs 可以动态加载语句，代码发生在运行时。esm是静态编译期间就确定模块的依赖，不可以动态加载语句，只能声明在该文件的最顶部，代码发生在编译时
 
-2.commonjs输出的是值的拷贝，可以修改导出的值,一旦内部再修改这个值，则不会同步到外部。。esm输出的是值的引用，内部修改可以同步到外部，而且导入的值，不能进行修改，也就是只读
+2.commonjs输出的是值的拷贝，可以修改导出的值,一旦内部再修改这个值，则不会同步到外部。esm输出的是值的引用，内部修改可以同步到外部，而且导入的值，不能进行修改，也就是只读
 
 common module.exports对象的属性
 
@@ -1290,6 +1302,64 @@ intCnt();
 console.log(cnt);//3
 cnt=10;//不会报错
 ```
+
+## AMD
+
+Asynchronous moule definnition
+
+![amd结构目录](/Volumes/F/zyl-study/web-zhuawa/20221203/amd结构目录.jpg)
+
+```js
+//dataService.js
+define(function(){
+    let msg='zyl';
+    function getMsg(){
+        return msg.toUpperCase();
+    }
+    return {getMsg}
+})
+
+
+//alerter.js
+define(['dataService'],function(dataService){
+    let name='zyl122';
+    function showMsg(){
+        alert(dataService.getMsg()+','+name)
+    }
+    return {showMsg}
+})
+
+//main.js
+(function(){
+    require.config({
+        baseUrl:'js/',//根级目录
+        paths:{
+            alerter:'./modules/alerter',
+            dataService:'./modules/dataService'
+        }
+    })
+    require(['alerter'],function(alerter){
+        alerter.showMsg();
+    })
+})()
+
+
+//index.html
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AMD</title>
+</head>
+<body>
+    <script data-main="js/main" src="js/libs/require.js"></script>
+</body>
+</html>
+```
+
+
 
 # 浏览器事件&请求
 
