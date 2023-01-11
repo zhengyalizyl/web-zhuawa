@@ -4,19 +4,83 @@
 
 函数 prototype指向的是一个对象，这个对象是调用该构造函数创建的实例的原型
 
-原型：每一个js对象在创建的时候会关联另一个对象，这个对象就是原型，都会从原型上继承属性
+### 原型：每一个js对象在创建的时候会关联另一个对象，这个对象就是原型，都会从原型上继承属性
 
-读取实例的属性时，如果找不到，就会找原型的属性，如果还找不到，就会找原型的原型，直到找到为止
+```js
+function Person(){}
+const person=new Person();
+console.log(person.__proto__===Person.prototype);//true
+console.log(Person.prototype.constructor===Person)//true
+console.log(Object.getPrototypeOf(person)===Person.prototype)//true
+```
+
+读取实例的属性时，如果找不到，就会找原型的属性，如果还找不到，就会找原型的原型，直到找到头为止
+
+<img src="/Volumes/F/zyl-study/web-zhuawa/20221203/原型.jpeg" alt="原型" style="zoom: 67%;" />
 
 ## 词法作用域 动态作用域
 
 作用域：定义了如何查找变量，当前执行的代码有没有权限访问变量
 
-词法作用域 静态作用域
+词法作用域又叫 静态作用域
 
--词法作用域:在函数定义时确定的
+- 词法作用域:在函数定义时确定的
 
--动态作用域：在函数调用时确定的
+- 动态作用域：在函数调用时确定的
+
+```js
+var scope='global scope';
+function checkScope(){
+    var scope='local scope';
+    function f(){
+        return  scope;
+    }
+    return f();
+}
+
+checkScope();//local scope
+
+
+var scope='global scope';
+function checkScope(){
+    var scope='local scope';
+    function f(){
+        return  scope;
+    }
+    return f;
+}
+
+checkScope()();//local scope
+```
+
+## 执行上下文
+
+```js
+var  foo=function(){
+    console.log('foo1')
+}
+
+foo();//foo1
+var foo=function(){
+    console.log('foo2')
+}
+
+foo();//foo2，因为
+
+function foo(){
+    console.log('foo1')
+}
+foo(); //foo2,这里function foo(){
+   // console.log('foo2')
+//}会将//function foo(){
+   // console.log('foo1')
+//}覆盖掉
+
+function foo(){
+    console.log('foo2')
+}
+foo();//foo2
+```
 
 execute context stack执行上下文栈，管理执行上下文(ECS)---先进后出(执行的时候才会压入栈)
 
@@ -26,7 +90,7 @@ execute context stack执行上下文栈，管理执行上下文(ECS)---先进后
 
 ![](/Volumes/F/zyl-study/web-zhuawa/20221203/ecsstack-case2.jpeg)
 
-变量对象
+## 变量对象
 
 Js执行代码，会创建执行上下文
 
@@ -36,17 +100,93 @@ Js执行代码，会创建执行上下文
 
 3.this
 
-变量对象:是与执行上下文相关的数据作用域，存储上下文中的定义的变量
+变量对象:是与执行上下文相关的数据作用域，存储上下文中的定义的变量和函数声明
 
-全局上下文的变量
+- 全局上下文的变量
 
-在js里，全局上下文的变量就是全局对象window
+​      在js里，全局上下文的变量就是全局对象window
 
-函数上下文的变量
+- 函数上下文的变量
+
+  activation object AO 活动对象
+
+  arguments初始化 arguments属性值就是Arguments对象
+
+### 上下文的执过程
+
+1.进入执行上下文
+
+2.执行代码
+
+执行上下文
+
+变量对象
+
+1.函数的形参
+
+2.函数的声明
+
+3.变量声明
+
+```js
+function foo(a){
+    var b=2;
+    function c(){}
+    var d=function(){};
+    b=3;
+}
+foo(1)
+
+//1.进入执行上下文
+AO={
+    arguments:{
+        0:1,
+        length:1
+    }，
+    a:1,
+    b:undefined,
+    c:reference to function c(){},
+    d:undefined
+}
+
+//代码执行
+AO={
+     arguments:{
+         0:1,
+        length:1
+    }，
+    a:1,
+    b:3,
+    c:reference to function c(){},
+    d:reference to Functionexpress 'd'
+}
+```
 
 ## 作用域链
 
 多个执行上下文的变量对象构成的链表是作用域链
+
+```js
+function foo(){
+    function bar(){
+        
+    }
+}
+
+foo.[[scope]]=[
+    globalContext.AO
+]
+
+bar.[[scope]]=[
+    fooContext.AO
+    globalContext.VO
+]
+
+//函数执行
+Scope=[AO].concat([[scope]])[AO,VO]
+```
+
+
 
 ## this
 
@@ -94,7 +234,11 @@ function checkscope(){
     }
     return f;
 }
-checkscope();
+checkscope()();//local scope
+
+fContext={
+    Scope:[AO,checkScopeConext.AO,globalContext.VO]
+}
 ```
 
 1.进入全局代码，创建全局执行的上下文，压入全局执行上下文到上下文栈
@@ -173,11 +317,70 @@ console.log(obj.val);//1，obj的引用地址没有变化，变的只是o的东�
 
 1.call：使用一个指定的this的值和若干个指定的参数的值的前提下调用某个函数
 
+```js
+let foo={
+ val:1
+};
+
+function bar(){
+    console.log(this.val)//1
+};
+
+bar.call(foo);
+```
+
 第一步：改变this的指向,将函数设为对象的属性
 
 第二步：执行该函数
 
 第三步：删除该函数
+
+```js
+foo.fn=bar;
+foo.fn();
+delete foo.fn;
+```
+
+步骤
+
+```js
+Function.prototype.call2=function(context){
+    //首先，获取调用call的函数，可以用this获取
+    context.fn=this;
+    context.fn();
+    delete context.fn;
+}
+```
+
+```js
+var foo={
+    value:1
+};
+
+function bar(name,age){
+    console.log(name);
+    console.log(age);
+    console.log(this.value);
+}
+
+bar.call(foo,'zyl',18)
+```
+
+```js
+var obj={
+    val:1
+}
+
+function bar(name,age){
+    return {
+        val:this.val,
+        name,
+        age,
+    }
+}
+
+console.log(bar.call(obj,'zyl',18))//{val: 1, name: 'zyl', age: 18}
+```
 
 ```js
 Function.prototype.call2=function(context,...args){
@@ -189,6 +392,8 @@ Function.prototype.call2=function(context,...args){
     return result;
 }
 ```
+
+
 
 ```js
 Function.prototype.apply=function(context,arr){
@@ -209,6 +414,83 @@ Function.prototype.apply=function(context,arr){
 
 bind会创建一个新的函数，当新的函数被调用时，bind()的第一个参数作为运行时的this,后续的参数作为参数
 
+```js
+var foo={
+    val:1
+}
+
+function bar(){
+    console.log(this.val)
+}
+
+var bindFoo=bar.bind(foo);
+bindFoo();
+```
+
+```js
+Function.prototype.bind2=function(context){
+    var self=this;
+    return function(){
+        return self.apply(context)
+    }
+}
+```
+
+
+
+```js
+var foo={
+    val:1
+}
+
+function bar(name,age){
+    console.log(this.val);
+    console.log(name);
+    console.log(age);
+}
+
+var bindFoo=bar.bind(foo,'zyl');
+bindFoo('18');
+```
+
+```js
+Function.prototype.bind2=function(context){
+    var self=this;
+    var args=Array.prototype.slice.call(arguments,1)////arguments是类数组的对象
+    return function(){
+        var bindArgs=Array.prototype.slice.call(arguments)//arguments指的是bind的返回结果的函数的入参
+        return self.apply(context,args.concat(bindArgs))
+    }
+}
+```
+
+当bind返回的函数作为构造函数的时候，bind的指定this值会失效，但传入的参数会生效
+
+```js
+var value=2;
+var foo={
+    value:1
+}
+
+function bar(name,age){
+    this.habit='shopping';
+    console.log(name);
+    console.log(age)
+}
+
+bar.prototype.friend='zyl';
+var bindFoo=bar.bind(foo,'zyl1');
+var obj=new bindFoo(12);
+//undefined
+//zyl1
+//12
+console.log(obj);//{"habit": "shopping"}
+console.log(obj.habit);//shopping
+console.log(obj.friend);//zyl
+```
+
+
+
 1.返回一个函数
 
 2.可以传递参数
@@ -219,15 +501,14 @@ Function.prototype.bind2=function(context){
         throw new Error('this绑定不能为非函数的内容')
     }
     let self=this;
-    
     let args=Array.prototype.slice.call(arguments,1);//arguments是类数组的对象
     let fnop=function(){};
     let fBound= function(){
          let bindArgs=Array.prototype.slice.call(arguments,1);//arguments指的是bind的返回结果的函数的入参
-         return self.apply(this instanceof fBound?this:context，args.concat(bindArgs))//这里的this,指的是构造函数的this
+         return self.apply(this instanceof fnop?this:context，args.concat(bindArgs))//这里的this,指的是构造函数的this
     }
     fnop.prototype=this.prototype;//
-    fBound.prototype=new fnop();//继承构造函数的原型
+    fBound.prototype=new fnop();//继承构造函数的原型,以防fBound的prototype改变会使this.prototype发生改变，故用一个空的函数来转接
     return fBound;
 }
 
@@ -291,7 +572,7 @@ const person2=createPerson('zyl1');
 ```js
 function Person(name){
     this.name=name;
-    ths.getName=getName;
+    this.getName=getName;
 }
 
 function getName(){
@@ -305,9 +586,7 @@ const person2=new Person('zyl1');
 ### 3.原型模式
 
 ```js
-function Person(name){
-    
-}
+function Person(name){}
 
 Person.prototype.name='zyl';
 Person.prototype.getName=function(){
@@ -319,9 +598,7 @@ const person1=new Person();
 #### 3.1原型模式优化
 
 ```js
-function Person(name){
-    
-}
+function Person(name){}
 
 Person.prototype={
      constructor:Person,
@@ -370,7 +647,7 @@ console.log(child.getName())//zyl
 
 ```js
 function Parent(){
-    this.names=['zyl','zyl1'];
+    this.name=['zyl','zyl1'];
 }
 
 function Child(){
@@ -398,18 +675,18 @@ Parent.prototype.getName=function(){
 }
 
 function Child(name,age){
-    Pareent.call(this,name);
+    Parent.call(this,name);
     this.age=age;
 }
 
 Child.prototype=new Parent();
 Child.prototype.constructor=Child;
-const child1=new Children('zyl',6666);
+const child1=new Child('zyl',6666);
 child1.colors.push('white');
 
-console.log(child1.name,child1.age,chidl.colors)//zyl,6666,['red','green','blue','white']
+console.log(child1.name,child1.age,child1.colors)//zyl,6666,['red','green','blue','white']
 
-const child2=new Children('zyl1',9999);
+const child2=new Child('zyl1',9999);
 
 console.log(child2.name,child2.age,child2.colors)//zyl1,9999,['red','green','blue']
 ```
@@ -442,13 +719,13 @@ console.log('p3',p3);
 //p3 Promise{<rejected>:'error'}
 ```
 
-1.执行reslove ->fullfilled
+1.执行resolve ->fullfilled
 
 2.执行reject ->rejected
 
 3.Promise 状态更改后不可改变
 
-4.throw=reject
+4.throw等同于reject
 
 5.初始状态pending
 
@@ -495,6 +772,27 @@ class MyPromise{
 }
 ```
 
+例子：
+
+```js
+const p1=new Promise((resolve,reject)=>{
+    resolve('success')
+}).then(res=>console.log(res),err=>console.log(err)); //success
+
+const p2=new Promise((resolve,reject)=>{
+    setTimeOut(()=>{
+        reject('fail')
+    },1000)
+}).then(res=>console.log(res),err=>console.log(err)); //fail
+
+const p3=new Promise((resolve,reject)=>{
+    resolve(100)
+}).then(res=>2*res,err=>console.log(err)).then(res=>console.log(res),err=>console.log(err)) //200
+
+```
+
+源码实现
+
 ```js
   then(onFulfilled,onRejected){
     //参数校验，确保一定是函数
@@ -510,8 +808,6 @@ if(this.PromiseState==='fulfilled'){
   }
 ```
 
-
-
 1.then接收2个回调：res,err
 
 2.resolve->res, reject->err
@@ -520,11 +816,27 @@ if(this.PromiseState==='fulfilled'){
 
 4.then支持链式，下次then会受到上次影响
 
+例子：
+
+```js
+const p3=new Promise((resolve,reject)=>{resolve(100)})
+.then(res=>2*res,err=>console.log(err))
+.then(res=>console.log(res),err=>console.log(err));
+
+const p4=new Promise((resolve,reject)=>{resolve(100)})
+.then(res=>new Promise(resolve,reject)=>resolve(3*res),err=>console.log(err))
+.then(res=>console.log(res),err=>console.log(err))
+
+
+```
+
  then本身就会返回promise对象
 
  返回值为promise对象，success/fail->新的promise success/fail
 
-返回的值为非promise对象，返回success val
+ 返回的值为非promise对象，返回success val
+
+实现的源码
 
 ```js
 class MyPromise {
@@ -612,8 +924,8 @@ class MyPromise {
                     // onRejected(this.PromiseResult)
                     resolvePromise(onRejected)
                 } else if (this.PormiseState === 'pending') {
-                    this.onFulfilledCallbacks.push(onFulfilled.bind(this, onFulfilled));
-                    this.onRejectedCallbacks.push(onRejected.bind(this, onRejected))
+                    this.onFulfilledCallbacks.push(resolvePromise.bind(this, onFulfilled));
+                    this.onRejectedCallbacks.push(resolvePromise.bind(this, onRejected))
                 }
             }, 0)
         })
@@ -623,7 +935,7 @@ class MyPromise {
 
 ```
 
--all
+### -all
 
 1.接收promise数组，如果有非promise的值，返回成功
 
@@ -656,7 +968,7 @@ all(promiseList){
 }
 ```
 
--race
+### -race
 
 1.接收promise数组，如果有非promise的值，返回成功
 
@@ -678,7 +990,7 @@ race(promiseList){
 }
 ```
 
--allSettled
+### -allSettled
 
 1.接收promise数组，如果有非promise的值，返回成功
 
@@ -712,7 +1024,7 @@ allSettled(promiseList) {
 }
 ```
 
--any
+### -any
 
 1.接收promise数组，如果有非promise的值，返回成功
 
@@ -751,7 +1063,7 @@ https://www.yuque.com/lpldplws/atomml/gtn6hvlf3fh1gl6e?singleDoc# 《前端异�
 function request(num){
     return new Promise(()=>{
         setTimeout(()=>{
-            console.log(num*2)
+            console.log(num*2)//因为没有返回结果
         },1000)
     })
 }
@@ -761,7 +1073,7 @@ async function fn(){
     await request(2);
 }
 
-fn()//只会输出2
+fn()//只会输出2,
 ```
 
 ```js
@@ -784,13 +1096,13 @@ fn()//输出2
 
 async/await
 
-1.await async一起用
+- await async一起用
 
-2.async返回的内容是promise,要不要返回值，看return
+- async返回的内容是promise,要不要返回值，看return
 
-3.await 接promise异步转同步，不接promise同步
+- await 接promise异步转同步，不接promise同步
 
-4.async/await 写法异步转同步
+- async/await 写法异步转同步
 
 ## generator
 
@@ -815,13 +1127,15 @@ console.log(g.next());//{value:3,done:false}
 console.log(g.next());//{value:4,done:true}
 ```
 
+
+
 ```js
 function fn(num){
     return new Promise(reslove=>{
         setTimeout(()=>{
             resolve(num)
-        })
-    },1000)
+        },1000)
+    })
 }
 
 function *gen(){
@@ -848,7 +1162,7 @@ function *gen(){
     return 3;
 }
 const g=gen();
-consol.log(g.next());// {value:1,done:false}
+console.log(g.next());// {value:1,done:false}
 console.log(g.next(111));//111 {value:2,done:false}
 console.log(g.next(222));//222 {value:3,done:true}
 ```
@@ -1346,9 +1660,119 @@ const start=(classTime:ClassTime|undefined)=>{
 }
 ```
 
+### 多态 - 多重状态类型
+
+```ts
+interface Teacher{
+     name:string,
+     courses:string[],
+     score:number
+}
+
+interface Student{
+    name:string,
+    startTime:Date,
+    score:string
+}
+
+type Class=Teacher|Student;
+
+//in-是否包含某种属性
+function startCourse(cls:Class){
+    if('courses' in cls ){
+        //老师
+    }
+    
+    if('startTime' in cls){
+        //学生
+    }
+}
 
 
+//typeof /instanceof -类型分类场景下的身份确认
+function startCourse(cls:Class){
+    if(typeof cls.score==='number'){
+        //老师
+    }
+    
+    if(typeof cls.score==='string'){
+        //学生
+    }
+}
 
+function startCourse(cls:Class){
+    if(cls instanceof Teacher){
+        //老师
+    }
+    
+    if(cls instanceof Student){
+        //学生
+    }
+}
+
+```
+
+## 函数重载
+
+```ts
+class Class{
+    start(name:number,score:number):number;
+    start(name:string,score:number):string;
+    start(name:string,score:number):number;
+    start(name:Comnbinable,score:Comnbinable){
+        if(typeof name==='number'||typeof score==='number'){
+            //
+        }
+           if(typeof name==='string'||typeof score==='string'){
+            //
+        }
+           if(typeof name==='string'||typeof score==='number'){
+            //
+        }
+    }
+}
+```
+
+## 泛型 -重用
+
+```tsx
+function startClass<T,U>(name:T,score:U):T{
+    
+}
+
+function startClass<T,U>(name:T,score:U):string{
+    
+}
+
+function startClass<T,U>(name:T,score:U):T{
+    return (name+String(score)) as any as T;
+}
+```
+
+## 装饰器-decorator
+
+```ts
+function ZhaoWa(target:Function):void{
+    target.prototype.startClass=function():void{
+        
+    }
+}
+
+
+@ZhaoWa
+class Course{
+    contructor(){
+        
+    }
+}
+```
+
+## ts实战
+
+### webpack打包配置=>vue-cli=>webpack配置=>编译时
+
+- entry入口
+- 
 
 
 
