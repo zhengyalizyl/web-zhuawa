@@ -1359,6 +1359,92 @@ define(['dataService'],function(dataService){
 </html>
 ```
 
+## CMD
+
+Common module definition
+
+Commons +amd ->sea.js
+
+```js
+define(function(require,exports,module){
+    let module=require('./module');
+    require.async('./module2',function(m){
+        
+    });
+    module.showMsg();
+    exports.XXX=val;
+    
+})
+```
+
+![cmd结构目录](/Volumes/F/zyl-study/web-zhuawa/20221203/cmd结构目录.jpg)
+
+```js
+//module1.js
+define(function(require,exports,module){
+    let data='zyl.com';
+    function show(){
+        console.log('module1 1 show'+data);
+    }
+    exports.show=show;
+})
+
+//module2.js
+define(function(require,exports,module){
+ module.exports={
+     msg:'hello zyl'
+ }
+})
+
+//module3.js
+define(function(require,exports,module){
+ const API_KEY='abc123';
+    exports.API_KEY=API_KEY;
+})
+
+//module4.js
+define(function(require,exports,module){
+    //同步引用
+  var module2=require('./module2');
+    function show(){
+        console.log('module2 show()'+module2.msg)
+    }
+    
+    //异步引用
+    require.async('./module3',function(m3){
+        console.log('module3'+m3.API_KEY)
+     
+    })
+    exports.show=show;
+})
+
+
+//main.js
+define(function(require,exports,module){
+ let m1=require('./module1');
+    let m4=require('./module4');
+    m1.show();
+    m4.show();
+})
+
+//index.html
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AMD</title>
+</head>
+<body>
+    <script type="text/javascript" src="js/libs/sea.js"></script>
+ <script type="text/javascript" >
+     seajs.use('./js/modules/main.js')
+     </script>
+</body>
+</html>
+```
+
 
 
 # 浏览器事件&请求
