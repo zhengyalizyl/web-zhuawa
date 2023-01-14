@@ -1255,9 +1255,9 @@ function generatorToAsync(generatorFn) {
 
 ## cmd和amd的区别
 
-1.amd是依赖前置，cmd依赖就近
+- amd是依赖前置，cmd依赖就近
 
-2.amd：返回return ,cmd：exports出去的
+- amd：返回return ,cmd：exports出去的
 
 ## esm(es module  es6)
 
@@ -1265,7 +1265,7 @@ function generatorToAsync(generatorFn) {
 
 Commons amd都是运行时
 
-### ES module和 commonjs区别
+## ES module和 commonjs区别
 
 1.commonjs 可以动态加载语句，代码发生在运行时。esm是静态编译期间就确定模块的依赖，不可以动态加载语句，只能声明在该文件的最顶部，代码发生在编译时
 
@@ -1449,9 +1449,72 @@ define(function(require,exports,module){
 
 # 浏览器事件&请求
 
+
+
 stopPropagation:停止事件在dom层上的事件传播，包括捕获和冒泡
 
 preventDefault:停止点击a标签跳转url
+
+## 手写ajax
+
+```js
+const ajax = option => {
+    //0.将对象转换成字符串
+    const objToString = data => {
+        data.t = new Date().getTime();
+        let res = [];
+        for (let key in data) {
+            res.push(encodeURIComponent(key) + "=" + encodeURIComponent(data[key]));
+        }
+        return res.join('&')
+    }
+
+    let str = objToString(option.data || {});
+
+    //1.创建一个异步对象xmlHttp
+    let xmlHttp, timer;
+    if (window.XMLHttpRequest) {
+        xmlHttp = new XMLHttpRequest();
+    } else if (xmlHttp) {
+        //code for IE6,IE5
+        xmlHttp = new ActiveXObject('Microsoft-xmlHttp');
+    }
+
+    //2.设置请求方式和请求地址
+    if (option.type.toLowerCase() === 'get') {
+        xmlHttp.open(option.type, option.urtl + '?t=' + str, true);
+        //3.发送请求
+        xmlHttp.send();
+    } else {
+        xmlHttp.open(option.type, option.url, true);
+        //在post请求中，必须在open和send之间添加HTTP请求头：setREquestHeader(header,value)
+        xmlHttp.setRequestHeader('Content-type', "appliaction/x-www-form-urlencoded");
+        xmlHttp.send(str)
+    }
+
+    //监听状态的变化
+    xmlHttp.onreadystatechange = function() {
+        clearInterval(timer);
+    }
+    if (xmlHttp.readyState === 4) {
+        if ((xmlHttp.status >= 200 && xmlHttp.status < 300) || xmlHttp.status == 304) {
+            //处理返回的结果
+            option.success(xmlHttp.responseText);
+        } else {
+            option.error(xmlHttp.responseText)
+        }
+    }
+
+
+    if (option.timeout) {
+        timer = setInterval(function() {
+            xmlHttp.abort();
+            clearInterval(timer)
+        }, option.timeout)
+    }
+
+}
+```
 
 # JS垃圾回收与内存泄漏
 
@@ -1465,8 +1528,8 @@ GC：js引擎周期性的寻找不具有可达性的内存空间进行释放
 
 ### 1.标记清除 mark-sweep
 
-- 标记：针对所有的活动对象(被引用到的内存地址)进行标记
-- 清除：把没有标记的非活动对象 进行清除
+- 标记：针对所有的AO活动对象(被引用到的内存地址)进行标记
+- 清除：把没有标记的非AO活动对象 进行清除
 
 ```js
 let name='zyl';
@@ -1505,7 +1568,7 @@ let obj={
 
 - 分配速度o(n)
 
-标记整理算法：mark-compact
+## 标记整理算法：mark-compact
 
 ## 引用计数
 
@@ -1529,7 +1592,75 @@ V8对GC做了优化
 
 老生代
 
+## 新生代的垃圾回收
+
+- 当新生代中内存被多次复制后，会移动到老生代
+
+- 当空闲区使用空间超过25%
+
+## 老生代的垃圾回收
+
+全停顿 stop-the-world GC
+
+parallel并行回收
+
+增量标记
+
+三色标记 如何针对GC暂停和恢复
+
 ## 内存泄漏
+
+```js
+function fn1(){
+    let test=new Array(1000).fill('zyl');
+    return function(){
+        return test
+    }
+}
+
+let fn1Child=fn1();
+fn1Child();
+fn1Child=null;//不写这段代码，会出现内存泄漏
+```
+
+隐式全局变量不会主动垃圾回收
+
+```js
+function fn(){
+     test1=new Array(1000).fill('zyl');
+     this.test1=new Array(1000).fill('zyl');
+}
+test1=null;
+test2=null;
+```
+
+```js
+let obj={
+    id:1,
+}
+let user={
+    info:obj
+}
+let  set=new Set([obj]);
+let map=new Map([[obj,'zyl']]);
+obj=null;
+console.log(user.info)//{id:1}
+```
+
+```js
+let obj={
+    id:1,
+}
+let user={
+    info:obj
+}
+let  set=new WeakSet([obj]);
+let map=new WeakMap([[obj,'zyl']]);
+obj=null;
+console.log(user.info)//null
+```
+
+
 
 # js运行机制
 
