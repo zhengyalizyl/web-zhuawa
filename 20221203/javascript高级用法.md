@@ -4,7 +4,7 @@
 
 函数 prototype指向的是一个对象，这个对象是调用该构造函数创建的实例的原型
 
-### 原型：每一个js对象在创建的时候会关联另一个对象，这个对象就是原型，都会从原型上继承属性
+### 原型：每一个js对象(null除外)在创建的时候会关联另一个对象，这个对象就是原型，都会从原型上继承属性
 
 ```js
 function Person(){}
@@ -54,6 +54,12 @@ checkScope()();//local scope
 ```
 
 ## 执行上下文
+
+在函数上下⽂中，我们⽤活动对象( activation object , AO)来表示变量对象。 
+
+活动对象和变量对象其实是⼀个东⻄，只是变量对象是规范上的或者说是引擎实现上的，不可在 JavaScript 环境中访问，只有到当进⼊⼀个执⾏上下⽂中，这个执⾏上下⽂的变量对象才会被激活，所 以才叫 activation object，⽽只有被激活的变量对象，也就是活动对象上的各种属性才能被访问。 
+
+活动对象是在进⼊函数上下⽂时刻被创建的，它通过函数的 arguments 属性初始化。arguments 属性值是 Arguments 对象
 
 ```js
 var  foo=function(){
@@ -164,7 +170,7 @@ AO={
 
 ## 作用域链
 
-多个执行上下文的变量对象构成的链表是作用域链
+当查找变量的时候，会先从当前上下⽂的变量对象中查找，如果没有找到，就会从⽗级(词法层⾯上的⽗级)执⾏上下⽂的变量对象中查找，⼀直找到全局上下⽂的变量对象，也就是全局对象。这样由多个执⾏上下⽂的变量对象构成的链表就叫做作⽤域链。
 
 ```js
 function foo(){
@@ -185,8 +191,6 @@ bar.[[scope]]=[
 //函数执行
 Scope=[AO].concat([[scope]])[AO,VO]
 ```
-
-
 
 ## this
 
@@ -1660,8 +1664,6 @@ obj=null;
 console.log(user.info)//null
 ```
 
-
-
 # js运行机制
 
 ## 进程
@@ -1673,13 +1675,16 @@ https://www.yuque.com/lpldplws/atomml/wa93b6?singleDoc# 《阿里前端面试官
 - 独立运行，运行中的程序
 - 有自己的资源空间
 
-线程
+2.线程
 
-2.cpu调度的最小单元
+- cpu调度的最小单元
 
-3.协程
+3.协程 fiber requestIdleCallback
 
-调度和切换
+调度和切换 线程消耗更少
+
+- 多进程
+- 多线程
 
 ## 为什么js是单线程？
 
@@ -1691,20 +1696,24 @@ worker线程 web worker不能操作dom
 
 1.browser进程
 
+- 中控 --控制浏览器各个窗口
+
 2.第三方插件进程
 
 3.GPU 3D进程
 
 4.renderer 渲染进程
 
-4.1 GUI渲染线程：parser Html Css Dom CSSOM ->render tree
+4.1 GUI渲染线程：
+
+- parser Html Css Dom CSSOM ->render tree
 
 - repaint 重绘
 - reflow 回流/重排 resize
 
-4.2 js引擎线程
+4.2 js引擎线程 fiber
 
-- v8引擎 执行js脚本程序 解析js，远行代码
+- v8引擎 执行js脚本程序 解析js，运行代码
 
 GUI和js引擎是互斥的，相同的时间下，只能运行一个
 
@@ -1713,11 +1722,77 @@ GUI和js引擎是互斥的，相同的时间下，只能运行一个
 <scipt src="./script.js" defer></script>
 ```
 
-async和defer的区别？
+### async和defer的区别？
+
+- defer属性告诉浏览器不要等待脚本，浏览器回继续处理HTML,构建DOM。该脚本‘在后台’加载，然后在DOM完全构建完成后再运行。defer脚本总是在DOM准备好时执行，但在DOMContentLoaded事件之前。
+
+```js
+<p>...content before scripts...</p>
+
+<script>
+  document.addEventListener('DOMContentLoaded', () => alert("DOM fully loaded and parsed after defer!"));
+</script>
+
+<script defer src="https://javascript.info/article/script-async-defer/long.js?speed=1"></script>
+
+<p>...content after scripts...</p>
 
 
+1.页面内容立即显示。
+2.DOMContentLoaded事件处理程序等待defer脚本执行完之后执行
+```
+
+补充：当纯 HTML 被完全加载以及解析时，**`DOMContentLoaded`** 事件会被触发，而不必等待样式表，图片或者子框架完成加载。
+
+- defer脚本保持相对顺序来执行，就像常规脚本一样
+
+  ```js
+  <script defer src="https://javascript.info/article/script-async-defer/long.js"></script>
+  <script defer src="https://javascript.info/article/script-async-defer/small.js"></script>
+  
+  //这两个脚本会并行下载，small.js 可能会比long.js先下载完成，但是执行的时候依然会先执行 long.js
+  ```
+
+所以defer可用于对脚本执行顺序有严格要求的情况
+
+- async
+
+  - async属性意味着该脚本是完全独立的：
+
+  - 浏览器不会阻止async脚本,async脚本不会等待其他脚本
+
+  - DOMContentLoaded和async脚本不会互相等待
+
+    - DOMContentLoaded可能在async脚本执行之前触发(如果async脚本在页面解析完成后完成加载)
+
+    - 或在async脚本执行之后触发(如果async脚本很快加载完成或在HTTP缓存中)
+
+```js
+<p>...content before scripts...</p>
+
+<script>
+  document.addEventListener('DOMContentLoaded', () => alert("DOM 完全加载以及解析"));
+</script>
+
+<script async src="https://javascript.info/article/script-async-defer/long.js"></script>
+<script async src="https://javascript.info/article/script-async-defer/small.js"></script>
+
+<p>...content after scripts...</p>
 
 
+//页面内容立即显示：async不阻塞
+//DOMContentLoaded可能发生在async之前或之后
+//small.js先加载完就会在long.js之前执行，但如果long.js在之前有缓存，那么long.js先执行。
+```
+
+应用场景：将独立的第三方脚本集成到页面中时，不如及时器，广告等
+
+总结:script是会阻碍HTML解析的，只有下载好并执行完脚本才会继续解析HTML
+
+defer和async有一个共同点：下载此类脚本都不会阻止页面呈现(异步加载),区别在于：
+
+- async执行与文档顺序无关，先加载哪个就先执行哪个；defer会按按照文档的中的顺序执行
+- async脚本加载完成后立即执行，可以在DOM尚未完全下载完成就加载和执行；而defer脚本需要等到文档所有元素解析完成之后才执行
 
 4.3 事件的触发线程
 
@@ -1755,7 +1830,46 @@ async和defer的区别？
 
 macrotask ->microtask ->GUI ->macrotask
 
+- promise.then()
+- catch
+- finally
+- Object.observe
+- MutationObserver
+- process.nextTick()
+
 # ts
+
+对比原理：
+
+它是javascript的一个超集，在原有的语法基础上，添加了可选的静态类型和基于类的面向对象编程
+
+- 面向项目：
+
+​    TS:面向于解决大型复杂项目中，架构以及代码维护复杂场景
+
+​    JS:脚本化语言，用于面向单一简单场景
+
+- 自主检测
+
+  TS：编译期间，主动发现并纠正错误
+
+  JS：运行时报错
+
+- 类型检测
+
+  TS:弱类型，支持对于动态和静态类型的检测
+
+  JS:弱类型，无静态类型选项
+
+- 运行流程
+
+  TS:依赖编译，依赖工程化体系
+
+  JS：直接在浏览器中运行
+
+- 复杂特性
+
+  TS:模块化、泛型、接口
 
 所有类型检测和语法检测都是在编译的时候报错
 
@@ -1769,7 +1883,6 @@ enum Score{
 
 let scoNAme=Score[0]//BAD
 let scoVal=Score['BAD']//0
-
 
 //异构
 enum Enum{
@@ -1873,7 +1986,7 @@ interface Object{
 const obj={};
 obj.prop='zyl';//报错
 //可以使用Object上所有方法
-obj.toString();
+obj.toString();//不会报错
 ```
 
 ## interface
@@ -1881,6 +1994,8 @@ obj.toString();
 对行为的一种抽象，具体行为由类实现
 
 只读和js的引用是不同的
+
+const只是地址不能改变，readonly是内容和地址都不能发生改变
 
 因为接口的只读是编译的时候执行的，而js是运行的时候执行的
 
@@ -2058,18 +2173,265 @@ class Course{
 
 ### webpack打包配置=>vue-cli=>webpack配置=>编译时
 
-- entry入口
-- 
+- entry - 入口
+- extensions加上ts - 用于处理尝试的数据尾缀列表 =>面试题：如何webpack新增一种处理类型文件
+- Loaders - ts-loader,增加对于ts的工具处理 =>工程化
+
+### ts配置文件
+
+tsconfig.json
+
+### Vue/vuex+ts
+
+```vue
+<template>
+<div>
+     <vueComponent></vueComponent>
+    </div>
+</template>
+
+<script lang="ts">
+   //1.定义组件的方式上:形式上-extends
+    //申明当前组件模块 Vue.component or Vue.extends
+    import Vue from 'vue';
+    const Component=Vue.extend({
+        //类型推断
+    })
+    //2.全面拥抱面向对象 - 官方vue-class-component
+    import Component from 'vue-class-component'
+    //@Component本质 -类装饰器=>利用类装饰器，统一进行描述vue模版等概念
+    @Component({
+        components:{
+            vueComponent:vueComponent
+        }
+    })
+    export default Class myComponent extends Vue{
+         message:string='Hello'
+         onclick():void{
+             console.log(this.message)
+         }
+    }
+    //3.申明 - 利用ts的额外补充模块declare =>实现独立模块的声明，使之可以被独立引用
+    declare module '*.vue'{
+        import Vue from 'vue'
+        export default Vue
+    }
+    declare module '/typings/vuePlugin.d.ts'{
+        interface Vue{
+            myProps:string
+        }
+    }
+    
+    //实例中使用
+    let vm=new Vue();
+    console.log(vm.myProps)
+    
+    //4.props 提供propType原地声明联合变量
+    import {propType} from 'vue'
+    interface customPayload{
+        str:string,
+        number:number,
+        name:string
+    }
+    const Component=Vue.extend({
+        props:{
+            name:String,
+            success:{
+                type:string
+            },
+            payload:{
+                type:Object as propType<customPayload>
+            },
+            callback:{
+                type:Function as propType<()=>void>
+            }
+        }
+    })
+    
+    //5.computed以及method
+    computed:{
+        getMsg():string{
+            return this.click()+'!'
+        }
+    },
+   methods:{
+     click():string{
+       return this.message+'zyl'
+     }
+   }
+    
+    //6.vuex的接入ts -声明使用
+    //vue.d.ts声明模块-ComponentCustomProperties
+    import {ComponentCustomProperties} from 'vue';
+    declare module '@vue/runtion-core'{
+        interface State{
+            count:number
+        }
+        
+        interface ComponentCustomProperties{
+            $store:Store<State>
+        }
+    }
+        
+    //7.api形式编码实现-官方
+      //store.ts
+      import {InjectionKey} from 'vue'  
+        import {createStore,Store} from 'vuex'
+        export interface State{
+            count:number
+        }
+        
+        export const key:InjectionKey<Store<State>>=Symbol()
+        export const store=createStore<State>({
+            state:{
+                count:0
+            }
+        })
+        
+        //main.ts
+        import {createApp} from 'vue'
+        import {store,key} from './store'
+        const app=createApp({
+            //传入参数
+        })
+        //利用provider&inject依赖注入
+        app.use(store,key)//=>出入injection key
+        app.mount('#app')
+        //消费方
+        import {useStore} from 'vuex'
+        import {key} from './store'
+        export default {
+            const store=useStore(key);
+           //store.state.count
+        }
+       
+    //8.vuex面向对象 - 使用vuex-class工具
+    import {State,Action,Getter} from 'vuex-class';
+    export default class App extends Vue{
+        //利用属性装饰器整合store的状态
+        @State login:boolean;
+        
+        //利用时间装饰器，整合store方法
+        @Action setInit:()=>void
+        
+        get isLogin:boolean;
+        mounted(){
+            this.setInit();
+            this.isLogin=this.login;
+        }
+    }
+</script>
+```
+
+# Esnext规范详解
+
+const不在window中，因为const是块级作用域。而var是挂载到window中，故是全局作用域
+
+## 死锁 -dead zone
+
+```js
+if(true){
+    console.log(arg1);
+    var arg1='zyl'
+}
+```
+
+## let or const
+
+```js
+const obj={
+    teacher:'zyl',
+    leader:'zyl11'
+}
+
+obj.teacher='hhh';
+
+//const 是常量，锁定的是栈内存
+//引用类型的原理-指向地址
+Obejct.freeze(obj)
+//freeze的局限性=>只能冻结单层根层
+function deepFreeze(obj){
+    Object.freeze(obj);
+    (Object.keys(obj)||[]).forEach(key=>{
+         if(typeof obj[key]==='object'){
+             deepFreeze(obj[key])
+         }
+    })
+}
+```
+
+## 上下文
+
+## 箭头函数
+
+1.dom操作的cb
+
+```js
+const btn=document.querySelector('#btn');
+btn.addEventListener('click',function(){
+    this.style.color='#fff'
+})
+```
+
+2.类操作，箭头函数无法构造类
+
+3.箭头函数无法构造原型上的方法
+
+4.箭头函数没有arguments属性
+
+## class
+
+class 的类型是Function
+
+如何建立一个私有属性-闭包
+
+```js
+class Course{
+     constructor(teacher,course){
+         this._teacher=teacher;
+         let _course='es6';
+         this.getCourse=()=>{
+             return _course
+         }
+     }
+}
+```
+
+适配器模式
+
+```js
+class utils{
+    constuctor(core){
+        this._main=core;
+        this._name='zyl'
+    }
+    
+    get name(){
+        return {
+             ...this._main.name,
+            name:${this._name}
+        }
+    }
+   set  name(val){
+       this._name=val;
+   }
+}
+```
+
+# ES6项目实战
 
 
 
+https://www.yuque.com/lpldplws/web/hadz6f?singleDoc# 《Vue2源码解析（1/2）》 密码：mq90
 
+https://www.yuque.com/lpldplws/web/xx3ygi?singleDoc# 《Vue2源码解析（2/2）》 密码：ya0n
 
+https://www.yuque.com/lpldplws/web/gdw840?singleDoc# 《Vue3新特性&源码解析（1/3）》 密码：mmo8
 
+https://www.yuque.com/lpldplws/web/gmptis?singleDoc# 《Vue3新特性&源码解析（2/3）》 密码：qke4
 
+https://www.yuque.com/lpldplws/web/ty5nga?singleDoc# 《Vue3新特性&源码解析（3/3）》 密码：apwp
 
+https://www.yuque.com/lpldplws/web/myfkf4?singleDoc# 《配套习题》 密码：oir9
 
-
-
-
-
+https://www.yuque.com/lpldplws/web/sp3cao?singleDoc# 《配套习题》 密码：kv13
