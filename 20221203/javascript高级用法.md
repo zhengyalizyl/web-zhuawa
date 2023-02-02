@@ -2418,9 +2418,249 @@ class utils{
 }
 ```
 
-# ES6项目实战
+# Vue.js基础
 
+面试题：
 
+## 简单聊聊对于MVVM的了解？
+
+- 发展史以及旁支
+
+  - 语义话模版
+  - MVC - model view controller
+  - MVVM -  Model-view-ViewModel(vue和react)
+    - 数据会绑定在viewModel层，并自动将数据渲染到页面中
+    - 视图变化的时候，会通知viewModel层去更新数据
+
+  - mvc更关注元素本身；mvvm关注整体数据层统一
+
+## vue是如何利用mvvm思想来进行书写？
+
+模板式渲染+数据双向绑定
+
+- 利用花括号，构筑了数据与视图的双向绑定=>学习曲线更加平滑
+- 通过视图绑定事件，来处理数据
+
+## 生命周期
+
+vue生命周期
+
+beforeCreate=>created=>beforeMount=>mounted=>beforeUpdate=>updated=>beforeDestory=>destoryed
+
+bC：new Vue() - 实例初始化挂载功能
+
+c: data、props、methods、computed - 数据操作，不涉及到vdom和dom
+
+bM: vDom已经更新了的，但不涉及dom
+
+m: dom进行任何获取或者操作
+
+bU :vDom更新了的，dom未更新
+
+u: dom已经更新了 - 谨慎操作数据
+
+bD: 实例vm尚未被销毁 - 清空events,reset,store,clear
+
+d：实例vm已经被销毁 - 首尾
+
+react是mvvm，都是操作虚拟dom
+
+## computed和watch区别
+
+相同点：
+
+- 基于vue的依赖收集机制
+- 都是被依赖的变化触发，进行改变进而进行处理计算
+
+不同点：
+
+- 入和出
+
+  computed:  多入单出 - 多个值的变化，组成一个最终产物的变化
+
+  watch: 单入多出 - 单个值的变化，从而影响一系列的状态变更
+
+- 性能
+
+  computed: 会自动diff依赖，若依赖没有变化，会改从缓存中读取当前的计算值
+
+  watch：无论监听值变化与否，都会执行回调
+
+- 写法上
+
+  computed: 必须有return
+
+  watch: 由数据变化触发了回调中内容
+
+- 时机上
+
+  computed: 从首次生成赋值，就开始计算运行了
+
+  watch: 首次不会运行，除非immediate:true
+
+## 条件
+
+v-if & v-show & v-else & v-else-if
+
+v-if 无dom,不会渲染实际节点及其子节点
+
+v-show 存在实际节点及其子节点，只是不展示
+
+## 循环
+
+v-for和v-if循环优先级
+
+在vue 2.x, 在同一个元素上同时使用v-if和v-for时候，v-for会优先作用
+
+在vue3.x, v-if总是优先于v-for生效
+
+## key的作用
+
+- 模板编译原理 - template=>dom
+
+  template => 正则匹配语法 -生成AST: 静态、动态 =>转换AST为可执行方法 =>render() => dom
+
+- dom diff
+
+  1 2 3 4 5 6
+
+  6 5 7 3 2 1
+
+  层级上: 只考虑单层复用，多层级的遍历实现
+
+  顺序上：双向指针，首尾向中间移动
+
+  替换上：移动、新增、删除；优先复用 - key =>快速识别顺序
+
+- key的选取 - 尽可能地复用节点
+
+  使用index id 随机数 
+
+  使用index ：
+
+  节点 1 2 3 4 5 6
+
+  key  0 1 2 3 4 5
+
+  节点 6 5 7 3 2 1
+
+  key  0 1 2 3 4 5
+
+  =>当节点顺序发生改变，或者插入元素导致index顺延的情况下
+
+## 指令
+
+v-once -只渲染一次
+
+v-text -渲染字符串
+
+v-html - 渲染html
+
+v-bind - 绑定赋值
+
+v-on - @监听
+
+v-model -双向绑定 -语法糖： value + @input
+
+## 面试题
+
+{{}}的计算类型
+
+- 绑定数据计算可以写在花括号里
+
+  {{number+1}}
+
+- 截断
+
+  {{msg.slice(0,-1)}}
+
+- 浮点数
+
+  {{number.toFixed(2)}}
+
+- 转整型
+
+  {{parseInt(number,10)}}
+
+- 函数加工
+
+  {{calcNumber(number)}}
+
+-  三元运算
+
+  {{100>99?'yes':'no'}}
+
+- 逻辑运算
+
+  {{100>99&&100>98}}
+
+- 取反
+
+  {{!number}}
+
+## 版本差异
+
+### 数据上
+
+对象响应式是否可以传递影响
+
+2.x对象响应式可以被传递
+
+3 响应式对象始终通过挂载实例获取（this）
+
+### 模板上
+
+2.x统一根模版
+
+3.x支持碎片化模版
+
+### 接口方法上
+
+2.x 收敛到固定语法接口
+
+3.x平铺方法，对齐js
+
+### 生命周期
+
+setup=>bc+c
+
+onBeforeMount()=>bM
+
+onMounted=>m
+
+onBeforeUpdate=>bU
+
+onUpdated()=>u
+
+onBeforeUnMount()=>bD
+
+onUnMount()=>d
+
+# vue高级用法
+
+## mixin
+
+mixin灵活 提供可复用的功能
+
+抽离公共代码，哪里需要搬哪里
+
+vue mixin与vuex区别？
+
+vuex抽离公共状态的管理，vuex如果有一个组件改变数据，其他引入的部分也会改变
+
+mixin数据方法都是独立的，组件间互相不影响
+
+mixin方式？
+
+- 局部混入
+  - mixin会和组件一起执行，但是mixin优先级更高
+  - mixin的data、生命周期、methods也会跟组件一起混合使用
+
+- 全局混入
+
+## vue选项式合并的思路
+
+实例化过程中的选项
 
 https://www.yuque.com/lpldplws/web/hadz6f?singleDoc# 《Vue2源码解析（1/2）》 密码：mq90
 
@@ -2435,3 +2675,1624 @@ https://www.yuque.com/lpldplws/web/ty5nga?singleDoc# 《Vue3新特性&源码解�
 https://www.yuque.com/lpldplws/web/myfkf4?singleDoc# 《配套习题》 密码：oir9
 
 https://www.yuque.com/lpldplws/web/sp3cao?singleDoc# 《配套习题》 密码：kv13
+
+# vue-cli
+
+https://www.yuque.com/lpldplws/web/lhptox?singleDoc# 《2. xianzao-cli》 密码：bx09
+
+https://github.com/xianzao/xianzao-cli
+
+## 1.目标
+
+实现一个项目初始化cli，为后续项目提供统一初始化脚手架
+
+## 2.知识准备&技术选型
+
+### 2.1命令行交互
+
+目标：通过命令式的交互，完成在日常业务开发中，封装成具有交互行为的cli
+
+常见的命令行交互的npm包有：
+
+- [commander](https://github.com/tj/commander.js/blob/HEAD/Readme_zh-CN.md)：命令行完整的解决方案；
+- [cac](https://github.com/cacjs/cac)：类似 Commander.js 但更轻巧、现代，支持插件；
+- [chalk](https://github.com/chalk/chalk)：命令行样式处理；
+- [Inquirer](https://github.com/SBoudrias/Inquirer.js/)：交互式的命令行界面；
+- [minimist](https://github.com/minimistjs/minimist)：简单的命令行参数解析；
+- [semver](https://github.com/semver/semver)：npm包语义化处理；
+- [fs-extra](https://github.com/jprichardson/node-fs-extra)：fs包的代替，且继承了fs所有方法和为fs方法添加了promise的支持；
+
+本次选择cac、fs-extra、inquirer、chalk开发
+
+### 2.2开发调试
+
+目标：方便在开发调试阶段时，实现快速开发node应用的工具类
+
+- [nodemon](https://github.com/remy/nodemon)：监听文件更新变化，并自动重启进程；
+- [cross-spawn](https://github.com/moxystudio/node-cross-spawn)：类似node.js 的子进程 (child_process) 的spawn模块，可以在调用 spawn 函数时，自动根据当前的运行平台执行指令；
+- [ts-node](https://github.com/TypeStrong/ts-node)：提供TS的node运行环境，因为TS 是JS的超集，因此使用它意味着在 V8 引擎能够理解它们之前将TS 文件编译为纯JS；
+- [typescript](https://github.com/microsoft/TypeScript)：给JS添加各种静态类型；
+
+### 2.3开发标准化
+
+- [husky](https://github.com/typicode/husky)：添加git hooks工具；
+- [commitizen](https://github.com/commitizen/cz-cli)：优化commit提交规范；
+- [commitlint](https://github.com/conventional-changelog/commitlint)：校验commit提交规范；
+- [cz-customizable](https://github.com/leoforfree/cz-customizable)：定制commit提交规范；
+
+## 3.开发
+
+### 3.1目录结构
+
+```js
+|____.husky // husky配置
+|____README.md
+|____.gitignore
+|____package-lock.json
+|____package.json
+|____.github // git action
+|____commitlint.config.js // commit 限制
+|____tsconfig.json // TS 配置
+|____index.ts // 入口文件
+|____build // 打包&更新package.json版本工具
+|____src
+| |____core
+| | |____special.ts // 针对Vue3优化
+| | |____husky.ts	// 针对husky配置
+| | |____vscode.ts // 针对vscode配置
+| | |____eslint.ts // 针对eslint配置
+| | |____eslintignore.ts // eslint ignore配置
+| | |____commitlint.ts // 针对commitlint配置
+| |____template // 配置模板
+| |____cli.ts // CLI执行入口
+| |____utils // 工具类
+| |____start.ts // 标准化配置执行入口
+| |____interface.ts // TS interface
+```
+
+### 3.2配置项目基础内容
+
+#### 3.2.1初始化项目
+
+根据自己的项目配置
+
+```js
+npm init
+git init
+```
+
+安装上述说明的各种依赖，配置如下：
+
+```js
+"dependencies": {
+  "cac": "^6.7.14",
+  "chalk": "^4.1.2",
+  "cross-spawn": "^7.0.3",
+  "fs-extra": "^10.1.0",
+  "inquirer": "^8.2.4"
+},
+"devDependencies": {
+  "@commitlint/cli": "^17.0.3",
+  "@commitlint/config-angular": "^17.0.3",
+  "@commitlint/cz-commitlint": "^17.0.3",
+  "@types/cross-spawn": "^6.0.2",
+  "@types/fs-extra": "^9.0.13",
+  "@types/inquirer": "^9.0.2",
+  "@types/node": "^18.11.0",
+  "commitizen": "^4.2.4",
+  "cz-customizable": "^6.9.0",
+  "husky": "^8.0.1",
+  "inquirer": "^8.0.0",
+  "minimist": "^1.2.7",
+  "nodemon": "^2.0.20",
+  "ts-node": "^10.9.1",
+  "typescript": "^4.8.4"
+}
+```
+
+#### 3.2.2 tsconfig.json
+
+配置esm打包，及入口文件
+
+```js
+{
+  "compilerOptions": {
+    "target": "es5",
+    "module": "commonjs",
+    "outDir": "./dist",
+    "removeComments": true,
+    "strict": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
+    "resolveJsonModule": true
+  },
+  "include": ["./index.ts", "src**/*.ts"]
+}
+
+```
+
+#### 3.3.3 package.json
+
+配置基础的script执行指令
+
+```js
+  "scripts": {
+    "dev": "nodemon ./index.ts",
+    "serve": "ts-node ./index.ts",
+    "tsc": "tsc"
+  },
+```
+
+### 3.3 配置入口文件
+
+#### 3.3.1 index.ts
+
+使用inquirer完成问题配置
+
+```ts
+#!/usr/bin/env node
+import inquirer from 'inquirer';
+import initCli from './src/cli';
+import { answerType } from './src/interface';
+
+// export interface answerType {
+//   vue3: Boolean
+//   plugins: Array<String>
+// }
+
+
+const promptList = [
+  {
+    type: 'confirm',
+    message: '是否是Vue3项目？', // Vue3项目需要把package.json的type: module删除
+    name: 'vue3',
+  },
+  {
+    type: 'checkbox',
+    message: '选择要安装的插件(默认全选)',
+    name: 'plugins',
+    choices: [
+      {
+        name: 'eslint注册',
+        value: 'eslint',
+        checked: true,
+      },
+      {
+        name: 'husky注册',
+        value: 'husky',
+        checked: true,
+      },
+      {
+        name: 'commitLint注册',
+        value: 'commitLint',
+        checked: true,
+      },
+      {
+        name: 'vscode格式化注册',
+        value: 'vscode',
+        checked: true,
+      },
+    ],
+  },
+];
+
+const question = async () => {
+  // 运行时请使用 npm run serve, 避免使用nodemon，会导致arrow key press 无效： https://github.com/SBoudrias/Inquirer.js/issues/844#issuecomment-571412210
+  const answers: answerType = await inquirer.prompt(promptList);
+  initCli(answers);
+};
+
+question();
+```
+
+#### 3.3.2 cli.ts
+
+指定项目配置入口，如果没有为base设置默认值，交给cli执行脚本
+
+```ts
+// src/cli.ts
+
+import cac from 'cac';
+import { start } from './start';
+import { setEnv } from './utils/env';
+import { name } from '../package.json';
+import { getPackageJson } from './utils/env';
+import { answerType } from './interface';
+
+const cli = cac(name);
+
+export default async (answers: answerType) => {
+  const pkgJson = await getPackageJson();
+  const { version } = pkgJson;
+
+  cli
+    .command('[root]')
+    .alias('alias')
+    .action(async (_root, options) => {
+      let base: string = options.base;
+      if (!base) {
+        // 项目的最终路径
+        base = process.cwd();
+      }
+      setEnv('base', base);
+      await start(base, answers);
+    });
+
+  cli.help();
+  cli.version(version);
+  cli.parse();
+};
+
+```
+
+#### 3.3.3 start.ts
+
+根据用户交互式选择的指令，执行对应依赖的安装
+
+```ts
+// src/start.ts
+
+// 开始分析项目
+import { getPackageJson, initProjectInfo } from './utils/env'
+import { eslintInit } from './core/eslint'
+import { huskyInit } from './core/husky'
+import { eslintIgnoreInit } from './core/eslintignore'
+import { commitLintInit } from './core/commitlint'
+import { specialFn } from './core/special'
+import { vscodeInit } from './core/vscode'
+import { debugError, debugProcess, debugTxt } from './utils/debug'
+import { hasElementInArray } from './utils/tool'
+import { answerType } from './interface'
+
+export const start = async (base: string, answers: answerType) => {
+  const pckJson = await getPackageJson(base)
+
+  const { vue3 = false, plugins = [] } = answers
+
+  await initProjectInfo(pckJson)
+
+  try {
+    // 针对Vue3模板特殊处理
+    vue3 && (await specialFn())
+
+    // 安装eslint 和 prettier 并自动生成配置文件
+    hasElementInArray(plugins, 'eslint') && (await eslintInit())
+
+    // 添加eslint忽略文件
+    hasElementInArray(plugins, 'eslint') && (await eslintIgnoreInit())
+
+    // 安装 husky 并自动生成配置文件
+    hasElementInArray(plugins, 'husky') && (await huskyInit())
+
+    // 生成.vscode 配置文件 支持自动格式化代码
+    hasElementInArray(plugins, 'commitLint') && (await commitLintInit())
+
+    // 格式化VSCode格式
+    hasElementInArray(plugins, 'vscode') && (await vscodeInit())
+
+    debugProcess(
+      `恭喜您，成功注册${vue3 ? 'vue3' : ''} ${hasElementInArray(plugins, 'eslint')} ${hasElementInArray(plugins, 'husky')} ${hasElementInArray(
+        plugins,
+        'commitLint'
+      )} ${hasElementInArray(plugins, 'vscode')} 插件`
+    )
+
+    // 部分版本依赖可能有冲突，建议重新安装node modules
+    debugProcess('请重新安装依赖！npm install or yarn')
+    debugTxt(``)
+  } catch (error) {
+    debugError(JSON.stringify(error))
+  }
+}
+
+```
+
+### 3.4 执行依赖安装
+
+#### 3.4.1 husky
+
+指定husky及lint-staged(避免每次修改都执行一次lint,一般绑定在git pre-commit hook上)
+
+```typescript
+// src/core/husky.ts
+import { writeInPkg, run } from '../utils/tool';
+import fs from 'fs-extra';
+import { getPackageJson } from '../utils/env';
+import { getPath } from '../utils/path';
+import { debugInfo, debugWarning } from '../utils/debug';
+import { pathExists } from '../utils/check';
+
+// 需要安装的依赖
+const devDependencies = ['husky@^8.0.1', 'lint-staged@^12.4.1'];
+
+export const huskyInit = async () => {
+  // 检查是否有git 如果没有 需要先初始化git
+  if (!(await pathExists('.git', false))) {
+    debugWarning(`请先初始化git`);
+    debugInfo('参考命令 git init');
+    process.exit();
+  }
+  // 安装依赖
+  await writeInPkg(devDependencies);
+  // 更改package
+  let pkgJson = await getPackageJson();
+  pkgJson.scripts['prepare'] = 'husky install';
+  pkgJson.scripts['pre-commit'] = 'lint-staged';
+  pkgJson.scripts['postinstallmac'] = 'git config core.hooksPath .husky && chmod 700 .husky/*';
+  pkgJson.scripts['eslint'] = 'eslint --cache --max-warnings 0  "{src,mock}/**/*.{vue,ts,js,tsx}" --fix';
+  pkgJson['lint-staged'] = {
+    '*.{js,ts,vue,jsx,tsx}': ['npm run eslint'],
+    '*.{js,jsx,ts,tsx,md,html,css,lees,scss,sass}': 'prettier --write',
+  };
+  fs.writeJsonSync(getPath('package.json'), pkgJson, { spaces: 2 });
+
+  await run('npm run prepare');
+  await run('npx husky add .husky/pre-commit "npm-run-pre-commit"');
+};
+
+```
+
+#### 3.4.2 eslint
+
+指定eslint对应配置规范，建议可以根据自身项目进行定制化配置，相关文档看对应prettier和eslint官网配置
+
+针对不同开发框架，进行eslint注入(包括vue2/3，React)
+
+```typescript
+// src/core/eslint.ts
+
+import fs from 'fs-extra';
+import { writeInPkg } from '../utils/tool';
+import { getPackageJson, getEnv } from '../utils/env';
+import { prettierrcInit } from '../template/prettierrc';
+import { eslintrcFn } from '../template/eslintrc';
+import { getPath } from '../utils/path';
+
+const baseDep = [
+  'eslint@^7.25.0',
+  'prettier@^2.7.1',
+  'eslint-friendly-formatter@^4.0.1',
+  'eslint-plugin-prettier@^4.0.0',
+  'eslint-plugin-html@^6.2.0',
+  'eslint-config-prettier@^8.5.0',
+];
+
+export const eslintInit = async () => {
+  let devDependencies: string[] = baseDep;
+  if (getEnv('isVue2')) {
+    devDependencies = [...baseDep, 'eslint-plugin-vue@^6.2.2'];
+  }
+  if (getEnv('isVue3')) {
+    devDependencies = [...baseDep, 'eslint-plugin-vue@^9.2.0', '@typescript-eslint/parser@^5.30.7'];
+  }
+  if (getEnv('isReact')) {
+    devDependencies = [
+      ...baseDep,
+      'eslint-plugin-react@^7.30.1',
+      'eslint-plugin-jsx-a11y@^6.6.1',
+      '@typescript-eslint/parser@^5.30.7',
+      '@typescript-eslint/eslint-plugin@5.30.7',
+    ];
+  }
+  // writeInPkg 只是把依赖写入到package中
+  await writeInPkg(devDependencies, 'devDependencies');
+  fs.outputFileSync(getPath('./.eslintrc.js'), eslintrcFn());
+  fs.outputFileSync(getPath('./.prettierrc'), prettierrcInit);
+
+  let pkgJson = await getPackageJson();
+  if (pkgJson['eslintConfig']) {
+    delete pkgJson.eslintConfig;
+  }
+  fs.writeJsonSync(getPath('package.json'), pkgJson, { spaces: 2 });
+};
+
+```
+
+- eslintrc
+
+  ```typescript
+  // template/eslintrc.ts
+  
+  import { getEnv } from '../utils/env';
+  
+  const baseEslint = `
+  'prettier/prettier': 'error',
+  'accessor-pairs': 2,
+  'arrow-spacing': [
+    2,
+    {
+      before: true,
+      after: true
+    }
+  ],
+  'block-spacing': [2, 'always'],
+  'brace-style': [
+    2,
+    '1tbs',
+    {
+      allowSingleLine: true
+    }
+  ],
+  camelcase: [
+    0,
+    {
+      properties: 'always'
+    }
+  ],
+  'comma-dangle': [
+    'error',
+    {
+      arrays: 'never',
+      objects: 'never',
+      imports: 'never',
+      exports: 'never',
+      functions: 'never'
+    }
+  ],
+  'comma-spacing': [
+    2,
+    {
+      before: false,
+      after: true
+    }
+  ],
+  'comma-style': [2, 'last'],
+  'constructor-super': 2,
+  curly: [2, 'multi-line'],
+  'dot-location': [2, 'property'],
+  'eol-last': 2,
+  eqeqeq: 'off',
+  'generator-star-spacing': [
+    2,
+    {
+      before: true,
+      after: true
+    }
+  ],
+  'handle-callback-err': [2, '^(err|error)$'],
+  indent: 'off',
+  'key-spacing': [
+    2,
+    {
+      beforeColon: false,
+      afterColon: true
+    }
+  ],
+  'keyword-spacing': [
+    2,
+    {
+      before: true,
+      after: true
+    }
+  ],
+  'new-cap': [
+    2,
+    {
+      newIsCap: true,
+      capIsNew: false
+    }
+  ],
+  'new-parens': 2,
+  'no-array-constructor': 2,
+  'no-caller': 2,
+  'no-console': 'off',
+  'no-class-assign': 2,
+  'no-cond-assign': 2,
+  'no-const-assign': 2,
+  'no-control-regex': 0,
+  'no-delete-var': 2,
+  'no-dupe-args': 2,
+  'no-dupe-class-members': 2,
+  'no-dupe-keys': 2,
+  'no-duplicate-case': 2,
+  'no-empty-character-class': 2,
+  'no-empty-pattern': 2,
+  'no-eval': 0,
+  'no-ex-assign': 2,
+  'no-extend-native': 2,
+  'no-extra-bind': 2,
+  'no-extra-boolean-cast': 2,
+  'no-extra-parens': [2, 'functions'],
+  'no-fallthrough': 2,
+  'no-floating-decimal': 2,
+  'no-func-assign': 2,
+  'no-implied-eval': 2,
+  'no-inner-declarations': [2, 'functions'],
+  'no-invalid-regexp': 2,
+  'no-irregular-whitespace': 2,
+  'no-iterator': 2,
+  'no-label-var': 2,
+  'no-labels': [
+    2,
+    {
+      allowLoop: false,
+      allowSwitch: false
+    }
+  ],
+  'no-lone-blocks': 2,
+  'no-mixed-spaces-and-tabs': 2,
+  'no-multi-spaces': 2,
+  'no-multi-str': 2,
+  'no-multiple-empty-lines': [
+    2,
+    {
+      max: 1
+    }
+  ],
+  'no-native-reassign': 2,
+  'no-negated-in-lhs': 2,
+  'no-new-object': 2,
+  'no-new-require': 2,
+  'no-new-symbol': 2,
+  'no-new-wrappers': 2,
+  'no-obj-calls': 2,
+  'no-octal': 2,
+  'no-octal-escape': 2,
+  'no-path-concat': 2,
+  'no-proto': 2,
+  'no-redeclare': 2,
+  'no-regex-spaces': 2,
+  'no-return-assign': [2, 'except-parens'],
+  'no-self-assign': 2,
+  'no-self-compare': 2,
+  'no-sequences': 2,
+  'no-shadow-restricted-names': 2,
+  'no-spaced-func': 2,
+  'no-sparse-arrays': 2,
+  'no-this-before-super': 2,
+  'no-throw-literal': 2,
+  'no-trailing-spaces': 2,
+  'no-undef': 2,
+  'no-undef-init': 2,
+  'no-unexpected-multiline': 2,
+  'no-unmodified-loop-condition': 2,
+  'no-unneeded-ternary': [
+    2,
+    {
+      defaultAssignment: false
+    }
+  ],
+  'no-unreachable': 2,
+  'no-unsafe-finally': 2,
+  'no-unused-vars': [
+    2,
+    {
+      vars: 'all',
+      args: 'none'
+    }
+  ],
+  'no-useless-call': 2,
+  'no-useless-computed-key': 2,
+  'no-useless-constructor': 2,
+  'no-useless-escape': 0,
+  'no-whitespace-before-property': 2,
+  'no-with': 2,
+  'one-var': [
+    2,
+    {
+      initialized: 'never'
+    }
+  ],
+  'operator-linebreak': [
+    2,
+    'after',
+    {
+      overrides: {
+        '?': 'before',
+        ':': 'before'
+      }
+    }
+  ],
+  'padded-blocks': [2, 'never'],
+  quotes: 'off',
+  semi: 'off',
+  'semi-spacing': [
+    2,
+    {
+      before: false,
+      after: true
+    }
+  ],
+  'space-before-blocks': [2, 'always'],
+  'space-before-function-paren': 'off',
+  'space-in-parens': [2, 'never'],
+  'space-infix-ops': 2,
+  'space-unary-ops': [
+    2,
+    {
+      words: true,
+      nonwords: false
+    }
+  ],
+  'spaced-comment': 'off',
+  'template-curly-spacing': [2, 'never'],
+  'use-isnan': 2,
+  'valid-typeof': 2,
+  'wrap-iife': [2, 'any'],
+  'yield-star-spacing': [2, 'both'],
+  yoda: [2, 'never'],
+  'prefer-const': 2,
+  'no-debugger': process.env.NODE_ENV === 'production' ? 2 : 0,
+  'object-curly-spacing': [
+    0,
+    'always',
+    {
+      objectsInObjects: false
+    }
+  ],
+  'array-bracket-spacing': [2, 'never']
+  `;
+  
+  export const eslintrcFn = () => {
+    // vue2
+    let eslintrcInit = `
+  module.exports = {
+      root: true,
+      parserOptions: {
+        ecmaVersion: 11,
+        parser: 'babel-eslint',
+        sourceType: 'module'
+      },
+      env: {
+        browser: true,
+        node: true,
+        es6: true
+      },
+      plugins: ['prettier'],
+      extends: ['plugin:vue/recommended', 'eslint:recommended', 'plugin:prettier/recommended'],
+      rules: {
+        'vue/order-in-components': 'off',
+        'vue/html-self-closing': 'off',
+        'vue/require-default-prop': 'off',
+        'vue/max-attributes-per-line': [
+          0,
+          {
+            singleline: 10,
+            multiline: {
+              max: 1,
+              allowFirstLine: false
+            }
+          }
+        ],
+        'vue/singleline-html-element-content-newline': 'off',
+        'vue/multiline-html-element-content-newline': 'off',
+        'vue/name-property-casing': ['error', 'PascalCase'],
+        'vue/no-v-html': 'off',
+        ${baseEslint}
+      } 
+    }
+    
+  `;
+    // vue3
+    if (getEnv('isVue3')) {
+      eslintrcInit = `
+  module.exports = {
+      root: true,
+      parserOptions: {
+        ecmaVersion: 11,
+        sourceType: 'module',
+        parser: '@typescript-eslint/parser'
+      },
+      env: {
+        browser: true,
+        node: true,
+        es6: true
+      },
+      plugins: ['prettier'],
+      extends: ['plugin:vue/vue3-recommended', 'eslint:recommended', 'plugin:prettier/recommended'],
+      rules: {
+        'vue/order-in-components': 'off',
+        'vue/html-self-closing': 'off',
+        'vue/require-default-prop': 'off',
+        'vue/max-attributes-per-line': [
+          0,
+          {
+            singleline: 10,
+            multiline: {
+              max: 1,
+              allowFirstLine: false
+            }
+          }
+        ],
+        'vue/singleline-html-element-content-newline': 'off',
+        'vue/multiline-html-element-content-newline': 'off',
+        'vue/name-property-casing': 'off',
+        'vue/no-v-html': 'off',
+        ${baseEslint}
+      }
+    }
+    `;
+    }
+    if (getEnv('isReact')) {
+      eslintrcInit = `
+  module.exports = {
+    root: true,
+    parserOptions: {
+      ecmaVersion: 11,
+      sourceType: 'module',
+      parser: '@typescript-eslint/parser'
+    },
+    env: {
+      browser: true,
+      node: true,
+      es6: true
+    },
+    plugins: ['react', 'prettier', '@typescript-eslint/eslint-plugin', 'jsx-a11y'],
+    extends: ['plugin:react/recommended', 'plugin:@typescript-eslint/recommended', 'eslint:recommended', 'plugin:prettier/recommended'],
+      rules: {
+        'react/react-in-jsx-scope': 0,
+        ${baseEslint}
+      }
+    }
+    `;
+    }
+    return eslintrcInit;
+  };
+  
+  ```
+
+- prettierrc
+
+  ```typescript
+  export const prettierrcInit = `
+  {
+      "semi": false,
+      "singleQuote": true,
+      "printWidth": 180,
+      "tabWidth": 2,
+      "trailingComma": "none"
+    }
+    
+  `;
+  
+  ```
+
+#### 3.4.3 comitlint
+
+配合husky,提供commit时的规范
+
+```typescript
+// src/core/commitlint
+
+/**
+ * husk 结合 commitlint 提交信息校验
+ */
+import { getPackageJson } from '../utils/env';
+import { writeInPkg, run } from '../utils/tool';
+import fs from 'fs-extra';
+import { commitLintConfig } from '../template/commitlint.config';
+import { getPath } from '../utils/path';
+
+const devDependencies = [
+  '@commitlint/cli@^17.0.3',
+  '@commitlint/config-angular@^17.0.3',
+  'commitizen@^4.2.4',
+  'cz-customizable@^6.9.0',
+  '@commitlint/cz-commitlint@^17.0.3',
+  'inquirer@^8.0.0',
+];
+
+const commitMsg = `#!/usr/bin/env sh
+. "$(dirname -- "$0")/_/husky.sh"
+
+npx --no-install commitlint --edit $1
+`;
+
+const preCommit = `#!/usr/bin/env sh
+. "$(dirname -- "$0")/_/husky.sh"
+npm run pre-commit
+`;
+
+const commitlintPath = getPath('commitlint.config.js');
+
+export const commitLintInit = async () => {
+  await writeInPkg(devDependencies);
+  await run('npx husky add .husky/commit-msg "npm-run-test"');
+  let pkgJson = await getPackageJson();
+  pkgJson['config'] = {
+    commitizen: {
+      path: '@commitlint/cz-commitlint',
+    },
+  };
+  pkgJson.scripts['commit'] = 'git add . && git-cz';
+  fs.writeJsonSync(getPath('package.json'), pkgJson, { spaces: 2 });
+
+  if (await fs.pathExists(commitlintPath)) {
+    // 删除
+    fs.removeSync(commitlintPath);
+  }
+  fs.outputFileSync(commitlintPath, commitLintConfig);
+  fs.outputFileSync(getPath('./.husky/commit-msg'), commitMsg);
+  fs.outputFileSync(getPath('./.husky/pre-commit'), preCommit);
+};
+
+```
+
+- commitline.config
+
+配置custom-commit配置
+
+```typescript
+export const commitLintConfig = `
+module.exports={
+  extends: ['@commitlint/config-angular'],
+  parserPreset: {
+    parserOpts: {
+      headerPattern: /^(.*?)(?:\\((.*)\\))?:?\\s(.*)$/,
+      headerCorrespondence: ['type', 'scope', 'subject'],
+    },
+  },
+  rules: {
+    'type-case': [0],
+    'type-empty': [2, 'never'],
+    'type-enum': [
+      2,
+      'always',
+      [
+        '📦build',
+        '👷ci',
+        '📝docs',
+        '🌟feat',
+        '🐛fix',
+        '🚀perf',
+        '🌠refactor',
+        '🔂revert',
+        '💎style',
+        '🚨test',
+      ],
+    ],
+    'scope-empty': [2, 'never'],
+    'subject-empty': [2, 'never'],
+  },
+  prompt: {
+    settings: {},
+    skip: ['body', 'footer', 'issues'],
+    messages: {
+      skip: '回车直接跳过',
+      max: '最大%d字符',
+      min: '%d chars at least',
+      emptyWarning: '内容不能为空，重新输入',
+      upperLimitWarning: 'over limit',
+      lowerLimitWarning: 'below limit',
+    },
+    questions: {
+      type: {
+        description: '请选择提交类型',
+        enum: {
+          '🌟feat': {
+            description: '增加新功能',
+            title: 'Features',
+            emoji: '🌟',
+          },
+          '🐛fix': {
+            description: '修复bug',
+            title: 'Bug Fixes',
+            emoji: '🐛',
+          },
+          '📝docs': {
+            description: '修改文档',
+            title: 'Documentation',
+            emoji: '📝',
+          },
+          '💎style': {
+            description: '样式修改不影响逻辑',
+            title: 'Styles',
+            emoji: '💎',
+          },
+          '🌠refactor': {
+            description: '功能/代码重构',
+            title: 'Code Refactoring',
+            emoji: '🌠',
+          },
+          '🚀perf': {
+            description: '性能优化',
+            title: 'Performance Improvements',
+            emoji: '🚀',
+          },
+          '🚨test': {
+            description: '增删测试',
+            title: 'Tests',
+            emoji: '🚨',
+          },
+          '📦build': {
+            description: '打包',
+            title: '打包',
+            emoji: '📦',
+          },
+          '👷ci': {
+            description: 'CI部署',
+            title: 'Continuous Integrations',
+            emoji: '⚙️',
+          },
+
+          '🔂revert': {
+            description: '版本回退',
+            title: 'Reverts',
+            emoji: '🔂',
+          },
+        },
+      },
+      scope: {
+        description: '请输入修改的范围（必填）',
+      },
+      subject: {
+        description: '请简要描述提交（必填）',
+      },
+      body: {
+        description: '请输入详细描述（可选）',
+      },
+      isBreaking: {
+        description: '有什么突破性的变化吗?',
+      },
+      breakingBody: {
+        description:
+          '一个破坏性的变更提交需要一个主体。 请输入提交本身的更长的描述  ',
+      },
+      breaking: {
+        description: 'Describe the breaking changes',
+      },
+      isIssueAffected: {
+        description: '是否有未解决的问题?',
+      },
+      issuesBody: {
+        description:
+          'If issues are closed, the commit requires a body. Please enter a longer description of the commit itself',
+      },
+      issues: {
+        description: '请输入问题说明',
+      },
+    },
+  },
+}`;
+
+```
+
+#### 3.4.4 vue3
+
+针对vue3,去除package.json中的type:module
+
+src/core/special.ts
+
+```typescript
+// 一些特殊的处理
+import fs from 'fs-extra';
+import { env, getPackageJson } from '../utils/env';
+import { getPath } from '../utils/path';
+
+export const specialFn = async () => {
+  const { isVue3 } = env;
+  if (!isVue3) return;
+  let pkgJson = await getPackageJson();
+  if (pkgJson.type) {
+    delete pkgJson.type;
+  }
+  fs.writeJsonSync(getPath('package.json'), pkgJson, { spaces: 2 });
+  // 如果是vue3 的话 需要把package中的 type="module"去掉
+};
+
+```
+
+#### 3.4.5 vscode
+
+针对当前workspace,配置vscode配置，保证每个人的开发环境是一致的
+
+```typescript
+/**
+ * vscode 配置
+ */
+import fs from 'fs-extra';
+import { getPath } from '../utils/path';
+
+export const vscodeInit = async () => {
+  const haveVscodeSetting = await fs.pathExists(getPath('./vscode/settings.json'));
+
+  let vscodeSetting = {};
+  if (!haveVscodeSetting) {
+    vscodeSetting = {
+      // 每次保存自动格式化
+      'editor.formatOnSave': true,
+      // 每次保存的时候将代码按eslint格式进行修复
+      'editor.codeActionsOnSave': {
+        'source.fixAll.eslint': true,
+      },
+      'editor.defaultFormatter': 'esbenp.prettier-vscode',
+      // vue文件默认格式化方式vetur
+      '[vue]': {
+        // "editor.defaultFormatter": "octref.vetur"
+        'editor.defaultFormatter': 'esbenp.prettier-vscode',
+      },
+
+      'javascript.format.insertSpaceBeforeFunctionParenthesis': true, // 函数前加上空格 只有在默认vetur的时候生效
+      // js文件默认格式化方式 和vue中的js保持一致使用编辑器自带的ts格式
+      '[javascript]': {
+        // "editor.defaultFormatter": "vscode.typescript-language-features"
+        // javascript文件默认格式化方式prettier
+        'editor.defaultFormatter': 'esbenp.prettier-vscode',
+      },
+      // json文件默认格式化方式prettier
+      '[json]': {
+        'editor.defaultFormatter': 'esbenp.prettier-vscode',
+      },
+      // css文件默认格式化方式prettier
+      '[css]': {
+        'editor.defaultFormatter': 'esbenp.prettier-vscode',
+      },
+      // typescript文件默认格式化方式prettier
+      '[typescript]': {
+        'editor.defaultFormatter': 'esbenp.prettier-vscode',
+      },
+
+      // 控制折行方式 - "on" (根据视区宽度折行)
+      'editor.wordWrap': 'on',
+      'editor.tabSize': 2, // 换行默认以tab缩进 2个字符
+      'editor.snippetSuggestions': 'top', // 将建议的代码段优先级提前选择，比如输入for第一个提示是for循环代码段。
+      'files.associations': {
+        // 文件关联语言的优先级配置
+        '*.js': 'javascriptreact',
+        '*.vue': 'vue',
+        '*.cshtml': 'html',
+        '*.dwt': 'html',
+      },
+      // "eslint.validate": ["javascript", "javascriptreact", "typescript", "typescriptreact"],
+
+      'editor.formatOnPaste': true,
+    };
+  } else {
+    // const nowSetting = await getPackageJson('./vscode/settings.json');
+    const nowSetting = fs.readJSON(getPath('./vscode/settings.json'));
+    vscodeSetting = { ...nowSetting, ...vscodeSetting };
+  }
+  fs.outputFileSync(getPath('./.vscode/settings.json'), JSON.stringify(vscodeSetting, null, 2));
+};
+
+```
+
+### 3.5 开发工具类
+
+#### 3.5.1 env
+
+提供环境读取的配置项
+
+```typescript
+// src/utils/env.ts
+
+import path from 'path';
+import fs from 'fs-extra';
+import { checkVueVersion } from './check';
+
+export const env = {
+  base: '',
+  isVue: false,
+  isVue3: false,
+  isReact: false,
+  isVue2: false,
+  isVueCli: false,
+  isWebpack: true,
+  isEslint: false,
+};
+
+type envKeys = keyof typeof env;
+
+/**
+ * @name 设置变量
+ */
+export const setEnv = (key: envKeys, val: any) => {
+  env[key] = val as never;
+};
+/**
+ * @name 获取变量
+ */
+export const getEnv = (key: envKeys) => {
+  return env[key];
+};
+
+/**
+ * @name 把package.json转化为json
+ */
+export const getPackageJson = async (base: string = getEnv('base') as string) => {
+  // if (!(await pathExists('package.json'))) process.exit(0);
+  const file = path.resolve(base, 'package.json');
+  const json = fs.readJSON(file);
+  return json;
+};
+
+export const initProjectInfo = async (pckJson: any) => {
+  const deps = { ...pckJson.devDependencies, ...pckJson.dependencies };
+  if (deps['vue']) {
+    setEnv('isVue', true);
+    if (checkVueVersion(deps['vue']) === 2) {
+      setEnv('isVue2', true);
+    }
+    if (checkVueVersion(deps['vue']) === 3) {
+      setEnv('isVue3', true);
+    }
+  }
+
+  if (deps['react']) {
+    setEnv('isReact', true);
+  }
+
+  if (deps['eslint']) {
+    setEnv('isEslint', true);
+  }
+  return true;
+};
+
+```
+
+#### 3.5.2 check
+
+提供判断版本及文件是否存在的方法
+
+```typescript
+// 各种检测函数
+import fs from 'fs-extra';
+import { debugError } from './debug';
+import { getEnv } from './env';
+
+/**
+ * @name 判断文件夹是否存在
+ */
+export const pathExists = async (name: string, ext: boolean = true): Promise<boolean | void> => {
+  const base = getEnv('base') as string;
+  const res = await fs.pathExists(`${base}/${name}`);
+  if (!res) {
+    ext && debugError(`${base}/${name}不存在`);
+    return false;
+  } else {
+    return res;
+  }
+};
+
+/**
+ * @name 判断是哪个vue版本
+ */
+export const checkVueVersion = (version: string) => {
+  const v = version.split('.')[0] as string;
+  return Number(v.match(/\d+/g));
+};
+
+/**
+ * @name 判断使用的是npm和yarn
+ */
+export const checkNpmOrYarn = async (_basePath?: string): Promise<string[]> => {
+  // 如果原项目使用的是yarn进行安装的，那还是使用npm进行按照，否则就使用npm
+  if (await pathExists('yarn.lock', false)) {
+    return ['yarn', 'add'];
+  }
+  return ['npm', 'init'];
+};
+
+```
+
+#### 3.5.3 getPath
+
+通过env获取base路径
+
+```typescript
+import { getEnv } from './env';
+import path from 'path';
+
+export const getPath = (name: string) => {
+  const basePath = getEnv('base') as string;
+  return path.resolve(basePath, name);
+};
+
+```
+
+#### 3.5.4 tools
+
+各种读写包信息的操作
+
+```typescript
+import spawn from 'cross-spawn'
+import fs from 'fs-extra'
+
+import { getEnv, getPackageJson } from './env'
+import { checkNpmOrYarn } from './check'
+import { getPath } from './path'
+import { debugInfo, debugWarning } from './debug'
+
+export const hasElementInArray = (list: Array<String>, element: string) => {
+  return list.indexOf(element) >= 0 ? element : ''
+}
+
+export const down = async (runName: string | string[], type: string) => {
+  const basePath = getEnv('base') as string
+  const [n, i] = await checkNpmOrYarn(basePath)
+  if (typeof runName === 'string') {
+    await spawnSync(n, i, runName, type, basePath)
+    return false
+  }
+  runName.forEach(async (runItem) => {
+    await spawnSync(n, i, runItem, type, basePath)
+  })
+}
+
+export const spawnSync = (n: string, i: string, runItem: string, type: string, basePath: string) => {
+  return new Promise((resolve) => {
+    spawn.sync(n, [i, runItem, type], {
+      stdio: 'pipe',
+      cwd: basePath
+    })
+    debugInfo(`${runItem}✅`)
+
+    resolve({ success: true })
+  })
+}
+
+export const writeInPkg = async (devArr: string[], key: string = 'devDependencies') => {
+  let pkg = await getPackageJson()
+  devArr.forEach((item: string) => {
+    // 为了防止安装包里面的名字有@
+    const index = item.lastIndexOf('@')
+    const k = index === -1 ? item : item.slice(0, index)
+    const v = index === -1 ? '' : item.slice(index + 1) || ''
+    pkg[key][k] = v
+    debugInfo(`${item}✅`)
+  })
+  fs.writeJsonSync(getPath('package.json'), pkg, { spaces: 2 })
+}
+
+export const run = async (str: string) => {
+  const basePath = getEnv('base') as string
+  const runArr = str.split(' ')
+  if (runArr.length < 2) {
+    debugWarning(`运行参数错误${str}`)
+    return false
+  }
+  const [npm, ...args] = runArr
+  debugInfo(`${runArr.join(' ')}✅`)
+  spawn.sync(npm, args, {
+    stdio: 'pipe',
+    cwd: basePath
+  })
+}
+
+export const downNodeModules = async () => {
+  const basePath = getEnv('base') as string
+  const [n] = await checkNpmOrYarn(basePath)
+  await run(`${n} install`)
+}
+
+```
+
+#### 3.5.5 debug
+
+根据chalk生成cli不同类型的样式
+
+```typescript
+import chalk from 'chalk';
+const log = console.log;
+let debugSwitch = true;
+
+/**
+ * debug开关，默认开启
+ * @param debug boolean
+ */
+const switchDebug = (debug: boolean) => {
+  debugSwitch = debug;
+};
+
+/**
+ * debug 错误信息
+ * @param type 类型
+ * @param msg 信息
+ */
+const debugError = (msg: string) => {
+  debugSwitch && log(chalk.hex('#646cff')(`[xianzao-cli]:`) + chalk.red(msg));
+  // 如果出错就退出
+  process.exit(0);
+};
+
+/**
+ * debug 信息
+ * @param type 类型
+ * @param msg 信息
+ */
+const debugInfo = (msg: string) => {
+  debugSwitch && log(chalk.hex('#646cff')(`[xianzao-cli]:`) + chalk.green(msg));
+};
+
+/**
+ * debug 强调
+ * @param type 类型
+ * @param msg 信息
+ */
+
+const debugProcess = (msg: string) => {
+  debugSwitch && log(chalk.hex('#646cff')(`[xianzao-cli]:`) + chalk.yellow(msg));
+};
+/**
+ * debug warning信息
+ * @param type 类型
+ * @param msg 信息
+ */
+const debugWarning = (msg: string) => {
+  log(chalk.hex('#646cff')(`[xianzao-cli]:`) + chalk.yellow(msg));
+};
+
+const debugTxt = (msg: string) => {
+  log(chalk.hex('#646cff')(`[xianzao-cli]:`) + chalk.hex('#5c6d82')(msg));
+};
+
+export { switchDebug, debugInfo, debugError, debugWarning, debugProcess, debugTxt };
+
+```
+
+### 3.6 打包工具类
+
+#### 3.6.1 index
+
+根据tsconfig中指定的target及outDir配置打包
+
+```typescript
+// build/index.ts
+
+import fs from 'fs-extra';
+import { getPackageJson } from '../src/utils/env';
+import { getPath } from '../src/utils/path';
+const buildInit = async () => {
+  const pkgJson = await getPackageJson();
+  pkgJson['bin'] = {
+    'xianzao-cli': 'index.js',
+  };
+  // 去掉husky
+  delete pkgJson.scripts.prepare;
+  pkgJson['main'] = 'index.js';
+  fs.outputFileSync(getPath('./dist/package.json'), JSON.stringify(pkgJson));
+  fs.copyFileSync(getPath('./README.md'), './dist/README.md');
+};
+
+buildInit();
+
+```
+
+####  3.6.2 version
+
+支持在每次提交代码时更新patch版本
+
+```typescript
+import fs from 'fs-extra';
+
+import { getPackageJson } from '../src/utils/env';
+import { getPath } from '../src/utils/path';
+import { debugInfo } from '../src/utils/debug';
+
+const versionInit = async () => {
+  // 默认为patch版本更新
+  const pkgJson = await getPackageJson();
+  let version = pkgJson.version.split('.');
+  version[2] = Number(version[2]) + 1;
+
+  pkgJson['version'] = version.join('.');
+  fs.outputFileSync(getPath('./package.json'), JSON.stringify(pkgJson, null, 2));
+
+  debugInfo(`当前版本升级为：${pkgJson['version']}`);
+};
+
+versionInit();
+
+```
+
+### 3.7 打包&发布npm
+
+#### 3.7.1打包
+
+在package.json中添加script
+
+- build: 生产打包文件
+- commit: 执行commit规范化
+- update- version: 更新patch版本
+
+```js
+"build": "rm -rf dist && tsc && ts-node build/index.ts",
+"commit": "git add . && git-cz ",
+"update-version": "ts-node build/version.ts",
+"commit-version": "npm run update-version && git add . && git-cz",
+"prepare": "husky install",
+"release": "rm -rf dist && tsc && ts-node build/index.ts"
+```
+
+#### 3.7.2 发布npm
+
+在github上关联git  action ,需要先注册登录rpm,或者使用[publish](https://www.npmjs.com/package/publish)简化发布流程
+
+```js
+name: 发布npm
+on:
+  push:
+    branches: [master]
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+      - name: setupNode
+        uses: actions/setup-node@v3
+        with:
+          node-version: '16.x'
+          registry-url: 'https://registry.npmjs.org'
+      - name: 依赖安装
+        run: npm install
+      - name: 构建
+        run: npm run build
+      - run: cd ./dist && npm publish
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NODE_AUTH_TOKEN }}
+
+```
+
+#### 3.7.3 指定package.json入口
+
+完整的package.json如下：
+
+```json
+{
+  "name": "xianzao-cli",
+  "version": "1.0.0",
+  "description": "项目初始化脚手架",
+  "main": "dist/index.js",
+  "scripts": {
+    "dev": "nodemon ./index.ts",
+    "serve": "ts-node ./index.ts",
+    "tsc": "tsc",
+    "build": "rm -rf dist && tsc && ts-node build/index.ts",
+    "commit": "git add . && git-cz ",
+    "update-version": "ts-node build/version.ts",
+    "commit-version": "npm run update-version && git add . && git-cz",
+    "prepare": "husky install",
+    "release": "rm -rf dist && tsc && ts-node build/index.ts"
+  },
+  "bin": {
+    "xianzao-cli": "dist/index.js"
+  },
+  "config": {
+    "commitizen": {
+      "path": "@commitlint/cz-commitlint"
+    }
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/xianzao/xianzao-cli.git"
+  },
+  "keywords": [
+    "cli",
+    "xianzao"
+  ],
+  "author": "xianzao",
+  "license": "ISC",
+  "nodemonConfig": {
+    "ignore": [
+      "package.json"
+    ]
+  },
+  "bugs": {
+    "url": "https://github.com/xianzao/xianzao-cli/issues"
+  },
+  "homepage": "https://github.com/xianzao/xianzao-cli#readme",
+  "dependencies": {
+    "cac": "^6.7.14",
+    "chalk": "^4.1.2",
+    "cross-spawn": "^7.0.3",
+    "fs-extra": "^10.1.0",
+    "inquirer": "^8.2.4"
+  },
+  "devDependencies": {
+    "@commitlint/cli": "^17.0.3",
+    "@commitlint/config-angular": "^17.0.3",
+    "@commitlint/cz-commitlint": "^17.0.3",
+    "@types/cross-spawn": "^6.0.2",
+    "@types/fs-extra": "^9.0.13",
+    "@types/inquirer": "^9.0.2",
+    "@types/node": "^18.11.0",
+    "commitizen": "^4.2.4",
+    "cz-customizable": "^6.9.0",
+    "husky": "^8.0.1",
+    "inquirer": "^8.0.0",
+    "minimist": "^1.2.7",
+    "nodemon": "^2.0.20",
+    "ts-node": "^10.9.1",
+    "typescript": "^4.8.4"
+  }
+}
+```
+
+### 3.8使用
+
+```bash
+# 1. 项目中执行
+npm i xianzao-cli -D
+
+# 2. 在package.json中添加script
+"scripts": {
+"xianzao-cli": "xianzao-cli",
+},
+
+# 3. 执行npm run xianzao-cli, 即会自动添加依赖
+```
+
+## 4. 总结
+
+github：https://github.com/xianzao/xianzao-cli
+
+- npm：https://www.npmjs.com/package/xianzao-cli
+  至此，我们就实现了一个简单基础的项目初始化脚手架，包括：
+
+- 保存代码自动格式化
+- 提交前 commit 校验
+- eslint + prettier 校验
+- husky 自动装载
+- 提交时关联git action，自动发布npm包
+  后续可以根据业务需求，在此基础上实现各种优化，后续，我们也会用它来完成后面项目的初始化。
+
+# vue2源码解析(1/2)
+
+https://vgbixa7nr9.feishu.cn/drive/folder/fldcnuszmspfoSJwl5QFtPrsCGg
+
+https://www.yuque.com/lpldplws/web/ck0csfxciuzol315?singleDoc# 《Vue高级用法》 密码：tczl
+https://www.yuque.com/lpldplws/web/hadz6f?singleDoc# 《Vue2源码解析（1/2）》 密码：mq90
+https://www.yuque.com/lpldplws/web/xx3ygi?singleDoc# 《Vue2源码解析（2/2）》 密码：ya0n
+https://www.yuque.com/lpldplws/web/gdw840?singleDoc# 《Vue3新特性&源码解析（1/3）》 密码：mmo8
+https://www.yuque.com/lpldplws/web/gmptis?singleDoc# 《Vue3新特性&源码解析（2/3）》 密码：qke4
+https://www.yuque.com/lpldplws/web/ty5nga?singleDoc# 《Vue3新特性&源码解析（3/3）》 密码：apwp
+https://www.yuque.com/lpldplws/web/myfkf4?singleDoc# 《配套习题》 密码：oir9
+
+## 1.课程目标
+
+掌握vue2.6(目前2.x最高版本)的核心源码
+
+## 2.课程大纲
+
+- 前置知识
+- 数据驱动
+
+## 3.前置知识
+
+#### 3.1 Flow
+
+[Flow](https://flow.org/en/docs/getting-started/) 是 facebook 出品的 JavaScript 静态类型检查工具。Vue.js 的源码利用了 Flow 做了静态类型检查，也就是文件顶部出现的
+
+```js
+/* @flow */
+```
+
+#### 3.1.2 使用Flow的原因
+
+1. JavaScript 是动态类型语言，它的灵活性有目共睹，但是过于灵活的副作用是很容易就写出非常隐蔽的隐患代码，在编译期甚至看上去都不会报错，但在运行阶段就可能出现各种奇怪的 bug；
+
+2. 类型检查是当前动态类型语言的发展趋势，可以帮助我们在编译期尽早发现（由类型错误引起的）bug，又不影响代码运行（不需要运行时动态检查类型），使编写 JavaScript 具有和编写 Java 等强类型语言相近的体验；
+
+3. 项目越复杂就越需要通过工具的手段来保证项目的维护性和增强代码的可读性。 Vue.js 在做 2.0 重构的时候，在 ES2015 的基础上，除了 ESLint 保证代码风格之外，也引入了 Flow 做静态类型检查。之所以选择 Flow，主要是因为 Babel 和 ESLint 都有对应的 Flow 插件以支持语法，可以完全沿用现有的构建配置，非常小成本的改动就可以拥有静态类型检查的能力；
+
+   [Vue2.0选用Flow的具体原因](https://www.zhihu.com/question/46397274/answer/101193678)，当然Vue3.0还是还是用TS重构了
+
+#### 3.1.3 Flow的工作方式
+
+通常类型检查分为2种方式：
+
+- 类型推断：通过变量的使用上下文来推断出变量类型，然后根据这些推断来检查类型；
+- 类型注释：事先注释好我们期待的类型，Flow 会基于这些注释来判断；
+
+##### 3.1.3.1 类型判断
+
+它不需要任何代码修改即可进行类型检查，最小化开发者的工作量。它不会强制你改变开发习惯，因为它会自动推断出变量的类型。这就是所谓的类型推断，Flow 最重要的特性之一。
+
+通过一个简单例子说明一下：
+
+```js
+/*@flow*/
+
+function split(str) {
+  return str.split(' ')
+}
+
+split(11)
+```
+
+Flow 检查上述代码后会报错，因为函数 split 期待的参数是字符串，而我们输入了数字；
+
