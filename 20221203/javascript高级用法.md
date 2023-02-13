@@ -8192,6 +8192,18 @@ export function createAsyncPlaceholder (
 
 # vue3新特性&源码解析（1/3）
 
+Object.defineProperty重新定义getter和setter，为什么换proxy代理
+
+1.对于数组长度变化
+
+2.在对象上增删元素的操作
+
+3.数组方法push, pop,unshift,shift
+
+4.想支持响应式的属性$set
+
+https://www.yuque.com/lpldplws/web/gdw840?singleDoc# 《Vue3新特性&源码解析（1/3）》 密码：mmo8
+
 ## 1.课程目标
 
 对比Vue2，对Vue3的新特性进行学习，掌握Vue3的关键技术点，以及能够使用vue3实现组件的开发；
@@ -9620,22 +9632,3101 @@ export default useMousePosition
 
 当我们需要从父组件向子组件传递数据时，可以使用 props。想象一下这样的结构：但对于一些深度嵌套的组件，如果仍然将 prop 沿着组件链逐级传递下去，会很麻烦。对于这种情况，我们可以使用一对 `provide `和 `inject`。无论组件层次结构有多深，父组件都可以作为其所有子组件的依赖提供者。这个特性有两个部分：父组件有一个 provide 选项来提供数据，子组件有一个 inject 选项来开始使用这些数据。
 
-## vue2和vue3响应式的区别
+##### 3.2.8.1 基础使用
 
-Object.defineProperty重新定义getter和setter，为什么换proxy代理
+```js
+<script>
+import { defineComponent } from 'vue';
+export default defineComponent({
+  provide: {
+    provideData: { name: "先早" },
+  }
+});
+</script>
 
-1.对于数组长度变化
+// 子组件
+<template>
+  <div class="hello">
+    <h1>{{ msg }}</h1>
+    {{ provideData }}
+  </div>
+</template>
 
-2.在对象上增删元素的操作
+<script>
+export default defineComponent({
+  name: "HelloWorld",
+  props: {
+    msg: String,
+  },
+  inject: ["provideData"],
+});
+</script>
+```
 
-3.数组方法push, pop,unshift,shift
+##### 3.2.8.2. setup()中使用
 
-4.想支持响应式的属性$set
+在 setup() 中使用, 则需要从 vue 显式导入provide、inject方法。导入以后，我们就可以调用它来定义暴露给我们的组件方式。
+
+provide 函数允许你通过两个参数定义属性：
+
+- name：参数名称
+- value：属性的值
+
+```js
+// 父组件
+<script>
+import { provide } from "vue";
+import HelloWorldVue from "./components/HelloWorld.vue";
+export default defineComponent({
+  name: "App",
+  components: {
+    HelloWorld: HelloWorldVue,
+  },
+  setup() {
+    provide("provideData", {
+      name: "先早",
+    });
+  },
+});
+</script>
+
+// 子组件
+<script>
+import { provide, inject } from "vue";
+export default defineComponent({
+  name: "HelloWorld",
+  props: {
+    msg: String,
+  },
+  setup() {
+    const provideData = inject("provideData");
+    
+    console.log(provideData); //  { name: "先早"  }
+
+    return {
+      provideData,
+    };
+  },
+});
+</script>
+```
+
+##### 3.2.8.3 传递响应数据
+
+在 `provide `值时使用 `ref `或 `reactive`
+
+```js
+<script>
+import { provide, reactive, ref } from "vue";
+import HelloWorldVue from "./components/HelloWorld.vue";
+export default defineComponent({
+  name: "App",
+  components: {
+    HelloWorld: HelloWorldVue,
+  },
+  setup() {
+    const age = ref(18);
+
+    provide("provideData", {
+      age,
+      data: reactive({ name: "先早" }),
+    });
+  },
+});
+</script>
+
+
+<script lang="ts">
+import { inject } from "vue";
+export default defineComponent({
+  name: "HelloWorld",
+  props: {
+    msg: String,
+  },
+  setup() {
+    const provideData = inject("provideData");
+
+    console.log(provideData);
+
+    return {
+      provideData,
+    };
+  },
+});
+</script>
+```
+
+### 3.3 一个完整的Vue3组件模板
+
+```js
+<template>
+  <div class="mine" ref="elmRefs">
+    <span>{{name}}</span>
+    <br>
+    <span>{{count}}</span>
+    <div>
+      <button @click="handleClick">测试按钮</button>
+    </div>
+
+    <ul>
+      <li v-for="item in list" :key="item.id">{{item.name}}</li>
+    </ul>
+  </div>
+</template>
+
+<script lang="ts">
+import { computed, defineComponent, getCurrentInstance, onMounted, PropType, reactive, ref, toRefs } from 'vue';
+
+interface IState {
+  count: number
+  name: string
+  list: Array<object>
+}
+
+export default defineComponent({
+  name: 'demo',
+  // 父组件传子组件参数
+  props: {
+    name: {
+      type: String as PropType<null | ''>,
+      default: 'vue3.x'
+    },
+    list: {
+      type: Array as PropType<object[]>,
+      default: () => []
+    }
+  },
+  components: {
+    /// TODO 组件注册
+  },
+  emits: ["emits-name"], // 为了提示作用
+  setup (props, context) {
+    console.log(props.name)
+    console.log(props.list)
+    
+    
+    const state = reactive<IState>({
+      name: 'vue 3.0 组件',
+      count: 0,
+      list: [
+        {
+          name: 'vue',
+          id: 1
+        },
+        {
+          name: 'vuex',
+          id: 2
+        }
+      ]
+    })
+
+    const a = computed(() => state.name)
+
+    onMounted(() => {
+
+    })
+
+    function handleClick () {
+      state.count ++
+      // 调用父组件的方法
+      context.emit('emits-name', state.count)
+    }
+  
+    return {
+      ...toRefs(state),
+      handleClick
+    }
+  }
+});
+</script>
+```
+
+# vue3新特性&源码解析（2/3）
 
 https://www.yuque.com/lpldplws/web/gmptis?singleDoc# 《Vue3新特性&源码解析（2/3）》 密码：qke4
 
+## 1.课程目标
+
+深入理解Vue3核心源码，通过精简的核心源码，更好的去掌握Vue3具体执行逻辑；
+
+## 2.课程大纲
+
+1. Vue3模块源码解析；
+2. Vue3执行逻辑解析；
+
+## 3. vue3模块源码解析
+
+课程代码已经发给班班，可以咨询班班，课程代码目录结构同官方目录结构一致，可以先看懂课程上的简版代码（主要添加注释及去除环境变量等），再深入官方源码进行学习；
+
+官方地址：https://github.com/vuejs/core/tree/main/packages
+
+基本核心模块目录结构如下：
+
+```js
+├─compiler-core
+│  │  package.json
+│  │
+│  ├─src
+│  │  │  ast.ts
+│  │  │  codegen.ts
+│  │  │  compile.ts
+│  │  │  index.ts
+│  │  │  parse.ts
+│  │  │  runtimeHelpers.ts
+│  │  │  transform.ts
+│  │  │  utils.ts
+│  │  │
+│  │  └─transforms
+│  │          transformElement.ts
+│  │          transformExpression.ts
+│  │          transformText.ts
+│  │
+│  └─__tests__
+│      │  codegen.spec.ts
+│      │  parse.spec.ts
+│      │  transform.spec.ts
+│      │
+│      └─__snapshots__
+│              codegen.spec.ts.snap
+│
+├─reactivity
+│  │  package.json
+│  │
+│  ├─src
+│  │      baseHandlers.ts
+│  │      computed.ts
+│  │      dep.ts
+│  │      effect.ts
+│  │      index.ts
+│  │      reactive.ts
+│  │      ref.ts
+│  │
+│  └─__tests__
+│          computed.spec.ts
+│          dep.spec.ts
+│          effect.spec.ts
+│          reactive.spec.ts
+│          readonly.spec.ts
+│          ref.spec.ts
+│          shallowReadonly.spec.ts
+│
+├─runtime-core
+│  │  package.json
+│  │
+│  ├─src
+│  │  │  .pnpm-debug.log
+│  │  │  apiInject.ts
+│  │  │  apiWatch.ts
+│  │  │  component.ts
+│  │  │  componentEmits.ts
+│  │  │  componentProps.ts
+│  │  │  componentPublicInstance.ts
+│  │  │  componentRenderUtils.ts
+│  │  │  componentSlots.ts
+│  │  │  createApp.ts
+│  │  │  h.ts
+│  │  │  index.ts
+│  │  │  renderer.ts
+│  │  │  scheduler.ts
+│  │  │  vnode.ts
+│  │  │
+│  │  └─helpers
+│  │          renderSlot.ts
+│  │
+│  └─__tests__
+│          apiWatch.spec.ts
+│          componentEmits.spec.ts
+│          rendererComponent.spec.ts
+│          rendererElement.spec.ts
+│
+├─runtime-dom
+│  │  package.json
+│  │
+│  └─src
+│          index.ts
+│
+├─runtime-test
+│  └─src
+│          index.ts
+│          nodeOps.ts
+│          patchProp.ts
+│          serialize.ts
+│
+├─shared
+│  │  package.json
+│  │
+│  └─src
+│          index.ts
+│          shapeFlags.ts
+│          toDisplayString.ts
+```
+
+### 3.1 compiler-core
+
+Vue3的编译核心，核心作用就是将字符串转换成 抽象对象语法树AST；
+
+ 
+
+#### 3.1.1. 目录结构 
+
+```js
+├─compiler-core
+│  │  package.json
+│  │
+│  ├─src
+│  │  │  ast.ts
+│  │  │  codegen.ts
+│  │  │  compile.ts
+│  │  │  index.ts
+│  │  │  parse.ts
+│  │  │  runtimeHelpers.ts
+│  │  │  transform.ts
+│  │  │  utils.ts
+│  │  │
+│  │  └─transforms
+│  │          transformElement.ts
+│  │          transformExpression.ts
+│  │          transformText.ts
+│  │
+│  └─__tests__
+│      │  codegen.spec.ts
+│      │  parse.spec.ts
+│      │  transform.spec.ts
+│      │
+│      └─__snapshots__
+│              codegen.spec.ts.snap
+│
+├─reactivity
+│  │  package.json
+│  │
+│  ├─src
+│  │      baseHandlers.ts
+│  │      computed.ts
+│  │      dep.ts
+│  │      effect.ts
+│  │      index.ts
+│  │      reactive.ts
+│  │      ref.ts
+│  │
+│  └─__tests__
+│          computed.spec.ts
+│          dep.spec.ts
+│          effect.spec.ts
+│          reactive.spec.ts
+│          readonly.spec.ts
+│          ref.spec.ts
+│          shallowReadonly.spec.ts
+│
+├─runtime-core
+│  │  package.json
+│  │
+│  ├─src
+│  │  │  .pnpm-debug.log
+│  │  │  apiInject.ts
+│  │  │  apiWatch.ts
+│  │  │  component.ts
+│  │  │  componentEmits.ts
+│  │  │  componentProps.ts
+│  │  │  componentPublicInstance.ts
+│  │  │  componentRenderUtils.ts
+│  │  │  componentSlots.ts
+│  │  │  createApp.ts
+│  │  │  h.ts
+│  │  │  index.ts
+│  │  │  renderer.ts
+│  │  │  scheduler.ts
+│  │  │  vnode.ts
+│  │  │
+│  │  └─helpers
+│  │          renderSlot.ts
+│  │
+│  └─__tests__
+│          apiWatch.spec.ts
+│          componentEmits.spec.ts
+│          rendererComponent.spec.ts
+│          rendererElement.spec.ts
+│
+├─runtime-dom
+│  │  package.json
+│  │
+│  └─src
+│          index.ts
+│
+├─runtime-test
+│  └─src
+│          index.ts
+│          nodeOps.ts
+│          patchProp.ts
+│          serialize.ts
+│
+├─shared
+│  │  package.json
+│  │
+│  └─src
+│          index.ts
+│          shapeFlags.ts
+│          toDisplayString.ts
+```
+
+#### 3.1.2 compile逻辑
+
+详细代码见课上讲解
+
+```js
+// src/index.ts
+export { baseCompile } from "./compile";
+
+// src/compiler.ts
+import { generate } from "./codegen";
+import { baseParse } from "./parse";
+import { transform } from "./transform";
+import { transformExpression } from "./transforms/transformExpression";
+import { transformElement } from "./transforms/transformElement";
+import { transformText } from "./transforms/transformText";
+
+export function baseCompile(template, options) {
+  // 1. 先把 template 也就是字符串 parse 成 ast
+  const ast = baseParse(template);
+  // 2. 给 ast 加点料（- -#）
+  transform(
+    ast,
+    Object.assign(options, {
+      nodeTransforms: [transformElement, transformText, transformExpression],
+    })
+  );
+  
+  // 3. 生成 render 函数代码
+  return generate(ast);
+}
+
+```
+
+- baseParse
+
+```typescript
+export function baseParse(content: string) {
+  const context = createParserContext(content);
+  return createRoot(parseChildren(context, []));
+}
+
+function createParserContext(content) {
+  console.log("创建 paserContext");
+  return {
+    source: content,
+  };
+}
+
+function createRoot(children) {
+  return {
+    type: NodeTypes.ROOT,
+    children,
+    helpers: [],
+  };
+}
+
+function parseChildren(context, ancestors) {
+  console.log("开始解析 children");
+  const nodes: any = [];
+  
+  while (!isEnd(context, ancestors)) {
+    let node;
+    const s = context.source;
+    
+    if (startsWith(s, "{{")) {
+      // 看看如果是 {{ 开头的话，那么就是一个插值， 那么去解析他
+      node = parseInterpolation(context);
+    } else if (s[0] === "<") {
+      if (s[1] === "/") {
+        // 这里属于 edge case 可以不用关心
+        // 处理结束标签
+        if (/[a-z]/i.test(s[2])) {
+          // 匹配 </div>
+          // 需要改变 context.source 的值 -> 也就是需要移动光标
+          parseTag(context, TagType.End);
+          // 结束标签就以为这都已经处理完了，所以就可以跳出本次循环了
+          continue;
+        }
+      } else if (/[a-z]/i.test(s[1])) {
+        node = parseElement(context, ancestors);
+      }
+    }
+    
+    if (!node) {
+      node = parseText(context);
+    }
+    
+    nodes.push(node);
+  }
+  
+  return nodes;
+}
+```
+
+- transfrom
+
+```typescript
+export function transform(root, options = {}) {
+  // 1. 创建 context
+  
+  const context = createTransformContext(root, options);
+  
+  // 2. 遍历 node
+  traverseNode(root, context);
+  
+  createRootCodegen(root, context);
+  
+  root.helpers.push(...context.helpers.keys());
+}
+
+function createTransformContext(root, options): any {
+  const context = {
+    root,
+    nodeTransforms: options.nodeTransforms || [],
+    helpers: new Map(),
+    helper(name) {
+      // 这里会收集调用的次数
+      // 收集次数是为了给删除做处理的， （当只有 count 为0 的时候才需要真的删除掉）
+      // helpers 数据会在后续生成代码的时候用到
+      const count = context.helpers.get(name) || 0;
+      context.helpers.set(name, count + 1);
+    },
+  };
+  
+  return context;
+}
+
+function traverseNode(node: any, context) {
+  const type: NodeTypes = node.type;
+  
+  // 遍历调用所有的 nodeTransforms
+  // 把 node 给到 transform
+  // 用户可以对 node 做处理
+  const nodeTransforms = context.nodeTransforms;
+  const exitFns: any = [];
+  for (let i = 0; i < nodeTransforms.length; i++) {
+    const transform = nodeTransforms[i];
+    
+    const onExit = transform(node, context);
+    if (onExit) {
+      exitFns.push(onExit);
+    }
+  }
+  
+  switch (type) {
+    case NodeTypes.INTERPOLATION:
+      // 插值的点，在于后续生成 render 代码的时候是获取变量的值
+      context.helper(TO_DISPLAY_STRING);
+      break;
+      
+    case NodeTypes.ROOT:
+    case NodeTypes.ELEMENT:
+      
+      traverseChildren(node, context);
+      break;
+      
+    default:
+      break;
+  }
+  
+  
+  
+  let i = exitFns.length;
+  // i-- 这个很巧妙
+  // 使用 while 是要比 for 快 (可以使用 https://jsbench.me/ 来测试一下)
+  while (i--) {
+    exitFns[i]();
+  }
+}
+
+function createRootCodegen(root: any, context: any) {
+  const { children } = root;
+  
+  // 只支持有一个根节点
+  // 并且还是一个 single text node
+  const child = children[0];
+  
+  // 如果是 element 类型的话 ， 那么我们需要把它的 codegenNode 赋值给 root
+  // root 其实是个空的什么数据都没有的节点
+  // 所以这里需要额外的处理 codegenNode
+  // codegenNode 的目的是专门为了 codegen 准备的  为的就是和 ast 的 node 分离开
+  if (child.type === NodeTypes.ELEMENT && child.codegenNode) {
+    const codegenNode = child.codegenNode;
+    root.codegenNode = codegenNode;
+  } else {
+    root.codegenNode = child;
+  }
+}
+
+```
+
+- generate
+
+```typescript
+export function generate(ast, options = {}) {
+  // 先生成 context
+  const context = createCodegenContext(ast, options);
+  const { push, mode } = context;
+  
+  // 1. 先生成 preambleContext
+  
+  if (mode === "module") {
+    genModulePreamble(ast, context);
+  } else {
+    genFunctionPreamble(ast, context);
+  }
+  
+  const functionName = "render";
+  
+  const args = ["_ctx"];
+  
+  // _ctx,aaa,bbb,ccc
+  // 需要把 args 处理成 上面的 string
+  const signature = args.join(", ");
+  push(`function ${functionName}(${signature}) {`);
+  // 这里需要生成具体的代码内容
+  // 开始生成 vnode tree 的表达式
+  push("return ");
+  genNode(ast.codegenNode, context);
+  
+  push("}");
+  
+  return {
+    code: context.code,
+  };
+}
+```
+
+### 3.2 reactivity
+
+负责Vue3中响应式实现的部分
+
+#### 3.2.1 目录结构
+
+```js
+├─src
+│      baseHandlers.ts // 基本处理逻辑
+│      computed.ts // computed属性处理
+│      dep.ts // effect对象存储逻辑
+│      effect.ts // 依赖收集机制
+│      index.ts // 入口文件
+│      reactive.ts // 响应式处理逻辑
+│      ref.ts // ref执行逻辑
+│
+└─__tests__ // 测试用例
+        computed.spec.ts
+        dep.spec.ts
+        effect.spec.ts
+        reactive.spec.ts
+        readonly.spec.ts
+        ref.spec.ts
+        shallowReadonly.spec.ts
+```
+
+#### 3.2.2 reactivity逻辑
+
+详细代码见课上讲解
+
+- index.ts
+
+```typescript
+export {
+reactive,
+  readonly,
+  shallowReadonly,
+  isReadonly,
+  isReactive,
+  isProxy,
+} from "./reactive";
+
+export { ref, proxyRefs, unRef, isRef } from "./ref";
+
+export { effect, stop, ReactiveEffect } from "./effect";
+
+export { computed } from "./computed";
+
+```
+
+- reactive.ts
+
+```typescript
+import {
+  mutableHandlers,
+  readonlyHandlers,
+  shallowReadonlyHandlers,
+} from "./baseHandlers";
+
+export const reactiveMap = new WeakMap();
+export const readonlyMap = new WeakMap();
+export const shallowReadonlyMap = new WeakMap();
+
+export const enum ReactiveFlags {
+  IS_REACTIVE = "__v_isReactive",
+  IS_READONLY = "__v_isReadonly",
+  RAW = "__v_raw",
+}
+
+export function reactive(target) {
+  return createReactiveObject(target, reactiveMap, mutableHandlers);
+}
+
+export function readonly(target) {
+  return createReactiveObject(target, readonlyMap, readonlyHandlers);
+}
+
+export function shallowReadonly(target) {
+  return createReactiveObject(
+    target,
+    shallowReadonlyMap,
+    shallowReadonlyHandlers
+  );
+}
+
+export function isProxy(value) {
+  return isReactive(value) || isReadonly(value);
+}
+
+export function isReadonly(value) {
+  return !!value[ReactiveFlags.IS_READONLY];
+}
+
+export function isReactive(value) {
+  // 如果 value 是 proxy 的话
+  // 会触发 get 操作，而在 createGetter 里面会判断
+  // 如果 value 是普通对象的话
+  // 那么会返回 undefined ，那么就需要转换成布尔值
+  return !!value[ReactiveFlags.IS_REACTIVE];
+}
+
+export function toRaw(value) {
+  // 如果 value 是 proxy 的话 ,那么直接返回就可以了
+  // 因为会触发 createGetter 内的逻辑
+  // 如果 value 是普通对象的话，
+  // 我们就应该返回普通对象
+  // 只要不是 proxy ，只要是得到了 undefined 的话，那么就一定是普通对象
+  // TODO 这里和源码里面实现的不一样，不确定后面会不会有问题
+  if (!value[ReactiveFlags.RAW]) {
+    return value;
+  }
+  
+  return value[ReactiveFlags.RAW];
+}
+
+function createReactiveObject(target, proxyMap, baseHandlers) {
+  // 核心就是 proxy
+  // 目的是可以侦听到用户 get 或者 set 的动作
+  
+  // 如果命中的话就直接返回就好了
+  // 使用缓存做的优化点
+  const existingProxy = proxyMap.get(target);
+  if (existingProxy) {
+    return existingProxy;
+  }
+  
+  const proxy = new Proxy(target, baseHandlers);
+  
+  // 把创建好的 proxy 给存起来，
+  proxyMap.set(target, proxy);
+  return proxy;
+}
+
+```
+
+- ref.ts
+
+```typescript
+import { trackEffects, triggerEffects, isTracking } from "./effect";
+import { createDep } from "./dep";
+import { isObject, hasChanged } from "@mini-vue/shared";
+import { reactive } from "./reactive";
+
+export class RefImpl {
+  private _rawValue: any;
+  private _value: any;
+  public dep;
+  public __v_isRef = true;
+
+  constructor(value) {
+    this._rawValue = value;
+    // 看看value 是不是一个对象，如果是一个对象的话
+    // 那么需要用 reactive 包裹一下
+    this._value = convert(value);
+    this.dep = createDep();
+  }
+
+  get value() {
+    // 收集依赖
+    trackRefValue(this);
+    return this._value;
+  }
+
+  set value(newValue) {
+    // 当新的值不等于老的值的话，
+    // 那么才需要触发依赖
+    if (hasChanged(newValue, this._rawValue)) {
+      // 更新值
+      this._value = convert(newValue);
+      this._rawValue = newValue;
+      // 触发依赖
+      triggerRefValue(this);
+    }
+  }
+}
+
+export function ref(value) {
+  return createRef(value);
+}
+
+function convert(value) {
+  return isObject(value) ? reactive(value) : value;
+}
+
+function createRef(value) {
+  const refImpl = new RefImpl(value);
+
+  return refImpl;
+}
+
+export function triggerRefValue(ref) {
+  triggerEffects(ref.dep);
+}
+
+export function trackRefValue(ref) {
+  if (isTracking()) {
+    trackEffects(ref.dep);
+  }
+}
+
+// 这个函数的目的是
+// 帮助解构 ref
+// 比如在 template 中使用 ref 的时候，直接使用就可以了
+// 例如： const count = ref(0) -> 在 template 中使用的话 可以直接 count
+// 解决方案就是通过 proxy 来对 ref 做处理
+
+const shallowUnwrapHandlers = {
+  get(target, key, receiver) {
+    // 如果里面是一个 ref 类型的话，那么就返回 .value
+    // 如果不是的话，那么直接返回value 就可以了
+    return unRef(Reflect.get(target, key, receiver));
+  },
+  set(target, key, value, receiver) {
+    const oldValue = target[key];
+    if (isRef(oldValue) && !isRef(value)) {
+      return (target[key].value = value);
+    } else {
+      return Reflect.set(target, key, value, receiver);
+    }
+  },
+};
+
+// 这里没有处理 objectWithRefs 是 reactive 类型的时候
+// TODO reactive 里面如果有 ref 类型的 key 的话， 那么也是不需要调用 ref.value 的
+// （but 这个逻辑在 reactive 里面没有实现）
+export function proxyRefs(objectWithRefs) {
+  return new Proxy(objectWithRefs, shallowUnwrapHandlers);
+}
+
+// 把 ref 里面的值拿到
+export function unRef(ref) {
+  return isRef(ref) ? ref.value : ref;
+}
+
+export function isRef(value) {
+  return !!value.__v_isRef;
+}
+
+```
+
+- effect
+
+```typescript
+export function effect(fn, options = {}) {
+  const _effect = new ReactiveEffect(fn);
+
+  // 把用户传过来的值合并到 _effect 对象上去
+  // 缺点就是不是显式的，看代码的时候并不知道有什么值
+  extend(_effect, options);
+  _effect.run();
+
+  // 把 _effect.run 这个方法返回
+  // 让用户可以自行选择调用的时机（调用 fn）
+  const runner: any = _effect.run.bind(_effect);
+  runner.effect = _effect;
+  return runner;
+}
+
+export function stop(runner) {
+  runner.effect.stop();
+}
+```
+
+- computed
+
+```typescript
+import { createDep } from "./dep";
+import { ReactiveEffect } from "./effect";
+import { trackRefValue, triggerRefValue } from "./ref";
+
+export class ComputedRefImpl {
+  public dep: any;
+  public effect: ReactiveEffect;
+
+  private _dirty: boolean;
+  private _value
+
+  constructor(getter) {
+    this._dirty = true;
+    this.dep = createDep();
+    this.effect = new ReactiveEffect(getter, () => {
+      // scheduler
+      // 只要触发了这个函数说明响应式对象的值发生改变了
+      // 那么就解锁，后续在调用 get 的时候就会重新执行，所以会得到最新的值
+      if (this._dirty) return;
+
+      this._dirty = true;
+      triggerRefValue(this);
+    });
+  }
+
+  get value() {
+    // 收集依赖
+    trackRefValue(this);
+    // 锁上，只可以调用一次
+    // 当数据改变的时候才会解锁
+    // 这里就是缓存实现的核心
+    // 解锁是在 scheduler 里面做的
+    if (this._dirty) {
+      this._dirty = false;
+      // 这里执行 run 的话，就是执行用户传入的 fn
+      this._value = this.effect.run();
+    }
+
+    return this._value;
+  }
+}
+
+export function computed(getter) {
+  return new ComputedRefImpl(getter);
+}
+
+```
+
+### 3.3 runtime-core
+
+运行的核心流程，其中包括初始化流程和更新流程
+
+#### 3.3.1 目录结构
+
+```js
+├─src
+│  │  apiInject.ts	// 提供provider和inject
+│  │  apiWatch.ts	// 提供watch
+│  │  component.ts	// 创建组件实例
+│  │  componentEmits.ts	// 执行组件props 里面的 onXXX 的函数
+│  │  componentProps.ts	// 获取组件props
+│  │  componentPublicInstance.ts	// 组件通用实例上的代理,如$el,$emit等
+│  │  componentRenderUtils.ts	// 判断组件是否需要重新渲染的工具类
+│  │  componentSlots.ts	// 组件的slot
+│  │  createApp.ts	// 根据跟组件创建应用
+│  │  h.ts	// 创建节点
+│  │  index.ts	// 入口文件
+│  │  renderer.ts	// 渲染机制,包含diff
+│  │  scheduler.ts // 触发更新机制
+│  │  vnode.ts	// vnode节点
+│  │
+│  └─helpers
+│          renderSlot.ts	// 插槽渲染实现
+│
+└─__tests__	// 测试用例
+        apiWatch.spec.ts
+        componentEmits.spec.ts
+        rendererComponent.spec.ts
+        rendererElement.spec.ts
+```
+
+#### 3.3.2 runtime核心逻辑
+
+详细代码见课上讲解
+
+- provide/inject
+
+  ```typescript
+  import { getCurrentInstance } from "./component";
+  
+  export function provide(key, value) {
+    const currentInstance = getCurrentInstance();
+  
+    if (currentInstance) {
+      let { provides } = currentInstance;
+  
+      const parentProvides = currentInstance.parent?.provides;
+  
+      // 这里要解决一个问题
+      // 当父级 key 和 爷爷级别的 key 重复的时候，对于子组件来讲，需要取最近的父级别组件的值
+      // 那这里的解决方案就是利用原型链来解决
+      // provides 初始化的时候是在 createComponent 时处理的，当时是直接把 parent.provides 赋值给组件的 provides 的
+      // 所以，如果说这里发现 provides 和 parentProvides 相等的话，那么就说明是第一次做 provide(对于当前组件来讲)
+      // 我们就可以把 parent.provides 作为 currentInstance.provides 的原型重新赋值
+      // 至于为什么不在 createComponent 的时候做这个处理，可能的好处是在这里初始化的话，是有个懒执行的效果（优化点，只有需要的时候在初始化）
+      if (parentProvides === provides) {
+        provides = currentInstance.provides = Object.create(parentProvides);
+      }
+  
+      provides[key] = value;
+    }
+  }
+  
+  export function inject(key, defaultValue) {
+    const currentInstance = getCurrentInstance();
+  
+    if (currentInstance) {
+      const provides = currentInstance.parent?.provides;
+  
+      if (key in provides) {
+        return provides[key];
+      } else if (defaultValue) {
+        if (typeof defaultValue === "function") {
+          return defaultValue();
+        }
+        return defaultValue;
+      }
+    }
+  }
+  
+  ```
+
+- watch
+
+```typescript
+import { ReactiveEffect } from "@mini-vue/reactivity";
+import { queuePreFlushCb } from "./scheduler";
+
+// Simple effect.
+export function watchEffect(effect) {
+  doWatch(effect);
+}
+
+function doWatch(source) {
+  // 把 job 添加到 pre flush 里面
+  // 也就是在视图更新完成之前进行渲染（待确认？）
+  // 当逻辑执行到这里的时候 就已经触发了 watchEffect
+  const job = () => {
+    effect.run();
+  };
+
+  // 这里用 scheduler 的目的就是在更新的时候
+  // 让回调可以在 render 前执行 变成一个异步的行为（这里也可以通过 flush 来改变）
+  const scheduler = () => queuePreFlushCb(job);
+
+  const getter = () => {
+    source();
+  };
+
+  const effect = new ReactiveEffect(getter, scheduler);
+
+  // 这里执行的就是 getter
+  effect.run();
+}
+
+```
+
+- component创建
+
+```typescript
+export function createComponentInstance(vnode, parent) {
+  const instance = {
+    type: vnode.type,
+    vnode,
+    next: null, // 需要更新的 vnode，用于更新 component 类型的组件
+    props: {},
+    parent,
+    provides: parent ? parent.provides : {}, //  获取 parent 的 provides 作为当前组件的初始化值 这样就可以继承 parent.provides 的属性了
+    proxy: null,
+    isMounted: false,
+    attrs: {}, // 存放 attrs 的数据
+    slots: {}, // 存放插槽的数据
+    ctx: {}, // context 对象
+    setupState: {}, // 存储 setup 的返回值
+    emit: () => {},
+  };
+  
+  // 在 prod 坏境下的 ctx 只是下面简单的结构
+  // 在 dev 环境下会更复杂
+  instance.ctx = {
+    _: instance,
+  };
+  
+  // 赋值 emit
+  // 这里使用 bind 把 instance 进行绑定
+  // 后面用户使用的时候只需要给 event 和参数即可
+  instance.emit = emit.bind(null, instance) as any;
+  
+  return instance;
+}
+
+```
+
+- createApp
+
+```typescript
+import { createVNode } from "./vnode";
+
+export function createAppAPI(render) {
+  return function createApp(rootComponent) {
+    const app = {
+      _component: rootComponent,
+      mount(rootContainer) {
+        console.log("基于根组件创建 vnode");
+        const vnode = createVNode(rootComponent);
+        console.log("调用 render，基于 vnode 进行开箱");
+        render(vnode, rootContainer);
+      },
+    };
+
+    return app;
+  };
+}
+
+```
+
+- 创建vnode节点
+
+```typescript
+import { createVNode } from "./vnode";
+export const h = (type: any , props: any = null, children: string | Array<any> = []) => {
+  return createVNode(type, props, children);
+};
+
+```
+
+- 入口文件
+
+```typescript
+export * from "./h";
+export * from "./createApp";
+export { getCurrentInstance, registerRuntimeCompiler } from "./component";
+export { inject, provide } from "./apiInject";
+export { renderSlot } from "./helpers/renderSlot";
+export { createTextVNode, createElementVNode } from "./vnode";
+export { createRenderer } from "./renderer";
+export { toDisplayString } from "@mini-vue/shared";
+export {
+  // core
+  reactive,
+  ref,
+  readonly,
+  // utilities
+  unRef,
+  proxyRefs,
+  isReadonly,
+  isReactive,
+  isProxy,
+  isRef,
+  // advanced
+  shallowReadonly,
+  // effect
+  effect,
+  stop,
+  computed,
+} from "@mini-vue/reactivity";
+
+```
+
+- render
+
+```typescript
+// 具体update的Diff见下节课内容;
+function updateElement(n1, n2, container, anchor, parentComponent) {
+    const oldProps = (n1 && n1.props) || {};
+  const newProps = n2.props || {};
+  // 应该更新 element
+  console.log("应该更新 element");
+  console.log("旧的 vnode", n1);
+  console.log("新的 vnode", n2);
+
+  // 需要把 el 挂载到新的 vnode
+  const el = (n2.el = n1.el);
+
+  // 对比 props
+  patchProps(el, oldProps, newProps);
+
+  // 对比 children
+  patchChildren(n1, n2, el, anchor, parentComponent);
+}
+```
+
+- scheduler
+
+```typescript
+// 具体的调度机制见下节课内容
+const queue: any[] = [];
+const activePreFlushCbs: any = [];
+
+const p = Promise.resolve();
+let isFlushPending = false;
+
+export function nextTick(fn?) {
+  return fn ? p.then(fn) : p;
+}
+
+export function queueJob(job) {
+  if (!queue.includes(job)) {
+    queue.push(job);
+    // 执行所有的 job
+    queueFlush();
+  }
+}
+
+function queueFlush() {
+  // 如果同时触发了两个组件的更新的话
+  // 这里就会触发两次 then （微任务逻辑）
+  // 但是着是没有必要的
+  // 我们只需要触发一次即可处理完所有的 job 调用
+  // 所以需要判断一下 如果已经触发过 nextTick 了
+  // 那么后面就不需要再次触发一次 nextTick 逻辑了
+  if (isFlushPending) return;
+  isFlushPending = true;
+  nextTick(flushJobs);
+}
+
+export function queuePreFlushCb(cb) {
+  queueCb(cb, activePreFlushCbs);
+}
+
+function queueCb(cb, activeQueue) {
+  // 直接添加到对应的列表内就ok
+  // todo 这里没有考虑 activeQueue 是否已经存在 cb 的情况
+  // 然后在执行 flushJobs 的时候就可以调用 activeQueue 了
+  activeQueue.push(cb);
+
+  // 然后执行队列里面所有的 job
+  queueFlush()
+}
+
+function flushJobs() {
+  isFlushPending = false;
+
+  // 先执行 pre 类型的 job
+  // 所以这里执行的job 是在渲染前的
+  // 也就意味着执行这里的 job 的时候 页面还没有渲染
+  flushPreFlushCbs();
+
+  // 这里是执行 queueJob 的
+  // 比如 render 渲染就是属于这个类型的 job
+  let job;
+  while ((job = queue.shift())) {
+    if (job) {
+      job();
+    }
+  }
+}
+
+function flushPreFlushCbs() {
+  // 执行所有的 pre 类型的 job
+  for (let i = 0; i < activePreFlushCbs.length; i++) {
+    activePreFlushCbs[i]();
+  }
+}
+
+```
+
+- vnode类型定义及格式规范
+
+```typescript
+import { ShapeFlags } from "@mini-vue/shared";
+
+export { createVNode as createElementVNode }
+
+export const createVNode = function (
+  type: any,
+  props?: any,
+  children?: string | Array<any>
+) {
+  // 注意 type 有可能是 string 也有可能是对象
+  // 如果是对象的话，那么就是用户设置的 options
+  // type 为 string 的时候
+  // createVNode("div")
+  // type 为组件对象的时候
+  // createVNode(App)
+  const vnode = {
+    el: null,
+    component: null,
+    key: props?.key,
+    type,
+    props: props || {},
+    children,
+    shapeFlag: getShapeFlag(type),
+  };
+
+  // 基于 children 再次设置 shapeFlag
+  if (Array.isArray(children)) {
+    vnode.shapeFlag |= ShapeFlags.ARRAY_CHILDREN;
+  } else if (typeof children === "string") {
+    vnode.shapeFlag |= ShapeFlags.TEXT_CHILDREN;
+  }
+
+  normalizeChildren(vnode, children);
+
+  return vnode;
+};
+
+export function normalizeChildren(vnode, children) {
+  if (typeof children === "object") {
+    // 暂时主要是为了标识出 slots_children 这个类型来
+    // 暂时我们只有 element 类型和 component 类型的组件
+    // 所以我们这里除了 element ，那么只要是 component 的话，那么children 肯定就是 slots 了
+    if (vnode.shapeFlag & ShapeFlags.ELEMENT) {
+      // 如果是 element 类型的话，那么 children 肯定不是 slots
+    } else {
+      // 这里就必然是 component 了,
+      vnode.shapeFlag |= ShapeFlags.SLOTS_CHILDREN;
+    }
+  }
+}
+// 用 symbol 作为唯一标识
+export const Text = Symbol("Text");
+export const Fragment = Symbol("Fragment");
+
+/**
+ * @private
+ */
+export function createTextVNode(text: string = " ") {
+  return createVNode(Text, {}, text);
+}
+
+// 标准化 vnode 的格式
+// 其目的是为了让 child 支持多种格式
+export function normalizeVNode(child) {
+  // 暂时只支持处理 child 为 string 和 number 的情况
+  if (typeof child === "string" || typeof child === "number") {
+    return createVNode(Text, null, String(child));
+  } else {
+    return child;
+  }
+}
+
+// 基于 type 来判断是什么类型的组件
+function getShapeFlag(type: any) {
+  return typeof type === "string"
+    ? ShapeFlags.ELEMENT
+    : ShapeFlags.STATEFUL_COMPONENT;
+}
+
+```
+
+### 3.4 runtime-dom
+
+Vue3靠虚拟dom，实现跨平台的能力，runtime-dom提供一个渲染器，这个渲染器可以渲染虚拟dom节点到指定的容器中；
+
+#### 3.4.1 主要功能
+
+详细代码见课上讲解
+
+```typescript
+// 源码里面这些接口是由 runtime-dom 来实现
+// 这里先简单实现
+
+import { isOn } from "@mini-vue/shared";
+import { createRenderer } from "@mini-vue/runtime-core";
+
+// 后面也修改成和源码一样的实现
+function createElement(type) {
+  console.log("CreateElement", type);
+  const element = document.createElement(type);
+  return element;
+}
+
+function createText(text) {
+  return document.createTextNode(text);
+}
+
+function setText(node, text) {
+  node.nodeValue = text;
+}
+
+function setElementText(el, text) {
+  console.log("SetElementText", el, text);
+  el.textContent = text;
+}
+
+function patchProp(el, key, preValue, nextValue) {
+  // preValue 之前的值
+  // 为了之后 update 做准备的值
+  // nextValue 当前的值
+  console.log(`PatchProp 设置属性:${key} 值:${nextValue}`);
+  console.log(`key: ${key} 之前的值是:${preValue}`);
+
+  if (isOn(key)) {
+    // 添加事件处理函数的时候需要注意一下
+    // 1. 添加的和删除的必须是一个函数，不然的话 删除不掉
+    //    那么就需要把之前 add 的函数给存起来，后面删除的时候需要用到
+    // 2. nextValue 有可能是匿名函数，当对比发现不一样的时候也可以通过缓存的机制来避免注册多次
+    // 存储所有的事件函数
+    const invokers = el._vei || (el._vei = {});
+    const existingInvoker = invokers[key];
+    if (nextValue && existingInvoker) {
+      // patch
+      // 直接修改函数的值即可
+      existingInvoker.value = nextValue;
+    } else {
+      const eventName = key.slice(2).toLowerCase();
+      if (nextValue) {
+        const invoker = (invokers[key] = nextValue);
+        el.addEventListener(eventName, invoker);
+      } else {
+        el.removeEventListener(eventName, existingInvoker);
+        invokers[key] = undefined;
+      }
+    }
+  } else {
+    if (nextValue === null || nextValue === "") {
+      el.removeAttribute(key);
+    } else {
+      el.setAttribute(key, nextValue);
+    }
+  }
+}
+
+function insert(child, parent, anchor = null) {
+  console.log("Insert");
+  parent.insertBefore(child, anchor);
+}
+
+function remove(child) {
+  const parent = child.parentNode;
+  if (parent) {
+    parent.removeChild(child);
+  }
+}
+
+let renderer;
+
+function ensureRenderer() {
+  // 如果 renderer 有值的话，那么以后都不会初始化了
+  return (
+    renderer ||
+    (renderer = createRenderer({
+      createElement,
+      createText,
+      setText,
+      setElementText,
+      patchProp,
+      insert,
+      remove,
+    }))
+  );
+}
+
+export const createApp = (...args) => {
+  return ensureRenderer().createApp(...args);
+};
+
+export * from "@mini-vue/runtime-core"
+
+```
+
+### 3.5 runtime-test
+
+可以理解成runtime-dom的延伸，,因为runtime-test对外提供的确实是dom环境的测试，方便用于runtime-core的测试；
+
+#### 3.5.1 目录结构
+
+```js
+──src
+index.ts
+nodeOps.ts
+patchProp.ts
+serialize.ts
+
+```
+
+#### 3.5.2 runtime-test 核心逻辑
+
+详细代码见课上讲解
+
+- index.ts
+
+```typescript
+// todo
+// 实现 render 的渲染接口
+// 实现序列化
+import { createRenderer } from "@mini-vue/runtime-core";
+import { extend } from "@mini-vue/shared";
+import { nodeOps } from "./nodeOps";
+import { patchProp } from "./patchProp";
+
+export const { render } = createRenderer(extend({ patchProp }, nodeOps));
+
+export * from "./nodeOps";
+export * from "./serialize"
+export * from '@mini-vue/runtime-core'
+```
+
+- nodeOps，节点定义及操作再runtime-core中的映射
+
+```typescript
+export const enum NodeTypes {
+  ELEMENT = "element",
+  TEXT = "TEXT",
+}
+
+let nodeId = 0;
+// 这个函数会在 runtime-core 初始化 element 的时候调用
+function createElement(tag: string) {
+  // 如果是基于 dom 的话 那么这里会返回 dom 元素
+  // 这里是为了测试 所以只需要反正一个对象就可以了
+  // 后面的话 通过这个对象来做测试
+  const node = {
+    tag,
+    id: nodeId++,
+    type: NodeTypes.ELEMENT,
+    props: {},
+    children: [],
+    parentNode: null,
+  };
+
+  return node;
+}
+
+function insert(child, parent) {
+  parent.children.push(child);
+  child.parentNode = parent;
+}
+
+function parentNode(node) {
+  return node.parentNode;
+}
+
+function setElementText(el, text) {
+  el.children = [
+    {
+      id: nodeId++,
+      type: NodeTypes.TEXT,
+      text,
+      parentNode: el,
+    },
+  ];
+}
+
+export const nodeOps = { createElement, insert, parentNode, setElementText };
+
+```
+
+- Serialize, 序列化：把vnode处理成string
+
+```typescript
+// 把 node 给序列化
+// 测试的时候好对比
+
+import { NodeTypes } from "./nodeOps";
+
+// 序列化： 把一个对象给处理成 string （进行流化）
+export function serialize(node) {
+  if (node.type === NodeTypes.ELEMENT) {
+    return serializeElement(node);
+  } else {
+    return serializeText(node);
+  }
+}
+
+function serializeText(node) {
+  return node.text;
+}
+
+export function serializeInner(node) {
+  // 把所有节点变成一个string
+  return node.children.map((c) => serialize(c)).join(``);
+}
+
+function serializeElement(node) {
+  // 把 props 处理成字符串
+  // 规则：
+  // 如果 value 是 null 的话 那么直接返回 ``
+  // 如果 value 是 `` 的话，那么返回 key
+  // 不然的话返回 key = value（这里的值需要字符串化）
+  const props = Object.keys(node.props)
+    .map((key) => {
+      const value = node.props[key];
+      return value == null
+        ? ``
+        : value === ``
+        ? key
+        : `${key}=${JSON.stringify(value)}`;
+    })
+    .filter(Boolean)
+    .join(" ");
+
+  console.log("node---------", node.children);
+  return `<${node.tag}${props ? ` ${props}` : ``}>${serializeInner(node)}</${
+    node.tag
+  }>`;
+}
+
+```
+
+### 3.6 shared
+
+公用逻辑
+
+#### 3.6.1 具体逻辑
+
+```typescript
+export * from '../src/shapeFlags';
+export * from '../src/toDisplayString';
+
+export const isObject = val => {
+	return val !== null && typeof val === 'object';
+};
+
+export const isString = val => typeof val === 'string';
+
+const camelizeRE = /-(\w)/g;
+/**
+ * @private
+ * 把中划线命名方式转换成驼峰命名方式
+ */
+export const camelize = (str: string): string => {
+	return str.replace(camelizeRE, (_, c) => (c ? c.toUpperCase() : ''));
+};
+
+export const extend = Object.assign;
+
+// 必须是 on+一个大写字母的格式开头
+export const isOn = key => /^on[A-Z]/.test(key);
+
+export function hasChanged(value, oldValue) {
+	return !Object.is(value, oldValue);
+}
+
+export function hasOwn(val, key) {
+	return Object.prototype.hasOwnProperty.call(val, key);
+}
+
+/**
+ * @private
+ * 首字母大写
+ */
+export const capitalize = (str: string) => str.charAt(0).toUpperCase() + str.slice(1);
+
+/**
+ * @private
+ * 添加 on 前缀，并且首字母大写
+ */
+export const toHandlerKey = (str: string) => (str ? `on${capitalize(str)}` : ``);
+
+// 用来匹配 kebab-case 的情况
+// 比如 onTest-event 可以匹配到 T
+// 然后取到 T 在前面加一个 - 就可以
+// \BT 就可以匹配到 T 前面是字母的位置
+const hyphenateRE = /\B([A-Z])/g;
+/**
+ * @private
+ */
+export const hyphenate = (str: string) => str.replace(hyphenateRE, '-$1').toLowerCase();
+
+
+// 组件的类型
+export const enum ShapeFlags {
+  // 最后要渲染的 element 类型
+  ELEMENT = 1,
+  // 组件类型
+  STATEFUL_COMPONENT = 1 << 2,
+  // vnode 的 children 为 string 类型
+  TEXT_CHILDREN = 1 << 3,
+  // vnode 的 children 为数组类型
+  ARRAY_CHILDREN = 1 << 4,
+  // vnode 的 children 为 slots 类型
+  SLOTS_CHILDREN = 1 << 5
+}
+
+export const toDisplayString = (val) => {
+  return String(val);
+};
+
+```
+
+## 4 vue3执行逻辑解析
+
+详情见课上讲解
+
+### 4.1 init
+
+​	<img src="/Volumes/F/zyl-study/web-zhuawa/20221203/vue3执行逻辑init.png" alt="vue3执行逻辑init" style="zoom:50%;" />
+
+### 4.2 update
+
+<img src="/Volumes/F/zyl-study/web-zhuawa/20221203/vue3执行逻辑update.png" alt="vue3执行逻辑update" style="zoom:50%;" />
+
+### 4.3 关键函数调用
+
+<img src="/Volumes/F/zyl-study/web-zhuawa/20221203/vue3执行逻辑functionCall.png" alt="vue3执行逻辑functionCall" style="zoom:50%;" />
+
+# vue3新特性&源码解析（3/3）
+
 https://www.yuque.com/lpldplws/web/ty5nga?singleDoc# 《Vue3新特性&源码解析（3/3）》 密码：apwp
+
+## 1. 课程目标
+
+掌握面试高频考点，从理论的角度分析问题后再代入源码，保证能够完整的掌握Vue3的内容；
+
+## 2.课程大纲
+
+- Diff算法
+
+## 3. Diff算法
+
+diff算法的目的是为了找到哪些节点发生了变化，哪些节点没有发生变化可以复用。如果用最传统的diff算法，如下图所示，每个节点都要遍历另一棵树上的所有节点做比较，这就是o(n^2)的复杂度，加上更新节点时的o(n)复杂度，那就总共达到了o(n^3)的复杂度，这对于一个结构复杂节点数众多的页面，成本是非常大的。
+
+![vue3-Diff](/Volumes/F/zyl-study/web-zhuawa/20221203/vue3-Diff.png)
+
+
+
+实际上vue和react都对虚拟dom的diff算法做了一定的优化，将复杂度降低到了o(n)级别，具体的策略是：同层的节点才相互比较；
+
+1. 节点比较时，如果类型不同，则对该节点及其所有子节点直接销毁新建；
+
+2. 类型相同的子节点，使用key帮助查找，并且使用算法优化查找效率。其中react和vue2以及vue3的diff算法都不尽相同；
+
+   ![vue3同层的diff](/Volumes/F/zyl-study/web-zhuawa/20221203/vue3同层的diff.png)
+
+主要对比Vue2和Vue3，掌握为什么要从Vue2升级到Vue3，并代入后续代码，掌握Vue实现diff的流程；
+
+前提：
+
+- `mount(vnode, parent, [refNode])`: 通过`vnode`生成真实的DOM节点。parent为其父级的真实DOM节点，`refNode`为真实的DOM节点，其父级节点为parent。如果refNode不为空，vnode生成的DOM节点就会插入到refNode之前；如果refNode为空，那么vnode生成的DOM节点就作为最后一个子节点插入到parent中
+- `patch(prevNode, nextNode, parent)`: 可以简单的理解为给当前DOM节点进行更新，并且调用diff算法对比自身的子节点;
+
+### 3.1 vue2 diff-双端比较
+
+双端比较就是新列表和旧列表两个列表的头与尾互相对比，，在对比的过程中指针会逐渐向内靠拢，直到某一个列表的节点全部遍历过，对比停止；
+
+#### 3.1.1  patch
+
+先判断是否是首次渲染，如果是首次渲染那么我们就直接createElm即可；如果不是就去判断新老两个节点的元素类型否一样；如果两个节点都是一样的，那么就深入检查他们的子节点。如果两个节点不一样那就说明Vnode完全被改变了，就可以直接替换oldVnode；
+
+```js
+function patch(oldVnode, vnode, hydrating, removeOnly) {
+    // 判断新的vnode是否为空
+    if (isUndef(vnode)) {
+      // 如果老的vnode不为空 卸载所有的老vnode
+      if (isDef(oldVnode)) invokeDestroyHook(oldVnode)
+      return
+    }
+    let isInitialPatch = false
+    // 用来存储 insert钩子函数，在插入节点之前调用
+    const insertedVnodeQueue = []
+    // 如果老节点不存在，直接创建新节点
+    if (isUndef(oldVnode)) {
+      isInitialPatch = true
+      createElm(vnode, insertedVnodeQueue)
+    } else {
+      // 是不是元素节点
+      const isRealElement = isDef(oldVnode.nodeType)
+      // 当老节点不是真实的DOM节点，并且新老节点的type和key相同，进行patchVnode更新工作
+      if (!isRealElement && sameVnode(oldVnode, vnode)) {
+        patchVnode(oldVnode, vnode, insertedVnodeQueue, null, null, removeOnly)
+      } else {
+        // 如果不是同一元素节点的话
+        // 当老节点是真实DOM节点的时候
+        if (isRealElement) {
+          // 如果是元素节点 并且在SSR环境的时候 修改SSR_ATTR属性
+          if (oldVnode.nodeType === 1 && oldVnode.hasAttribute(SSR_ATTR)) {
+            // 就是服务端渲染的，删掉这个属性
+            oldVnode.removeAttribute(SSR_ATTR)
+            hydrating = true
+          }
+          // 这个判断里是服务端渲染的处理逻辑
+          if (isTrue(hydrating)) {
+            if (hydrate(oldVnode, vnode, insertedVnodeQueue)) {
+              invokeInsertHook(vnode, insertedVnodeQueue, true)
+              return oldVnode
+            }
+          }
+          // 如果不是服务端渲染的，或者混合失败，就创建一个空的注释节点替换 oldVnode
+          oldVnode = emptyNodeAt(oldVnode)
+        }
+
+        // 拿到 oldVnode 的父节点
+        const oldElm = oldVnode.elm
+        const parentElm = nodeOps.parentNode(oldElm)
+
+        // 根据新的 vnode 创建一个 DOM 节点，挂载到父节点上
+        createElm(
+          vnode,
+          insertedVnodeQueue,
+          oldElm._leaveCb ? null : parentElm,
+          nodeOps.nextSibling(oldElm)
+        )
+        // 如果新的 vnode 的根节点存在，就是说根节点被修改了，就需要遍历更新父节点
+        // 递归 更新父占位符元素
+        // 就是执行一遍 父节点的 destory 和 create 、insert 的 钩子函数
+        if (isDef(vnode.parent)) {
+          let ancestor = vnode.parent
+          const patchable = isPatchable(vnode)
+          // 更新父组件的占位元素
+          while (ancestor) {
+            // 卸载老根节点下的全部组件
+            for (let i = 0; i < cbs.destroy.length; ++i) {
+              cbs.destroy[i](ancestor)
+            }
+            // 替换现有元素
+            ancestor.elm = vnode.elm
+            if (patchable) {
+              for (let i = 0; i < cbs.create.length; ++i) {
+                cbs.create[i](emptyNode, ancestor)
+              }
+              // #6513
+              // invoke insert hooks that may have been merged by create hooks.
+              // e.g. for directives that uses the "inserted" hook.
+              const insert = ancestor.data.hook.insert
+              if (insert.merged) {
+                // start at index 1 to avoid re-invoking component mounted hook
+                for (let i = 1; i < insert.fns.length; i++) {
+                  insert.fns[i]()
+                }
+              }
+            } else {
+              registerRef(ancestor)
+            }
+            // 更新父节点
+            ancestor = ancestor.parent
+          }
+        }
+        // 如果旧节点还存在，就删掉旧节点
+        if (isDef(parentElm)) {
+          removeVnodes([oldVnode], 0, 0)
+        } else if (isDef(oldVnode.tag)) {
+          // 否则直接卸载 oldVnode
+          invokeDestroyHook(oldVnode)
+        }
+      }
+    }
+    // 执行 虚拟 dom 的 insert 钩子函数
+    invokeInsertHook(vnode, insertedVnodeQueue, isInitialPatch)
+    // 返回最新 vnode 的 elm ，也就是真实的 dom节点
+    return vnode.elm
+ }
+```
+
+### 3.1.2 patchVnode
+
+- 如果`Vnode`和`oldVnode`指向同一个对象，则直接return即可；
+- 将旧节点的真实 DOM 赋值到新节点（真实 dom 连线到新子节点）称为elm，然后遍历调用 update 更新 `oldVnode `上的所有属性，比如 class,style,attrs,domProps,events...；
+- 如果新老节点都有文本节点，并且文本不相同，那么就用`vnode`.text更新文本内容。
+- 如果oldVnode有子节点而`Vnode`没有，则直接删除老节点即可；
+- 如果oldVnode没有子节点而`Vnode`有，则将Vnode的子节点真实化之后添加到DOM中即可。
+- 如果两者都有子节点，则执行`updateChildren`函数比较子节点。
+
+```js
+function patchVnode(
+    oldVnode, // 老的虚拟 DOM 节点
+    vnode, // 新节点
+    insertedVnodeQueue, // 插入节点队列
+    ownerArray, // 节点数组
+    index, // 当前节点的下标
+    removeOnly
+  ) {
+    // 新老节点对比地址一样，直接跳过
+    if (oldVnode === vnode) {
+      return
+    }
+    if (isDef(vnode.elm) && isDef(ownerArray)) {
+      // clone reused vnode
+      vnode = ownerArray[index] = cloneVNode(vnode)
+    }
+    const elm = vnode.elm = oldVnode.elm
+    // 如果当前节点是注释或 v-if 的，或者是异步函数，就跳过检查异步组件
+    if (isTrue(oldVnode.isAsyncPlaceholder)) {
+      if (isDef(vnode.asyncFactory.resolved)) {
+        hydrate(oldVnode.elm, vnode, insertedVnodeQueue)
+      } else {
+        vnode.isAsyncPlaceholder = true
+      }
+      return
+    }
+    // 当前节点是静态节点的时候，key 也一样，或者有 v-once 的时候，就直接赋值返回
+    if (isTrue(vnode.isStatic) &&
+      isTrue(oldVnode.isStatic) &&
+      vnode.key === oldVnode.key &&
+      (isTrue(vnode.isCloned) || isTrue(vnode.isOnce))
+    ) {
+      vnode.componentInstance = oldVnode.componentInstance
+      return
+    }
+    let i
+    const data = vnode.data
+    if (isDef(data) && isDef(i = data.hook) && isDef(i = i.prepatch)) {
+      i(oldVnode, vnode)
+    }
+    const oldCh = oldVnode.children
+    const ch = vnode.children
+    if (isDef(data) && isPatchable(vnode)) {
+      // 遍历调用 update 更新 oldVnode 所有属性，比如 class,style,attrs,domProps,events...
+      // 这里的 update 钩子函数是 vnode 本身的钩子函数
+      for (i = 0; i < cbs.update.length; ++i) cbs.update[i](oldVnode, vnode)
+      // 这里的 update 钩子函数是我们传过来的函数
+      if (isDef(i = data.hook) && isDef(i = i.update)) i(oldVnode, vnode)
+    }
+    // 如果新节点不是文本节点，也就是说有子节点
+    if (isUndef(vnode.text)) {
+      // 如果新老节点都有子节点
+      if (isDef(oldCh) && isDef(ch)) {
+        // 如果新老节点的子节点不一样，就执行 updateChildren 函数，对比子节点
+        if (oldCh !== ch) updateChildren(elm, oldCh, ch, insertedVnodeQueue, removeOnly)
+      } else if (isDef(ch)) {
+        // 如果新节点有子节点的话，就是说老节点没有子节点
+
+        // 如果老节点是文本节点，就是说没有子节点，就清空
+        if (isDef(oldVnode.text)) nodeOps.setTextContent(elm, '')
+        // 添加新节点
+        addVnodes(elm, null, ch, 0, ch.length - 1, insertedVnodeQueue)
+      } else if (isDef(oldCh)) {
+        // 如果新节点没有子节点，老节点有子节点，就删除
+        removeVnodes(oldCh, 0, oldCh.length - 1)
+      } else if (isDef(oldVnode.text)) {
+        // 如果老节点是文本节点，就清空
+        nodeOps.setTextContent(elm, '')
+      }
+    } else if (oldVnode.text !== vnode.text) {
+      // 如果老节点的文本和新节点的文本不同，就更新文本
+      nodeOps.setTextContent(elm, vnode.text)
+    }
+    if (isDef(data)) {
+      if (isDef(i = data.hook) && isDef(i = i.postpatch)) i(oldVnode, vnode)
+    }
+ }
+```
+
+#### 3.1.3 updatChildren
+
+为了方便理解，这里手动实现vue2中的updateChildren
+
+##### 3.1.3.1 实现思路
+
+我们先用四个指针指向两个列表的头尾
+
+```js
+function vue2Diff(prevChildren, nextChildren, parent) {
+  let oldStartIndex = 0,
+    oldEndIndex = prevChildren.length - 1
+    newStartIndex = 0,
+    newEndIndex = nextChildren.length - 1;
+  let oldStartNode = prevChildren[oldStartIndex],
+    oldEndNode = prevChildren[oldEndIndex],
+    newStartNode = nextChildren[nextStartIndex],
+    newEndNode = nextChildren[nextEndIndex];
+}
+```
+
+
+根据四个指针找到四个节点，然后进行对比，那么如何对比呢？我们按照以下四个步骤进行对比
+
+1. 使用旧列表的头一个节点`oldStartNode`与新列表的头一个节点`newStartNode`对比；
+2. 使用旧列表的最后一个节点`oldEndNode`与新列表的最后一个节点`newEndNode`对比；
+3. 使用旧列表的头一个节点`oldStartNode`与新列表的最后一个节点`newEndNode`对比；
+4. 使用旧列表的最后一个节点`oldEndNode`与新列表的头一个节点`newStartNode`对比；
+
+使用以上四步进行对比，去寻找key相同的可复用的节点，当在某一步中找到了则停止后面的寻找。具体对比顺序如下图：
+
+![vue2-diff具体实现](/Volumes/F/zyl-study/web-zhuawa/20221203/vue2-diff具体实现.png)
+
+
+
+对比顺序代码结构如下：
+
+```js
+function vue2Diff(prevChildren, nextChildren, parent) {
+  let oldStartIndex = 0,
+    oldEndIndex = prevChildren.length - 1
+    newStartIndex = 0,
+    newEndIndex = nextChildren.length - 1;
+  let oldStartNode = prevChildren[oldStartIndex],
+    oldEndNode = prevChildren[oldEndIndex],
+    newStartNode = nextChildren[newStartIndex],
+    newEndNode = nextChildren[newEndIndex];
+  
+  if (oldStartNode.key === newStartNode.key) {
+
+  } else if (oldEndNode.key === newEndNode.key) {
+
+  } else if (oldStartNode.key === newEndNode.key) {
+
+  } else if (oldEndNode.key === newStartNode.key) {
+
+  }
+}
+```
+
+当对比时找到了可复用的节点，我们还是先`patch`给元素打补丁，然后将指针进行前/后移一位指针。根据对比节点的不同，我们移动的指针和方向也不同，具体规则如下：
+
+1. 当旧列表的头一个节点`oldStartNode`与新列表的头一个节点`newStartNode`对比时key相同。那么旧列表的头指针`oldStartIndex`与新列表的头指针`newStartIndex`同时向后移动一位；
+2. 当旧列表的最后一个节点`oldEndNode`与新列表的最后一个节点`newEndNode`对比时key相同。那么旧列表的尾指针oldEndIndex与新列表的尾指针`newEndIndex`同时向前移动一位；
+3. 当旧列表的头一个节点`oldStartNode`与新列表的最后一个节点`newEndNode`对比时key相同。那么旧列表的头指针`oldStartIndex`向后移动一位；新列表的尾指针`newEndIndex`向前移动一位；
+4. 当旧列表的最后一个节点`oldEndNode`与新列表的头一个节点`newStartNode`对比时key相同。那么旧列表的尾指针`oldEndIndex`向前移动一位；新列表的头指针`newStartIndex`向后移动一位；
+
+```js
+function vue2Diff(prevChildren, nextChildren, parent) {
+  let oldStartIndex = 0,
+    oldEndIndex = prevChildren.length - 1,
+    newStartIndex = 0,
+    newEndIndex = nextChildren.length - 1;
+  let oldStartNode = prevChildren[oldStartIndex],
+    oldEndNode = prevChildren[oldEndIndex],
+    newStartNode = nextChildren[newStartIndex],
+    newEndNode = nextChildren[newEndIndex];
+
+  if (oldStartNode.key === newStartNode.key) {
+    patch(oldvStartNode, newStartNode, parent)
+
+    oldStartIndex++
+    newStartIndex++
+    oldStartNode = prevChildren[oldStartIndex]
+    newStartNode = nextChildren[newStartIndex]
+  } else if (oldEndNode.key === newEndNode.key) {
+    patch(oldEndNode, newEndNode, parent)
+
+    oldEndIndex--
+    newEndIndex--
+    oldEndNode = prevChildren[oldEndIndex]
+    newEndNode = nextChildren[newEndIndex]
+  } else if (oldStartNode.key === newEndNode.key) {
+    patch(oldStartNode, newEndNode, parent)
+
+    oldStartIndex++
+    newEndIndex--
+    oldStartNode = prevChildren[oldStartIndex]
+    newEndNode = nextChildren[newEndIndex]
+  } else if (oldEndNode.key === newStartNode.key) {
+    patch(oldEndNode, newStartNode, parent)
+
+    oldEndIndex--
+    nextStartIndex++
+    oldEndNode = prevChildren[oldEndIndex]
+    newStartNode = nextChildren[newStartIndex]
+  }
+}
+```
+
+至此整体的循环我们就全部完成了，下面我们需要考虑这样两个问题：
+
+- 什么情况下DOM节点需要移动；
+- DOM节点如何移动；
+
+我们来解决第一个问题：什么情况下需要移动，我们还是以上图为例：
+
+<img src="/Volumes/F/zyl-study/web-zhuawa/20221203/vue2-diff具体实现2.png" alt="vue2-diff具体实现2" style="zoom: 67%;" />
+
+当我们在第一个循环时，在第四步发现旧列表的尾节点oldEndNode与新列表的头节点newStartNode的key相同，是可复用的DOM节点。通过观察我们可以发现，原本在旧列表末尾的节点，却是新列表中的开头节点，没有人比他更靠前，因为他是第一个，所以我们只需要把当前的节点移动到原本旧列表中的第一个节点之前，让它成为第一个节点即可。
+
+```js
+function vue2Diff(prevChildren, nextChildren, parent) {
+ // ...
+  while (oldStartIndex <= oldEndIndex && newStartIndex <= newEndIndex) {
+    if (oldStartNode.key === newStartNode.key) {
+       // ...
+    } else if (oldEndNode.key === newEndNode.key) {
+      // ...
+    } else if (oldStartNode.key === newEndNode.key) {
+      // ...
+    } else if (oldEndNode.key === newStartNode.key) {
+      patch(oldEndNode, newStartNode, parent)
+      // 移动到旧列表头节点之前
+      parent.insertBefore(oldEndNode.el, oldStartNode.el)
+      
+      oldEndIndex--
+      newStartIndex++
+      oldEndNode = prevChildren[oldEndIndex]
+      newStartNode = nextChildren[newStartIndex]
+    }
+  }
+}
+```
+
+<img src="/Volumes/F/zyl-study/web-zhuawa/20221203/vue2-diff具体实现3.png" alt="vue2-diff具体实现3" style="zoom:67%;" />
+
+进入第二次循环，我们在第二步发现，旧列表的尾节点`oldEndNode`和新列表的尾节点`newEndNode`为复用节点。原本在旧列表中就是尾节点，在新列表中也是尾节点，说明该节点不需要移动，所以我们什么都不需要做。
+
+同理，如果是旧列表的头节点`oldStartNode`和新列表的头节点`newStartNode`为复用节点，我们也什么都不需要做
+
+<img src="/Volumes/F/zyl-study/web-zhuawa/20221203/vue2-diff具体实现4.png" alt="vue2-diff具体实现4" style="zoom:67%;" />
+
+![img](https://cdn.nlark.com/yuque/0/2022/webp/2340337/1659366689365-b379cb31-3e87-4afa-a4d6-3bcf68a3c720.webp)
+
+进入第三次循环，我们在第三部发现，旧列表的头节点`oldStartNode`和新列表的尾节点`newEndNode`为复用节点。，我们只要将DOM-A移动到DOM-B后面就可以了。
+
+依照惯例我们还是解释一下，原本旧列表中是头节点，然后在新列表中是尾节点。那么只要在旧列表中把当前的节点移动到原本尾节点的后面，就可以了。
+
+```js
+function vue2Diff(prevChildren, nextChildren, parent) {
+  // ...
+  while (oldStartIndex <= oldEndIndex && newStartIndex <= newEndIndex) {
+    if (oldStartNode.key === newStartNode.key) {
+      // ...
+    } else if (oldEndNode.key === newEndNode.key) {
+      // ...
+    } else if (oldStartNode.key === newEndNode.key) {
+      patch(oldStartNode, newEndNode, parent)
+      parent.insertBefore(oldStartNode.el, oldEndNode.el.nextSibling)
+
+      oldStartIndex++
+      newEndIndex--
+      oldStartNode = prevChildren[oldStartIndex]
+      newEndNode = nextChildren[newEndIndex]
+    } else if (oldEndNode.key === newStartNode.key) {
+     //...
+    }
+  }
+}
+```
+
+<img src="/Volumes/F/zyl-study/web-zhuawa/20221203/vue2-diff具体实现5.png" alt="vue2-diff具体实现5" style="zoom:67%;" />
+
+进入最后一个循环。在第一步旧列表头节点`oldStartNode`与新列表头节点`newStartNode`位置相同，所以啥也不用做。然后结束循环。
+
+##### 3.1.3.2 非理想情况
+
+上文中有一个特殊情况，当四次对比都没找到复用节点时，我们只能拿新列表的第一个节点去旧列表中找与其key相同的节点。
+
+<img src="/Volumes/F/zyl-study/web-zhuawa/20221203/vue2-diff具体实现6.png" alt="vue2-diff具体实现6" style="zoom:67%;" />
+
+```js
+function vue2Diff(prevChildren, nextChildren, parent) {
+  //...
+  while (oldStartIndex <= oldEndIndex && newStartIndex <= newEndIndex) {
+    if (oldStartNode.key === newStartNode.key) {
+    //...
+    } else if (oldEndNode.key === newEndNode.key) {
+    //...
+    } else if (oldStartNode.key === newEndNode.key) {
+    //...
+    } else if (oldEndNode.key === newStartNode.key) {
+    //...
+    } else {
+      // 在旧列表中找到 和新列表头节点key 相同的节点
+      let newKey = newStartNode.key,
+        oldIndex = prevChildren.findIndex(child => child.key === newKey);
+      
+    }
+  }
+}
+```
+
+找节点的时候其实会有两种情况：一种在旧列表中找到了，另一种情况是没找到。
+
+<img src="/Volumes/F/zyl-study/web-zhuawa/20221203/vue2-diff具体实现7.png" alt="vue2-diff具体实现7" style="zoom:67%;" />
+
+当我们在旧列表中找到对应的VNode，我们只需要将找到的节点的DOM元素，移动到开头就可以了。这里的逻辑其实和第四步的逻辑是一样的，只不过第四步是移动的尾节点，这里是移动找到的节点。DOM移动后，由我们将旧列表中的节点改为undefined，这是至关重要的一步，因为我们已经做了节点的移动了所以我们不需要进行再次的对比了。最后我们将头指针newStartIndex向后移一位。
+
+```js
+function vue2Diff(prevChildren, nextChildren, parent) {
+  //...
+  while (oldStartIndex <= oldEndIndex && newStartIndex <= newEndIndex) {
+    if (oldStartNode.key === newStartNode.key) {
+    //...
+    } else if (oldEndNode.key === newEndNode.key) {
+    //...
+    } else if (oldStartNode.key === newEndNode.key) {
+    //...
+    } else if (oldEndNode.key === newStartNode.key) {
+    //...
+    } else {
+      // 在旧列表中找到 和新列表头节点key 相同的节点
+      let newtKey = newStartNode.key,
+        oldIndex = prevChildren.findIndex(child => child.key === newKey);
+      
+      if (oldIndex > -1) {
+        let oldNode = prevChildren[oldIndex];
+        patch(oldNode, newStartNode, parent)
+        parent.insertBefore(oldNode.el, oldStartNode.el)
+        prevChildren[oldIndex] = undefined
+      }
+      newStartNode = nextChildren[++newStartIndex]
+    }
+  }
+}
+```
+
+如果在旧列表中没有找到复用节点，就直接创建一个新的节点放到最前面就可以了，然后后移头指针`newStartIndex`。
+
+<img src="/Volumes/F/zyl-study/web-zhuawa/20221203/vue2-diff具体实现8.png" alt="vue2-diff具体实现8" style="zoom:67%;" />
+
+```js
+function vue2Diff(prevChildren, nextChildren, parent) {
+  //...
+  while (oldStartIndex <= oldEndIndex && newStartIndex <= newEndIndex) {
+    if (oldStartNode.key === newStartNode.key) {
+    //...
+    } else if (oldEndNode.key === newEndNode.key) {
+    //...
+    } else if (oldStartNode.key === newEndNode.key) {
+    //...
+    } else if (oldEndNode.key === newStartNode.key) {
+    //...
+    } else {
+      // 在旧列表中找到 和新列表头节点key 相同的节点
+      let newtKey = newStartNode.key,
+        oldIndex = prevChildren.findIndex(child => child.key === newKey);
+      
+      if (oldIndex > -1) {
+        let oldNode = prevChildren[oldIndex];
+        patch(oldNode, newStartNode, parent)
+        parent.insertBefore(oldNode.el, oldStartNode.el)
+        prevChildren[oldIndex] = undefined
+      } else {
+      	mount(newStartNode, parent, oldStartNode.el)
+      }
+      newStartNode = nextChildren[++newStartIndex]
+    }
+  }
+}
+```
+
+最后当旧列表遍历到undefind时就跳过当前节点。
+
+```js
+function vue2Diff(prevChildren, nextChildren, parent) {
+  //...
+  while (oldStartIndex <= oldEndIndex && newStartIndex <= newEndIndex) {
+    if (oldStartNode === undefind) {
+    	oldStartNode = prevChildren[++oldStartIndex]
+    } else if (oldEndNode === undefind) {
+    	oldEndNode = prevChildren[--oldEndIndex]
+    } else if (oldStartNode.key === newStartNode.key) {
+    //...
+    } else if (oldEndNode.key === newEndNode.key) {
+    //...
+    } else if (oldStartNode.key === newEndNode.key) {
+    //...
+    } else if (oldEndNode.key === newStartNode.key) {
+    //...
+    } else {
+    // ...
+    }
+  }
+}
+```
+
+##### 3.1.3.3 添加节点
+
+![vue2-diff具体实现9](/Volumes/F/zyl-study/web-zhuawa/20221203/vue2-diff具体实现9.png)
+
+
+
+针对上述例子，几次循环都是尾节点相同，尾指针一直向前移动，直到循环结束；
+
+![vue2-diff具体实现10](/Volumes/F/zyl-study/web-zhuawa/20221203/vue2-diff具体实现10.png)
+
+
+
+此时`oldEndIndex`以及小于了`oldStartIndex`，但是新列表中还有剩余的节点，我们只需要将剩余的节点依次插入到`oldStartNode`的DOM之前就可以了。为什么是插入`oldStartNode`之前呢？原因是剩余的节点在新列表的位置是位于`oldStartNode`之前的，如果剩余节点是在`oldStartNode`之后，`oldStartNode`就会先行对比
+
+```js
+function vue2Diff(prevChildren, nextChildren, parent) {
+  //...
+  while (oldStartIndex <= oldEndIndex && newStartIndex <= newEndIndex) {
+  // ...
+  }
+  if (oldEndIndex < oldStartIndex) {
+    for (let i = newStartIndex; i <= newEndIndex; i++) {
+      mount(nextChildren[i], parent, prevStartNode.el)
+    }
+  }
+}
+```
+
+##### 3.1.3.4 移除节点
+
+当新列表的`newEndIndex`小于`newStartIndex`时，我们将旧列表剩余的节点删除即可。这里我们需要注意，旧列表的undefind。在第二小节中我们提到过，当头尾节点都不相同时，我们会去旧列表中找新列表的第一个节点，移动完DOM节点后，将旧列表的那个节点改为undefind。所以我们在最后的删除时，需要注意这些undefind，遇到的话跳过当前循环即可。
+
+```js
+function vue2Diff(prevChildren, nextChildren, parent) {
+  //...
+  while (oldStartIndex <= oldEndIndex && newStartIndex <= newEndIndex) {
+  // ...
+  }
+  if (oldEndIndex < oldStartIndex) {
+    for (let i = newStartIndex; i <= newEndIndex; i++) {
+      mount(nextChildren[i], parent, prevStartNode.el)
+    }
+  } else if (newEndIndex < newStartIndex) {
+    for (let i = oldStartIndex; i <= oldEndIndex; i++) {
+      if (prevChildren[i]) {
+        partent.removeChild(prevChildren[i].el)
+      }
+    }
+  }
+}
+```
+
+##### 3.1.3.5 总结
+
+```js
+function vue2diff(prevChildren, nextChildren, parent) {
+  let oldStartIndex = 0,
+    newStartIndex = 0,
+    oldStartIndex = prevChildren.length - 1,
+    newStartIndex = nextChildren.length - 1,
+    oldStartNode = prevChildren[oldStartIndex],
+    oldEndNode = prevChildren[oldStartIndex],
+    newStartNode = nextChildren[newStartIndex],
+    newEndNode = nextChildren[newStartIndex];
+  while (oldStartIndex <= oldStartIndex && newStartIndex <= newStartIndex) {
+    if (oldStartNode === undefined) {
+      oldStartNode = prevChildren[++oldStartIndex]
+    } else if (oldEndNode === undefined) {
+      oldEndNode = prevChildren[--oldStartIndex]
+    } else if (oldStartNode.key === newStartNode.key) {
+      patch(oldStartNode, newStartNode, parent)
+
+      oldStartIndex++
+      newStartIndex++
+      oldStartNode = prevChildren[oldStartIndex]
+      newStartNode = nextChildren[newStartIndex]
+    } else if (oldEndNode.key === newEndNode.key) {
+      patch(oldEndNode, newEndNode, parent)
+
+      oldStartIndex--
+      newStartIndex--
+      oldEndNode = prevChildren[oldStartIndex]
+      newEndNode = nextChildren[newStartIndex]
+    } else if (oldStartNode.key === newEndNode.key) {
+      patch(oldStartNode, newEndNode, parent)
+      parent.insertBefore(oldStartNode.el, oldEndNode.el.nextSibling)
+      oldStartIndex++
+      newStartIndex--
+      oldStartNode = prevChildren[oldStartIndex]
+      newEndNode = nextChildren[newStartIndex]
+    } else if (oldEndNode.key === newStartNode.key) {
+      patch(oldEndNode, newStartNode, parent)
+      parent.insertBefore(oldEndNode.el, oldStartNode.el)
+      oldStartIndex--
+      newStartIndex++
+      oldEndNode = prevChildren[oldStartIndex]
+      newStartNode = nextChildren[newStartIndex]
+    } else {
+      let newKey = newStartNode.key,
+        oldIndex = prevChildren.findIndex(child => child && (child.key === newKey));
+      if (oldIndex === -1) {
+        mount(newStartNode, parent, oldStartNode.el)
+      } else {
+        let prevNode = prevChildren[oldIndex]
+        patch(prevNode, newStartNode, parent)
+        parent.insertBefore(prevNode.el, oldStartNode.el)
+        prevChildren[oldIndex] = undefined
+      }
+      newStartIndex++
+      newStartNode = nextChildren[newStartIndex]
+    }
+  }
+  if (newStartIndex > newStartIndex) {
+    while (oldStartIndex <= oldStartIndex) {
+      if (!prevChildren[oldStartIndex]) {
+        oldStartIndex++
+        continue
+      }
+      parent.removeChild(prevChildren[oldStartIndex++].el)
+    }
+  } else if (oldStartIndex > oldStartIndex) {
+    while (newStartIndex <= newStartIndex) {
+      mount(nextChildren[newStartIndex++], parent, oldStartNode.el)
+    }
+  }
+}
+```
+
+#### 3.1.4 缺点
+
+Vue2 是全量 Diff（当数据发生变化，它就会新生成一个DOM树，并和之前的DOM树进行比较，找到不同的节点然后更新），如果层级很深，很消耗内存；
+
+### 3.2 vue3 diff-最长递增子序列
+
+#### 3.2.1 vue3 diff优化点
+
+1. 静态标记 + 非全量 Diff：（Vue 3在创建虚拟DOM树的时候，会根据DOM中的内容会不会发生变化，添加一个静态标记。之后在与上次虚拟节点进行对比的时候，就只会对比这些带有静态标记的节点。）；
+2. 使用最长递增子序列优化对比流程，可以最大程度的减少 DOM 的移动，达到最少的 DOM 操作；
+
+#### 3.2.2 实现思路
+
+vue3的diff算法其中有两个理念。第一个是相同的前置与后置元素的预处理；第二个则是最长递增子序列
+
+##### 3.2.2.1 前置与后置的预处理
+
+我们看着两段文字
+
+```js
+hello xianzao
+hey xianzao
+```
+
+我们会发现，这两段文字是有一部分是相同的，这些文字是不需要修改也不需要移动的，真正需要进行修改中间的几个字母，所以diff就变成以下部分
+
+```js
+text1: llo
+text2: y
+```
+
+接下来换成`vnode`：
+
+![vue2-diff具体实现11](/Volumes/F/zyl-study/web-zhuawa/20221203/vue2-diff具体实现11.png)
+
+图中的被绿色框起来的节点，他们是不需要移动的，只需要进行打补丁`patch`就可以了。我们把该逻辑写成代码。
+
+```js
+function vue3Diff(prevChildren, nextChildren, parent) {
+  let j = 0,
+    prevEnd = prevChildren.length - 1,
+    nextEnd = nextChildren.length - 1,
+    prevNode = prevChildren[j],
+    nextNode = nextChildren[j];
+  while (prevNode.key === nextNode.key) {
+    patch(prevNode, nextNode, parent)
+    j++
+    prevNode = prevChildren[j]
+    nextNode = nextChildren[j]
+  }
+  
+  prevNode = prevChildren[prevEnd]
+  nextNode = prevChildren[nextEnd]
+  
+  while (prevNode.key === nextNode.key) {
+    patch(prevNode, nextNode, parent)
+    prevEnd--
+    nextEnd--
+    prevNode = prevChildren[prevEnd]
+    nextNode = prevChildren[nextEnd]
+  }
+}
+```
+
+这时候，我们需要考虑边界情况，一种是j > prevEnd；另一种是j > nextEnd。
+
+![vue2-diff具体实现12](/Volumes/F/zyl-study/web-zhuawa/20221203/vue2-diff具体实现12.png)
+
+在上图中，此时j > prevEnd且j <= nextEnd，只需要把新列表中 j 到nextEnd之间剩下的节点插入进去就可以了。相反， 如果j > nextEnd时，把旧列表中 j 到prevEnd之间的节点删除就可以了。
+
+```js
+function vue3Diff(prevChildren, nextChildren, parent) {
+  // ...
+  if (j > prevEnd && j <= nextEnd) {
+    let nextpos = nextEnd + 1,
+      refNode = nextpos >= nextChildren.length
+                ? null
+                : nextChildren[nextpos].el;
+    while(j <= nextEnd) mount(nextChildren[j++], parent, refNode)
+    
+  } else if (j > nextEnd && j <= prevEnd) {
+    while(j <= prevEnd) parent.removeChild(prevChildren[j++].el)
+  }
+}
+```
+
+在while循环时，指针是从两端向内逐渐靠拢的，所以我们应该在循环中就应该去判断边界情况，我们使用label语法，当我们触发边界情况时，退出全部的循环，直接进入判断：
+
+```js
+function vue3Diff(prevChildren, nextChildren, parent) {
+  let j = 0,
+    prevEnd = prevChildren.length - 1,
+    nextEnd = nextChildren.length - 1,
+    prevNode = prevChildren[j],
+    nextNode = nextChildren[j];
+  // label语法
+  outer: {
+    while (prevNode.key === nextNode.key) {
+      patch(prevNode, nextNode, parent)
+      j++
+      // 循环中如果触发边界情况，直接break，执行outer之后的判断
+      if (j > prevEnd || j > nextEnd) break outer
+      prevNode = prevChildren[j]
+      nextNode = nextChildren[j]
+    }
+
+    prevNode = prevChildren[prevEnd]
+    nextNode = prevChildren[nextEnd]
+
+    while (prevNode.key === nextNode.key) {
+      patch(prevNode, nextNode, parent)
+      prevEnd--
+      nextEnd--
+      // 循环中如果触发边界情况，直接break，执行outer之后的判断
+      if (j > prevEnd || j > nextEnd) break outer
+      prevNode = prevChildren[prevEnd]
+      nextNode = prevChildren[nextEnd]
+    }
+  }
+  
+  // 边界情况的判断
+  if (j > prevEnd && j <= nextEnd) {
+    let nextpos = nextEnd + 1,
+      refNode = nextpos >= nextChildren.length
+                ? null
+                : nextChildren[nextpos].el;
+    while(j <= nextEnd) mount(nextChildren[j++], parent, refNode)
+    
+  } else if (j > nextEnd && j <= prevEnd) {
+    while(j <= prevEnd) parent.removeChild(prevChildren[j++].el)
+  }
+}
+```
+
+##### 3.2.2.2 判断是否需要移动
+
+接下来，就是找到移动的节点，然后给他移动到正确的位置
+
+当前/后置的预处理结束后，我们进入真正的diff环节。首先，我们先根据新列表剩余的节点数量，创建一个source数组，并将数组填满-1。
+
+![vue2-diff具体实现13](/Volumes/F/zyl-study/web-zhuawa/20221203/vue2-diff具体实现13.png)
+
+
+
+```js
+function vue3Diff(prevChildren, nextChildren, parent) {
+  //...
+  outer: {
+  // ...
+  }
+  
+  // 边界情况的判断
+  if (j > prevEnd && j <= nextEnd) {
+    // ...
+  } else if (j > nextEnd && j <= prevEnd) {
+    // ...
+  } else {
+    let prevStart = j,
+      nextStart = j,
+      nextLeft = nextEnd - nextStart + 1,     // 新列表中剩余的节点长度
+      source = new Array(nextLeft).fill(-1);  // 创建数组，填满-1
+     
+  }
+}
+```
+
+source是用来做新旧节点的对应关系的，我们将新节点在旧列表的位置存储在该数组中，我们在根据source计算出它的最长递增子序列用于移动DOM节点。为此，先建立一个对象存储当前新列表中的节点与index的关系，再去旧列表中去找位置。
+
+注意：如果旧节点在新列表中没有的话，直接删除就好。除此之外，我们还需要一个数量表示记录我们已经patch过的节点，如果数量已经与新列表剩余的节点数量一样，那么剩下的旧节点我们就直接删除了就可以了
+
+```js
+function vue3Diff(prevChildren, nextChildren, parent) {
+  //...
+  outer: {
+  // ...
+  }
+  
+  // 边界情况的判断
+  if (j > prevEnd && j <= nextEnd) {
+    // ...
+  } else if (j > nextEnd && j <= prevEnd) {
+    // ...
+  } else {
+    let prevStart = j,
+      nextStart = j,
+      nextLeft = nextEnd - nextStart + 1,     // 新列表中剩余的节点长度
+      source = new Array(nextLeft).fill(-1),  // 创建数组，填满-1
+      nextIndexMap = {},                      // 新列表节点与index的映射
+      patched = 0;                            // 已更新过的节点的数量
+      
+    // 保存映射关系  
+    for (let i = nextStart; i <= nextEnd; i++) {
+      let key = nextChildren[i].key
+      nextIndexMap[key] = i
+    } 
+    
+    // 去旧列表找位置
+    for (let i = prevStart; i <= prevEnd; i++) {
+      let prevNode = prevChildren[i],
+      	prevKey = prevNode.key,
+        nextIndex = nextIndexMap[prevKey];
+      // 新列表中没有该节点 或者 已经更新了全部的新节点，直接删除旧节点
+      if (nextIndex === undefind || patched >= nextLeft) {
+        parent.removeChild(prevNode.el)
+        continue
+      }
+      // 找到对应的节点
+      let nextNode = nextChildren[nextIndex];
+      patch(prevNode, nextNode, parent);
+      // 给source赋值
+      source[nextIndex - nextStart] = i
+      patched++
+    }
+  }
+}
+```
+
+![vue2-diff具体实现14](/Volumes/F/zyl-study/web-zhuawa/20221203/vue2-diff具体实现14.png)
+
+找到位置后，我们观察这个重新赋值后的source，我们可以看出，如果是全新的节点的话，其在source数组中对应的值就是初始的-1，通过这一步我们可以区分出来哪个为全新的节点，哪个是可复用的。
+其次，我们要判断是否需要移动，如果我们找到的index是一直递增的，说明不需要移动任何节点。我们通过设置一个变量来保存是否需要移动的状态。
+
+```js
+function vue3Diff(prevChildren, nextChildren, parent) {
+  //...
+  outer: {
+  // ...
+  }
+  
+  // 边界情况的判断
+  if (j > prevEnd && j <= nextEnd) {
+    // ...
+  } else if (j > nextEnd && j <= prevEnd) {
+    // ...
+  } else {
+    let prevStart = j,
+      nextStart = j,
+      nextLeft = nextEnd - nextStart + 1,     // 新列表中剩余的节点长度
+      source = new Array(nextLeft).fill(-1),  // 创建数组，填满-1
+      nextIndexMap = {},                      // 新列表节点与index的映射
+      patched = 0,
+      move = false,                           // 是否移动
+      lastIndex = 0;                          // 记录上一次的位置
+      
+    // 保存映射关系  
+    for (let i = nextStart; i <= nextEnd; i++) {
+      let key = nextChildren[i].key
+      nextIndexMap[key] = i
+    } 
+    
+    // 去旧列表找位置
+    for (let i = prevStart; i <= prevEnd; i++) {
+      let prevNode = prevChildren[i],
+      	prevKey = prevNode.key,
+        nextIndex = nextIndexMap[prevKey];
+      // 新列表中没有该节点 或者 已经更新了全部的新节点，直接删除旧节点
+      if (nextIndex === undefind || patched >= nextLeft) {
+        parent.removeChild(prevNode.el)
+        continue
+      }
+      // 找到对应的节点
+      let nextNode = nextChildren[nextIndex];
+      patch(prevNode, nextNode, parent);
+      // 给source赋值
+      source[nextIndex - nextStart] = i
+      patched++
+      
+      // 递增方法，判断是否需要移动
+      if (nextIndex < lastIndex) {
+      	move = true
+      } else {
+      	lastIndex = nextIndex
+      }
+    }
+    
+    if (move) {
+    
+    // 需要移动
+    } else {
+	
+    //不需要移动
+    }
+  }
+}
+```
+
+##### 3.3.2.3 DOM如何移动
+
+判断完是否需要移动后，我们就需要考虑如何移动了。一旦需要进行DOM移动，我们首先要做的就是找到source的最长递增子序列。vue2和vue3响应式的区别
+
+```js
+function vue3Diff(prevChildren, nextChildren, parent) {
+  //...
+  if (move) {
+	const seq = lis(source); // [0, 1]
+  // 需要移动
+  } else {
+
+  //不需要移动
+  }
+}
+```
+
+最长递增子序列：给定一个数值序列，找到它的一个子序列，并且子序列中的值是递增的，子序列中的元素在原序列中不一定连续。
+
+例如给定数值序列为：[ 0, 8, 4, 12 ]。
+
+那么它的最长递增子序列就是：[0, 8, 12]。 
+
+当然答案可能有多种情况，例如：[0, 4, 12] 也是可以的。
+
+上面的代码中，我们调用lis 函数求出数组source的最长递增子序列为[ 0, 1 ]。我们知道 source 数组的值为 [2, 3, 1, -1]，很显然最长递增子序列应该是[ 2, 3 ]，计算出的结果是[ 0, 1 ]代表的是最长递增子序列中的各个元素在source数组中的位置索引，如下图所示：
+
+![vue2-diff具体实现15](/Volumes/F/zyl-study/web-zhuawa/20221203/vue2-diff具体实现15.png)
+
+我们根据source，对新列表进行重新编号，并找出了最长递增子序列。
+
+我们从后向前进行遍历source每一项。此时会出现三种情况：
+
+1. 当前的值为-1，这说明该节点是全新的节点，又由于我们是从后向前遍历，我们直接创建好DOM节点插入到队尾就可以了；
+2. 当前的索引为最长递增子序列中的值，也就是i === seq[j]，这说说明该节点不需要移动；
+3. 当前的索引不是最长递增子序列中的值，那么说明该DOM节点需要移动，这里也很好理解，我们也是直接将DOM节点插入到队尾就可以了，因为队尾是排好序的；
+
+![vue2-diff具体实现16](/Volumes/F/zyl-study/web-zhuawa/20221203/vue2-diff具体实现16.png)
+
+```js
+function vue3Diff(prevChildren, nextChildren, parent) {
+  //...
+  if (move) {
+   // 需要移动
+	const seq = lis(source); // [0, 1]
+    let j = seq.length - 1;  // 最长子序列的指针
+    // 从后向前遍历
+    for (let i = nextLeft - 1； i >= 0; i--) {
+      let pos = nextStart + i, // 对应新列表的index
+        nextNode = nextChildren[pos],	// 找到vnode
+      	nextPos = pos + 1，    // 下一个节点的位置，用于移动DOM
+        refNode = nextPos >= nextChildren.length ? null : nextChildren[nextPos].el, //DOM节点
+        cur = source[i];  // 当前source的值，用来判断节点是否需要移动
+    
+      if (cur === -1) {
+        // 情况1，该节点是全新节点
+      	mount(nextNode, parent, refNode)
+      } else if (cur === seq[j]) {
+        // 情况2，是递增子序列，该节点不需要移动
+        // 让j指向下一个
+        j--
+      } else {
+        // 情况3，不是递增子序列，该节点需要移动
+        parent.insetBefore(nextNode.el, refNode)
+      }
+    }
+ 
+  } else {
+  //不需要移动
+  
+  }
+}
+```
+
+说完了需要移动的情况，再说说不需要移动的情况。如果不需要移动的话，我们只需要判断是否有全新的节点给他添加进去就可以了。具体代码如下：
+
+```js
+
+function vue3Diff(prevChildren, nextChildren, parent) {
+  //...
+  if (move) {
+	const seq = lis(source); // [0, 1]
+    let j = seq.length - 1;  // 最长子序列的指针
+    // 从后向前遍历
+    for (let i = nextLeft - 1； i >= 0; i--) {
+      let pos = nextStart + i, // 对应新列表的index
+        nextNode = nextChildren[pos],	// 找到vnode
+      	nextPos = pos + 1，    // 下一个节点的位置，用于移动DOM
+        refNode = nextPos >= nextChildren.length ? null : nextChildren[nextPos].el, //DOM节点
+        cur = source[i];  // 当前source的值，用来判断节点是否需要移动
+    
+      if (cur === -1) {
+        // 情况1，该节点是全新节点
+      	mount(nextNode, parent, refNode)
+      } else if (cur === seq[j]) {
+        // 情况2，是递增子序列，该节点不需要移动
+        // 让j指向下一个
+        j--
+      } else {
+        // 情况3，不是递增子序列，该节点需要移动
+        parent.insetBefore(nextNode.el, refNode)
+      }
+    }
+  } else {
+    //不需要移动
+    for (let i = nextLeft - 1； i >= 0; i--) {
+      let cur = source[i];  // 当前source的值，用来判断节点是否需要移动
+    
+      if (cur === -1) {
+       let pos = nextStart + i, // 对应新列表的index
+          nextNode = nextChildren[pos],	// 找到vnode
+          nextPos = pos + 1，    // 下一个节点的位置，用于移动DOM
+          refNode = nextPos >= nextChildren.length ? null : nextChildren[nextPos].el, //DOM节点
+      	mount(nextNode, parent, refNode)
+      }
+    }
+  }
+}
+```
+
+#### 3.2.3 最长递增子序列
+
+强烈建议看leetcode原题解法：https://leetcode.cn/problems/longest-increasing-subsequence/
+
+我们以该数组为例
+
+```js
+[10,9,2,5,3,8,7,13]
+```
+
+我们可以使用动态规划的思想考虑这个问题。动态规划的思想是将一个大的问题分解成多个小的子问题，并尝试得到这些子问题的最优解，子问题的最优解有可能会在更大的问题中被利用，这样通过小问题的最优解最终求得大问题的最优解。
+
+我们先假设只有一个值的数组[13]，那么该数组的最长递增子序列就是[13]自己本身，其长度为1。那么我们认为每一项的递增序列的长度值均为1
+
+那么我们这次给数组增加一个值[7, 13], 由于7 < 13，所以该数组的最长递增子序列是[7, 13]，那么该长度为2。那么我们是否可以认为，当[7]小于[13]时，以[7]为头的递增序列的长度是，[7]的长度和[13]的长度的和，即1 + 1 = 2。
+
+ok，我们基于这种思想来给计算一下该数组。我们先将每个值的初始赋值为1
+
+![vue2-diff具体实现17](/Volumes/F/zyl-study/web-zhuawa/20221203/vue2-diff具体实现17.png)
+
+首先 7 < 13 那么7对应的长度就是13的长度再加1，1 + 1 = 2
+
+![vue2-diff具体实现18](/Volumes/F/zyl-study/web-zhuawa/20221203/vue2-diff具体实现18.png)
+
+
+
+继续，我们对比8。我们首先和7比，发现不满足递增，但是没关系我们还可以继续和13比，8 < 13满足递增，那么8的长度也是13的长度在加一，长度为2
+
+![vue2-diff具体实现19](/Volumes/F/zyl-study/web-zhuawa/20221203/vue2-diff具体实现19.png)
+
+
+
+我们再对比3，我们先让其与8进行对比，3 < 8，那么3的长度是8的长度加一，此时3的长度为3。但是还没结束，我们还需要让3与7对比。同样3 < 7，此时我们需要在计算出一个长度是7的长度加一同样是3，我们对比两个长度，如果原本的长度没有本次计算出的长度值大的话，我们进行替换，反之则我们保留原本的值。由于3 === 3，我们选择不替换。最后，我们让3与13进行对比，同样的3 < 13，此时计算出的长度为2，比原本的长度3要小，我们选择保留原本的值。
+
+![vue2-diff具体实现20](/Volumes/F/zyl-study/web-zhuawa/20221203/vue2-diff具体实现20.png)
+
+
+
+![vue2-diff具体实现21](/Volumes/F/zyl-study/web-zhuawa/20221203/vue2-diff具体实现21.png)
+
+我们从中取最大的值4，该值代表的最长递增子序列的个数。代码如下：
+
+```js
+function lis(arr) {
+  let len = arr.length,
+    dp = new Array(len).fill(1); // 用于保存长度
+  for (let i = len - 1; i >= 0; i--) {
+    let cur = arr[i]
+    for(let j = i + 1; j < len; j++) {
+      let next = arr[j]
+      // 如果是递增 取更大的长度值
+      if (cur < next) dp[i] = Math.max(dp[j]+1, dp[i])
+    }
+  }
+  return Math.max(...dp)
+}
+```
+
+在vue3.0中，我们需要的是最长递增子序列在原本数组中的索引。所以我们还需要在创建一个数组用于保存每个值的最长子序列所对应在数组中的index。具体代码如下
+
+```js
+function lis(arr) {
+  let len = arr.length,
+    res = [],
+    dp = new Array(len).fill(1);
+  // 存默认index
+  for (let i = 0; i < len; i++) {
+    res.push([i])
+  }
+  for (let i = len - 1; i >= 0; i--) {
+    let cur = arr[i],
+      nextIndex = undefined;
+    // 如果为-1 直接跳过，因为-1代表的是新节点，不需要进行排序
+    if (cur === -1) continue
+    for (let j = i + 1; j < len; j++) {
+      let next = arr[j]
+      // 满足递增条件
+      if (cur < next) {
+        let max = dp[j] + 1
+        // 当前长度是否比原本的长度要大
+        if (max > dp[i]) {
+          dp[i] = max
+          nextIndex = j
+        }
+      }
+    }
+    // 记录满足条件的值，对应在数组中的index
+    if (nextIndex !== undefined) res[i].push(...res[nextIndex])
+  }
+  let index = dp.reduce((prev, cur, i, arr) => cur > arr[prev] ? i : prev, dp.length - 1)
+  // 返回最长的递增子序列的index
+  return result[index]
+}
+```
+
+# Vue Router 源码解析（1/2）
+
 https://www.yuque.com/lpldplws/web/gkiov622439zf64o?singleDoc# 《Vue Router源码解析(1/2)》 密码：zdfy
+
+## 1.课程目标
+
+1. 掌握Vue Router的核心源码；
+2. 掌握前端中一个完整的Router需要实现怎样的效果；
+
+## 2.课程大纲
+
+- vue router源码解析
+
+## 3.前置内容
+
+1. 课前准备：将Vue Router官网中[教程](https://router.vuejs.org/zh/guide/)通读一遍；
+2. 版本选择：选择的Vue Router版本为[V4.0.15](https://github.com/vuejs/router/releases/tag/v4.0.15)，跟目前最新版本除了极少部分调整外无任何区别；
+
+## 4.router.install解析
+
+### 4.1 vue-router的使用
+
+在介绍`router.install`之前，我们先看下vue3中是如何使用`vue-router`的：
+
+```js
+import { createApp } from 'vue'
+import { createRouter } from 'vue-router'
+
+const router = createRouter({ ... })
+const app = createApp({})
+
+app.use(router).mount('#app')
+```
+
+在执行app.use的过程中，会执行router.install,并传入app实例（即安装插件）。那么详细看一下router.install的过程
+
+### 4.2 router.install
+
+Router.install源码位于createRouter中，文件位置src/router.ts
+
+```typescript
+install(app: App) {
+  const router = this
+  app.component('RouterLink', RouterLink)
+  app.component('RouterView', RouterView)
+
+  app.config.globalProperties.$router = router
+  Object.defineProperty(app.config.globalProperties, '$route', {
+    enumerable: true,
+    get: () => unref(currentRoute),
+  })
+
+  if (
+    isBrowser &&
+    !started &&
+    currentRoute.value === START_LOCATION_NORMALIZED
+  ) {
+    started = true
+    push(routerHistory.location).catch(err => {
+      if (__DEV__) warn('Unexpected error when starting the router:', err)
+    })
+  }
+
+  const reactiveRoute = {} as {
+    [k in keyof RouteLocationNormalizedLoaded]: ComputedRef<
+      RouteLocationNormalizedLoaded[k]
+    >
+  }
+  for (const key in START_LOCATION_NORMALIZED) {
+    reactiveRoute[key] = computed(() => currentRoute.value[key])
+  }
+
+  app.provide(routerKey, router)
+  app.provide(routeLocationKey, reactive(reactiveRoute))
+  app.provide(routerViewLocationKey, currentRoute)
+
+  const unmountApp = app.unmount
+  installedApps.add(app)
+  app.unmount = function () {
+    installedApps.delete(app)
+    if (installedApps.size < 1) {
+      pendingLocation = START_LOCATION_NORMALIZED
+      removeHistoryListener && removeHistoryListener()
+      removeHistoryListener = null
+      currentRoute.value = START_LOCATION_NORMALIZED
+      started = false
+      ready = false
+    }
+    unmountApp()
+  }
+
+  if ((__DEV__ || __FEATURE_PROD_DEVTOOLS__) && isBrowser) {
+    addDevtools(app, router, matcher)
+  }
+}
+```
+
+在intall中，首先会注册routerLink与routerview两大组件
+
+```js
+app.component('RouterLink', RouterLink)
+app.component('RouterView', RouterView)
+```
+
+然后会将当前的`router`对象赋值给`app.config.globalProperties.$router`；
+
+同时拦截了`app.config.globalProperties.$route`的get操作，使`app.config.globalProperties.$route`始终获取`unref(currentRoute)`，`unref(currentRoute)`就是当前路由的一些信息（这里就是Vue源码中`unref`的实现，可以看上节课关于Vue源码的讲解），这里我们先不深究，在后续章节中会详细介绍。
+
+这样一来，就可以在组件中通过`this.$router`获取router，通过`this.$route`来获取当前路由信息。
+
+```js
+app.config.globalProperties.$router = router
+Object.defineProperty(app.config.globalProperties, '$route', {
+  enumerable: true,
+  get: () => unref(currentRoute),
+})
+```
+
+紧接着会根据浏览器url地址进行第一次跳转（如果是浏览器环境）。
+
+```js
+if (
+  isBrowser &&
+  // 用于初始导航客户端，避免在多个应用中使用路由器时多次push
+  !started &&
+  currentRoute.value === START_LOCATION_NORMALIZED
+) {
+  started = true
+  push(routerHistory.location).catch(err => {
+    if (__DEV__) warn('Unexpected error when starting the router:', err)
+  })
+}
+```
+
+紧接着声明了一个`reactiveRoute`响应式对象，并遍历`START_LOCATION_NORMALIZED`对象，依次将`START_LOCATION_NORMALIZED`中的key复制到`reactiveRoute`中，同时将`reactiveRoute`中key对应的值变成一个计算属性。
+
+这里`START_LOCATION_NORMALIZED`是`vue-router`提供的初始路由位置，通过`START_LOCATION_NORMALIZED`构建一个响应式的路由`reactiveRoute`，方便对路由变化进行追踪。
+
+```js
+START_LOCATION_NORMALIZED const reactiveRoute = {} as {
+  [k in keyof RouteLocationNormalizedLoaded]: ComputedRef<
+    RouteLocationNormalizedLoaded[k]
+  >
+}
+for (const key in START_LOCATION_NORMALIZED) {
+  reactiveRoute[key] = computed(() => currentRoute.value[key])
+}
+
+app.provide(routerKey, router)
+app.provide(routeLocationKey, reactive(reactiveRoute))
+app.provide(routerViewLocationKey, currentRoute)
+```
+
+这里使用`provide`又将`router`、`currentRoute`注入到app实例中，你可能会疑问，在前面过程中已经可以在组件中使用`this.$router`，`this.$route`获取到对应数据了，这里为什么又使用`provide`再次注入呢？这是因为在`setup`中式无法访问`this`的，这时通过`inject`就可以方便获取`router`及`currentRoute`。
+
+最后会将app放入一个哈希表中，然后重写`app.unmount`。当app卸载时，首先从哈希表中删除app，然后判断哈希表的大小是否小于1，如果小于1代表已经没有实例使用`vue-router`了，那么这时就需要重置一些状态、移除一些监听。
+
+```js
+const unmountApp = app.unmount
+installedApps.add(app)
+app.unmount = function () {
+  installedApps.delete(app)
+  if (installedApps.size < 1) {
+    pendingLocation = START_LOCATION_NORMALIZED
+    removeHistoryListener && removeHistoryListener()
+    removeHistoryListener = null
+    currentRoute.value = START_LOCATION_NORMALIZED
+    started = false
+    ready = false
+  }
+  unmountApp()
+}
+```
+
+## 4.3总结
+
+通过分析，`router.install`主要做以下几件事：
+
+1. 注册`RouterLink`、`RouterView`组件；
+2. 设置全局属性`$router`、`$route`；
+3. 根据地址栏进行首次的路由跳转；
+4. 向app中注入一些路由相关信息，如路由实例、响应式的当前路由信息对象；
+5. 拦截`app.unmount`方法，在卸载之前重置一些属性、删除一些监听函数；
+
+## 5.createHistory 解析
+
+在`vue-router 4.x`中创建`router`时，需要使用`createWebHistory`、`createWebHashHistory`、`createMemoryHistory`中的一个创建一个`history`，如下：
+
+```js
+```
+
+
+
 https://www.yuque.com/lpldplws/web/mo0sqg37epmtp41w?singleDoc# 《Vue Router源码解析(2/2)》 密码：bq3h
 https://www.yuque.com/lpldplws/web/qpafpkpkcfufkgtl?singleDoc# 《Vue实战》 密码：fw42
 
@@ -9654,3 +12745,9 @@ https://react.iamkasong.com/
 <input defaultValue={value2}>是非受控组件
 
 flushSync ???
+
+
+
+
+
+https://github.com/XiNiHa/streaming-ssr-showcase 流式渲染的例子
