@@ -12723,7 +12723,2291 @@ app.unmount = function () {
 在`vue-router 4.x`中创建`router`时，需要使用`createWebHistory`、`createWebHashHistory`、`createMemoryHistory`中的一个创建一个`history`，如下：
 
 ```js
+const routerHistory = createWebHistory()
+
+const router = createRouter({
+    history: routerHistory,
+    routes: [ ... ]
+}) import { createWebHistory, createRouter } from 'vue-router'
+
+const routerHistory = createWebHistory()
+
+const router = createRouter({
+    history: routerHistory,
+    routes: [ ... ]
+})
 ```
+
+接下来就对着三种方法进行解析：
+
+### 5.1 createWebHistory
+
+`createWebHistory`源码所处位置：`src/history/html5.ts`
+首先来看`createWebHistory`的参数，函数可以接受一个`base`字符串可选参数，该参数提供了一个基础路径。
+在`createWebHistory`中首先会调用`normalizeBase`函数对传入的base进行标准化。
+
+```js
+base = normalizeBase(base)
+```
+
+来看下`base`标准化的过程：
+
+```js
+export function normalizeBase(base?: string): string {
+  if (!base) {
+      // 浏览其环境下尝试获取base标签的href属性
+    if (isBrowser) {
+      const baseEl = document.querySelector('base')
+      base = (baseEl && baseEl.getAttribute('href')) || '/'
+      // 去除htttp(s)://xxx/，如https://example.com/folder/ --> /folder/
+      base = base.replace(/^\w+:\/\/[^\/]+/, '')
+    } else {
+      base = '/'
+    }
+  }
+  // 确保base的前导/
+  if (base[0] !== '/' && base[0] !== '#') base = '/' + base
+
+  return removeTrailingSlash(base)
+}
+```
+
+如果没有配置base的话，在浏览器环境下会尝试获取<base>标签的href属性作为base，如果没有<base>标签或<base>标签的href属性没有值，base取/，然后又对base进行了reaplce(/^\w+:\/\/[^\/]+/, '')操作，该操作是去除base的http(s)://xxx部分（如果base是https://example.com/floder/child，base最终会变成/floder/child）；非浏览器环境下，base直接取/。在最后会将base的末尾/去除，然后返回base，这样做的目的是后续我们可以通过base + fullPath的形式建立一个href。 base标准化后，会声明一个historyNavigation和historyListeners变量：
+
+```js
+const historyNavigation = useHistoryStateNavigation(base)
+const historyListeners = useHistoryListeners(
+  base,
+  historyNavigation.state,
+  historyNavigation.location,
+  historyNavigation.replace
+)
+```
+
+接下来看下`useHistoryStateNavigation()`、`useHistoryListeners()`的实现。
+
+先看`useHistoryStateNavigation`：
+
+```js
+function useHistoryStateNavigation(base: string) {
+  // 获取window.history、window.location
+  const { history, location } = window
+
+  const currentLocation: ValueContainer<HistoryLocation> = {
+    value: createCurrentLocation(base, location),
+  }
+  const historyState: ValueContainer<StateEntry> = { value:  }
+  // 如果history.state是空的，构建一条新的历史记录
+  if (!historyState.value) {
+    changeLocation(
+      currentLocation.value,
+      {
+        back: null,
+        current: currentLocation.value,
+        forward: null,
+        position: history.length - 1,
+        replaced: true,
+        scroll: null,
+      },
+      true
+    )
+  }
+  // 修改历史记录
+  function changeLocation(
+    to: HistoryLocation,
+    state: StateEntry,
+    replace: boolean
+  ): void {
+    const hashIndex = base.indexOf('#')
+    // 获取url，作为history.replaceState/pushState的参数
+    // 如果hashIndex > -1，url = `{location.host && document.querySelector('base') ? base : base字符串#及后面字符}${to}`
+    // 否则 url = `${location.protocol}//${location.host}${base}${to}`
+    const url =
+      hashIndex > -1
+        ? (location.host && document.querySelector('base')
+            ? base
+            : base.slice(hashIndex)) + to
+        : createBaseLocation() + base + to
+    try {
+      // 利用history.replaceState/pushState修改历史记录
+      history[replace ? 'replaceState' : 'pushState'](state, '', url)
+      // historyState更新为最新的历史记录
+      historyState.value = state
+    } catch (err) { // 如果历史记录修改过程中报错，则使用location.reaplce/assign导航到对应url
+      if (__DEV__) {
+        warn('Error with push/replace State', err)
+      } else {
+        console.error(err)
+      }
+      location[replace ? 'replace' : 'assign'](url)
+    }
+  }
+
+  function replace(to: HistoryLocation, data?: HistoryState) {
+    const state: StateEntry = assign(
+      {},
+      history.state,
+      buildState(
+        historyState.value.back,
+        to,
+        historyState.value.forward,
+        true
+      ),
+      data,
+      // 因为是replace操作，所以position不变
+      { position: historyState.value.position }
+    )
+
+    changeLocation(to, state, true)
+    // 修改当前历史为to
+    currentLocation.value = to
+  }
+
+  function push(to: HistoryLocation, data?: HistoryState) {
+    const currentState = assign(
+      {},      historyState.value,
+      history.state as Partial<StateEntry> | null,
+      {
+        forward: to,
+        scroll: computeScrollPosition(),
+      }
+    )
+
+    if (__DEV__ && !history.state) {
+      warn(
+        `history.state seems to have been manually replaced without preserving the necessary values. Make sure to preserve existing history state if you are manually calling history.replaceState:\n\n` +
+          `history.replaceState(history.state, '', url)\n\n` +
+          `You can find more information at https://next.router.vuejs.org/guide/migration/#usage-of-history-state.`
+      )
+    }
+
+    // 第一次changeLocation，使用replace刷新当前历史，目的是记录当前页面的滚动位置
+    changeLocation(currentState.current, currentState, true)
+
+    const state: StateEntry = assign(
+      {},
+      buildState(currentLocation.value, to, null),
+      // push操作，历史记录的position+1
+      { position: currentState.position + 1 },
+      data
+    )
+
+    // 第二次跳转，跳转到需要跳转的位置
+    changeLocation(to, state, false)
+    currentLocation.value = to
+  }
+
+  return {
+    location: currentLocation,
+    state: historyState,
+
+    push,
+    replace,
+  }
+}
+```
+
+这个函数接收一个`base`参数，返回一个对象。这个对象中有四个属性：
+
+1. `location`：一个包含`value`属性的对象，`value`值是`createCurrentLocation()`方法的返回值。那么这个`value`是什么呢？看下`createCurrentLocation`做了什么。
+
+`createCurrentLocation`的作用是通过`window.location`创建一个规范化的`history location`，方法接收两个参数：经过标准化的`base`字符串和一个`window.location`对象。
+
+```js
+createCurrentLocation function createCurrentLocation(
+  base: string,
+  location: Location
+): HistoryLocation {
+  const { pathname, search, hash } = location
+  // allows hash bases like #, /#, #/, #!, #!/, /#!/, or even /folder#end
+  // 从base中获取#的索引
+  const hashPos = base.indexOf('#')
+  // 如果base中包含#
+  if (hashPos > -1) {
+    // 如果hash包含base中的#后面部分，slicePos为base中#及后面字符串的的长度，否则为1
+    let slicePos = hash.includes(base.slice(hashPos))
+      ? base.slice(hashPos).length
+      : 1
+    // 从location.hash中获取path，/#add, #add
+    let pathFromHash = hash.slice(slicePos)
+    // 在开头加上/，形成/#的格式
+    if (pathFromHash[0] !== '/') pathFromHash = '/' + pathFromHash
+    // stripBase(pathname, base)：将pathname去除base部分
+    return stripBase(pathFromHash, '')
+  }
+  // 如果base中不包含#，把pathname中的base部分删除
+  const path = stripBase(pathname, base)
+  return path + search + hash
+}
+```
+
+可以看到`createCurrentLocation`其实就是获取`window.location`相对`base`的`location`。
+
+举几个例子（以下几个例子的base都经过标准化）：
+
+1. `window.location.pathname`为`/a/b/c`，`base`为`/a`，那么通过`createCurrentLocation`得到的`location`为`/b/c`；
+2. 有`hash`的情况，`window.location.hash`为`#/a/b/c`，`base`为`#/a`，那么通过`createCurrentLocation`得到的`location为/b/c`；`window.location.hash`为`#/a/b/c`，`base`为`#`，那么通过`createCurrentLocation`得到的`location`为`/a/b/c`；
+3. `state`：一个包含`value`属性的对象，`value`存储的是当前的`history.state`；
+4. `push`：向历史记录中添加一条记录。在push过程中你会发现调用了两次`changeLocation`：第一次调用`changeLocation`时，目的是为了记录当前页面在的滚动位置，如果使用`history.back()`或浏览器回退/前进按钮回到这个页面，页面会滚动到对应位置，为了不再历史栈中保存新的记录，第一次记录使用的`reaplceState`替换当前历史记录。第二次调用`changeLocation`是会跳转到需要跳转的位置；
+5. `reaplce`：替换当前历史记录；
+
+接下来看下`useHistoryListeners`方法：
+
+```js
+function useHistoryListeners(
+  base: string,
+  historyState: ValueContainer<StateEntry>,
+  currentLocation: ValueContainer<HistoryLocation>,
+  replace: RouterHistory['replace']
+) {
+  let listeners: NavigationCallback[] = []
+  let teardowns: Array<() => void> = []
+  let pauseState: HistoryLocation | null = null
+
+  const popStateHandler: PopStateListener = ({
+    state,
+  }: {
+    state: StateEntry | null
+  }) => {
+    const to = createCurrentLocation(base, location)
+    const from: HistoryLocation = currentLocation.value
+    const fromState: StateEntry = historyState.value
+    let delta = 0
+
+    if (state) {
+      currentLocation.value = to
+      historyState.value = state
+
+      // 如果暂停监听了，则直接return，同时pauseState赋为null
+      if (pauseState && pauseState === from) {
+        pauseState = null
+        return
+      }
+      // 计算移动步数
+      delta = fromState ? state.position - fromState.position : 0
+    } else {
+      replace(to)
+    }
+    // 执行监听函数列表
+    listeners.forEach(listener => {
+      listener(currentLocation.value, from, {
+        delta,
+        type: NavigationType.pop,
+        direction: delta
+          ? delta > 0
+            ? NavigationDirection.forward
+            : NavigationDirection.back
+          : NavigationDirection.unknown,
+      })
+    })
+  }
+
+  function pauseListeners() {
+    pauseState = currentLocation.value
+  }
+
+  function listen(callback: NavigationCallback) {
+    listeners.push(callback)
+
+    const teardown = () => {
+      const index = listeners.indexOf(callback)
+      if (index > -1) listeners.splice(index, 1)
+    }
+
+    teardowns.push(teardown)
+    return teardown
+  }
+
+  function beforeUnloadListener() {
+    const { history } = window
+    if (!history.state) return
+    // 当页面关闭时记录页面滚动位置
+    history.replaceState(
+      assign({}, history.state, { scroll: computeScrollPosition() }),
+      ''
+    )
+  }
+
+  function destroy() {
+    for (const teardown of teardowns) teardown()
+    teardowns = []
+    window.removeEventListener('popstate', popStateHandler)
+    window.removeEventListener('beforeunload', beforeUnloadListener)
+  }
+
+  window.addEventListener('popstate', popStateHandler)
+  window.addEventListener('beforeunload', beforeUnloadListener)
+
+  return {
+    pauseListeners,
+    listen,
+    destroy,
+  }
+}
+```
+
+`useHistoryListeners`方法接收四个参数：
+
+1. `base`（标准化的base）；
+2. `historyState`；
+3. `currentLocation`；
+4. `replace`（后三个参数来自`useHistoryStateNavigation`的返回值）；
+
+在`useHistoryListeners`中，会监听[popstate](https://developer.mozilla.org/zh-CN/docs/Web/API/Window/popstate_event)、[beforeunload](https://developer.mozilla.org/zh-CN/docs/Web/API/Window/beforeunload_event)。
+
+`useHistoryListeners`同样返回一个对象，该对象包含三个属性：
+
+1. `pauseListeners`：一个暂停监听的函数；
+2. `listen`：接收一个回调函数，并返回一个删除监听的函数。该回调函数会被加入`listeners`数组中，并向`teardowns`数组中添加卸载函数；
+3. `destroy`：销毁函数，清空`listeners`与`teardowns`，移除`popstate`、`beforeunload`监听。
+
+现在我们知道了`useHistoryStateNavigation`、`useHistoryListeners`的实现后。现在我们回到`createWebHistory`中，创建完`historyNavigation`、`historyListeners`之后，紧跟着声明一个`go`函数。该函数接收两个变量：`delta`历史记录移动的步数，`triggerListeners`是否触发监听：
+
+```js
+function go(delta: number, triggerListeners = true) {
+  if (!triggerListeners) historyListeners.pauseListeners()
+  history.go(delta)
+}
+```
+
+最后创建一个routerHistory对象，并将其返回
+
+```js
+const routerHistory: RouterHistory = assign(
+  {
+    location: '',
+    base,
+    go,
+    createHref: createHref.bind(null, base),
+  },
+  historyNavigation,
+  historyListeners
+)
+
+// 拦截routerHistory.location，使routerHistory.location返回当前路由地址
+Object.defineProperty(routerHistory, 'location', {
+  enumerable: true,
+  get: () => historyNavigation.location.value,
+})
+
+// 拦截routerHistory.state，使routerHistory.state返回当前的的history.state
+Object.defineProperty(routerHistory, 'state', {
+  enumerable: true,
+  get: () => historyNavigation.state.value,
+})
+
+return routerHistory
+```
+
+### 5.2 createWebHashHistory
+
+`createWebHashHistory`利用`createWebHashHistory`实现。
+
+```js
+export function createWebHashHistory(base?: string): RouterHistory {
+  // 对于使用文件协议打开的页面location.host是空字符串，这时的base为''
+  // 也就是说在使用文件协议打开页面时，设置了base是不生效的，因为base始终是''
+  base = location.host ? base || location.pathname + location.search : ''
+  // 允许中间的#: `/base/#/app`
+  if (!base.includes('#')) base += '#'
+
+  if (__DEV__ && !base.endsWith('#/') && !base.endsWith('#')) {
+    warn(
+      `A hash base must end with a "#":\n"${base}" should be "${base.replace(
+        /#.*$/,
+        '#'
+      )}".`
+    )
+  }
+  return createWebHistory(base)
+}
+```
+
+### 5.3 createMemoryHistory
+
+`createMemoryHistory`会创建一个基于内存历史记录，主要用来处理`SSR`。
+
+```js
+export function createMemoryHistory(base: string = ''): RouterHistory {
+  // 用户存储监听函数的数组
+  let listeners: NavigationCallback[] = []
+  // 使用一个队列维护历史记录
+  let queue: HistoryLocation[] = [START]
+  // 当前历史记录在队列中的位置
+  let position: number = 0
+  // base标准化
+  base = normalizeBase(base)
+
+  // 设置记录
+  function setLocation(location: HistoryLocation) {
+    position++
+    // 队列长度等于position时，直接push
+    if (position === queue.length) {
+      queue.push(location)
+    } else {
+      // 当历史记录在队列中的非末尾位置时，删除position及之后的记录，然后再push
+      // 如果某一刻处在非结尾的历史记录时，这时要进行push或reqlace操作，此时position之后的记录就会失效
+      queue.splice(position)
+      queue.push(location)
+    }
+  }
+
+  // 触发监听
+  function triggerListeners(
+    to: HistoryLocation,
+    from: HistoryLocation,
+    { direction, delta }: Pick<NavigationInformation, 'direction' | 'delta'>
+  ): void {
+    const info: NavigationInformation = {
+      direction,
+      delta,
+      type: NavigationType.pop,
+    }
+    for (const callback of listeners) {
+      callback(to, from, info)
+    }
+  }
+
+  const routerHistory: RouterHistory = {
+    location: START,
+    state: {},
+    base,
+    createHref: createHref.bind(null, base),
+
+    replace(to) {
+      // 移除queue中索引为position的记录，并将position--
+      queue.splice(position--, 1)
+      // 在setLocation会对position重新++操作，所以position会恢复要之前的值
+      setLocation(to)
+    },
+
+    push(to, data?: HistoryState) {
+      setLocation(to)
+    },
+
+    listen(callback) {
+      listeners.push(callback)
+      return () => {
+        const index = listeners.indexOf(callback)
+        if (index > -1) listeners.splice(index, 1)
+      }
+    },
+    destroy() {
+      listeners = []
+      queue = [START]
+      position = 0
+    },
+
+    go(delta, shouldTrigger = true) {
+      const from = this.location
+      // go的方向。delta < 0 为 back，相反为 forward
+      const direction: NavigationDirection =
+        delta < 0 ? NavigationDirection.back : NavigationDirection.forward
+      // go之后所处的position：Math.min(position + delta, queue.length - 1)保证了position<=queue.length - 1, 如果position + delta超出了数组最大索引，就取最大索引
+      // Math.max(0, Math.min(position + delta, queue.length - 1))进一步保证了position>=0，如果position + delta < 0, 则取0
+      position = Math.max(0, Math.min(position + delta, queue.length - 1))
+      // 根据shouldTrigger决定是否触发监听函数
+      if (shouldTrigger) {
+        triggerListeners(this.location, from, {
+          direction,
+          delta,
+        })
+      }
+    },
+  }
+
+  Object.defineProperty(routerHistory, 'location', {
+    enumerable: true,
+    get: () => queue[position],
+  })
+
+  if (__TEST__) {
+    routerHistory.changeURL = function (url: string) {
+      const from = this.location
+      queue.splice(position++ + 1, queue.length, url)
+      triggerListeners(this.location, from, {
+        direction: NavigationDirection.unknown,
+        delta: 0,
+      })
+    }
+  }
+
+  return routerHistory
+}
+```
+
+和`createWebHistory`、`createWebHashHistory`一样，`createMemoryHistory`同样返回一个`RouterHistory`类型的对象。与前面两个方法不同的是，`createMemoryHistory`维护一个队列`queue`和一个`position`，来保证历史记录存储的正确性。
+
+## 6 matcher解析
+
+### 6.1 matcher初识
+
+在开始介绍`matcher`的实现之前，我们先了解下`matcher`是什么？它的作用是什么？
+在`vue-router`中，每一个我们定义的路由都会被解析成一个对应的`matcher`（`RouteRecordMatcher`类型），路由的增删改查都会依靠`matcher`来实现。
+
+### 6.2. createRouterMatcher
+
+在`createRouter`中会通过`createRouterMatcher`创建一个`matcher`（`RouterMatcher`类型）。
+
+```js
+export function createRouterMatcher(
+  routes: RouteRecordRaw[],
+  globalOptions: PathParserOptions
+): RouterMatcher {
+  const matchers: RouteRecordMatcher[] = []
+  const matcherMap = new Map<RouteRecordName, RouteRecordMatcher>()
+  globalOptions = mergeOptions(
+    { strict: false, end: true, sensitive: false } as PathParserOptions,
+    globalOptions
+  )
+
+  function getRecordMatcher(name: RouteRecordName) { // ... }
+
+  function addRoute(
+    record: RouteRecordRaw,
+    parent?: RouteRecordMatcher,
+    originalRecord?: RouteRecordMatcher
+  ) {
+    // ...
+  }
+
+  function removeRoute(matcherRef: RouteRecordName | RouteRecordMatcher) { // ... }
+
+  function getRoutes() { // ... }
+
+  function insertMatcher(matcher: RouteRecordMatcher) { // ... }
+
+  function resolve(
+    location: Readonly<MatcherLocationRaw>,
+    currentLocation: Readonly<MatcherLocation>
+  ): MatcherLocation {
+    // ...
+  }
+
+  routes.forEach(route => addRoute(route))
+
+  return { addRoute, resolve, removeRoute, getRoutes, getRecordMatcher }
+}
+```
+
+`createRouterMatcher`接收两个参数：`routes`、`globalOptions`。
+
+其中`routes`为我们定义的路由表，也就是在`createRouter`时传入的`options.routes`，而`globalOptions`就是`createRouter`中的`options`。
+`createRouterMatcher`中声明了两个变量`matchers`、`matcherMap`，用来存储通过路由表解析的`matcher`（`RouteRecordMatcher`类型），然后遍历`routes`，对每个元素调用`addRoute`方法。最后返回一个对象，该对象有`addRoute`、`resolve`、`removeRoute`、`getRoute`、`getRecordMatcher`几个属性，这几个属性都对应着一个函数。
+接下来我们看下这几个函数：
+
+#### 6.2.1 addRoute
+
+addRoute函数接收三个参数：record（新增的路由）、parent（父matcher）、originalRecord（原始matcher）。
+
+```js
+function addRoute(
+  record: RouteRecordRaw,
+  parent?: RouteRecordMatcher,
+  originalRecord?: RouteRecordMatcher
+) {
+  // used later on to remove by name
+  const isRootAdd = !originalRecord
+  // 标准化化路由记录
+  const mainNormalizedRecord = normalizeRouteRecord(record)
+  // aliasOf表示此记录是否是另一个记录的别名
+  mainNormalizedRecord.aliasOf = originalRecord && originalRecord.record
+  const options: PathParserOptions = mergeOptions(globalOptions, record)
+  // 声明一个记录的数组用来处理别名
+  const normalizedRecords: typeof mainNormalizedRecord[] = [
+    mainNormalizedRecord,
+  ]
+  // 如果record设置了别名
+  if ('alias' in record) {
+    // 别名数组
+    const aliases =
+      typeof record.alias === 'string' ? [record.alias] : record.alias!
+    // 遍历别名数组，并根据别名创建记录存储到normalizedRecords中
+    for (const alias of aliases) {
+      normalizedRecords.push(
+        assign({}, mainNormalizedRecord, {
+          components: originalRecord
+            ? originalRecord.record.components
+            : mainNormalizedRecord.components,
+          path: alias,
+          // 如果有原始记录，aliasOf为原始记录，如果没有原始记录就是它自己
+          aliasOf: originalRecord
+            ? originalRecord.record
+            : mainNormalizedRecord,
+        }) as typeof mainNormalizedRecord
+      )
+    }
+  }
+
+  let matcher: RouteRecordMatcher
+  let originalMatcher: RouteRecordMatcher | undefined
+
+  // 遍历normalizedRecords
+  for (const normalizedRecord of normalizedRecords) {
+    
+    // 处理normalizedRecord.path为完整的path
+    const { path } = normalizedRecord
+    // 如果path不是以/开头，那么说明它不是根路由，需要拼接为完整的path
+    // { path: '/a', children: [ { path: 'b' } ] } -> { path: '/a', children: [ { path: '/a/b' } ] }
+    if (parent && path[0] !== '/') {
+      const parentPath = parent.record.path
+      const connectingSlash =
+        parentPath[parentPath.length - 1] === '/' ? '' : '/'
+      normalizedRecord.path =
+        parent.record.path + (path && connectingSlash + path)
+    }
+
+    // 提示*应使用正则表示式形式
+    if (__DEV__ && normalizedRecord.path === '*') {
+      throw new Error(
+        'Catch all routes ("*") must now be defined using a param with a custom regexp.\n' +
+          'See more at https://next.router.vuejs.org/guide/migration/#removed-star-or-catch-all-routes.'
+      )
+    }
+
+    // 创建一个路由记录匹配器
+    matcher = createRouteRecordMatcher(normalizedRecord, parent, options)
+
+    // 检查是否有丢失的参数
+    if (__DEV__ && parent && path[0] === '/')
+      checkMissingParamsInAbsolutePath(matcher, parent)
+
+    // 如果有originalRecord，将matcher放入原始记录的alias中，以便后续能够删除
+    if (originalRecord) {
+      originalRecord.alias.push(matcher)
+      // 检查originalRecord与matcher中动态参数是否相同
+      if (__DEV__) {
+        checkSameParams(originalRecord, matcher)
+      }
+    } else { // 没有originalRecord
+      // 因为原始记录索引为0，所以originalMatcher为有原始记录所产生的matcher
+      originalMatcher = originalMatcher || matcher
+      // 如果matcher不是原始记录产生的matcher，说明此时matcher是由别名记录产生的，此时将matcher放入originalMatcher.alias中
+      if (originalMatcher !== matcher) originalMatcher.alias.push(matcher)
+      // 如果命名并且仅用于顶部记录，则删除路由（避免嵌套调用）
+      if (isRootAdd && record.name && !isAliasRecord(matcher))
+        removeRoute(record.name)
+    }
+
+    // 遍历children，递归addRoute
+    if ('children' in mainNormalizedRecord) {
+      const children = mainNormalizedRecord.children
+      for (let i = 0; i < children.length; i++) {
+        addRoute(
+          children[i],
+          matcher,
+          originalRecord && originalRecord.children[i]
+        )
+      }
+    }
+
+    originalRecord = originalRecord || matcher
+    // 添加matcher
+    insertMatcher(matcher)
+  }
+
+  // 返回一个删除原始matcher的方法
+  return originalMatcher
+    ? () => {
+        removeRoute(originalMatcher!)
+      }
+    : noop
+}
+```
+
+在`addRoute`中，会对`record`进行标准化处理（`normalizeRouteRecord`），如果存在原始的`matcher`，也就是`originalRecord`，说明此时要添加的路由是另一记录的别名，这时会将`originalRecord.record`存入`mainNormalizedRecord.aliasOf`中。
+
+```js
+const isRootAdd = !originalRecord
+// 标准化化路由记录
+const mainNormalizedRecord = normalizeRouteRecord(record)
+// aliasOf表示此记录是否是另一个记录的别名
+mainNormalizedRecord.aliasOf = originalRecord && originalRecord.record
+const options: PathParserOptions = mergeOptions(globalOptions, record)
+// 声明一个记录的数组用来处理别名
+const normalizedRecords: typeof mainNormalizedRecord[] = [
+  mainNormalizedRecord,
+]
+```
+
+然后会遍历`record`的别名，向`normalizedRecords`中添加由别名产生的路由：
+
+```js
+if ('alias' in record) {
+  // 别名数组
+  const aliases =
+    typeof record.alias === 'string' ? [record.alias] : record.alias!
+  // 遍历别名数组，并根据别名创建记录存储到normalizedRecords中
+  for (const alias of aliases) {
+    normalizedRecords.push(
+      assign({}, mainNormalizedRecord, {
+        components: originalRecord
+          ? originalRecord.record.components
+          : mainNormalizedRecord.components,
+        path: alias,
+        // 如果有原始记录，aliasOf为原始记录，如果没有原始记录就是它自己
+        aliasOf: originalRecord
+          ? originalRecord.record
+          : mainNormalizedRecord,
+      }) as typeof mainNormalizedRecord
+    )
+  }
+}
+```
+
+紧接着会遍历normalizedRecords：在这个遍历过程中，会首先将path处理成完整的path，然后通过createRouteRecordMatcher方法创建一个matcher（RouteRecordMatcher类型），如果matcher是由别名产生的，那么matcher会被加入由原始记录产生的matcher中的alias属性中。然后会遍历mainNormalizedRecord的children属性，递归调用addRoute方法。在最后，调用insertMatcher添加新创建的matcher。
+
+```js
+for (const normalizedRecord of normalizedRecords) {
+  
+  // 处理normalizedRecord.path为完整的path
+  const { path } = normalizedRecord
+  // 如果path不是以/开头，那么说明它不是根路由，需要拼接为完整的path
+  // { path: '/a', children: [ { path: 'b' } ] } -> { path: '/a', children: [ { path: '/a/b' } ] }
+  if (parent && path[0] !== '/') {
+    const parentPath = parent.record.path
+    const connectingSlash =
+      parentPath[parentPath.length - 1] === '/' ? '' : '/'
+    normalizedRecord.path =
+      parent.record.path + (path && connectingSlash + path)
+  }
+
+  // 提示*应使用正则表示式形式
+  if (__DEV__ && normalizedRecord.path === '*') {
+    throw new Error(
+      'Catch all routes ("*") must now be defined using a param with a custom regexp.\n' +
+        'See more at https://next.router.vuejs.org/guide/migration/#removed-star-or-catch-all-routes.'
+    )
+  }
+
+  // 创建一个路由记录匹配器
+  matcher = createRouteRecordMatcher(normalizedRecord, parent, options)
+
+  // 检查是否有丢失的参数
+  if (__DEV__ && parent && path[0] === '/')
+    checkMissingParamsInAbsolutePath(matcher, parent)
+
+  // 如果有originalRecord，将matcher放入原始记录的alias中，以便后续能够删除
+  if (originalRecord) {
+    originalRecord.alias.push(matcher)
+    // 检查originalRecord与matcher中动态参数是否相同
+    if (__DEV__) {
+      checkSameParams(originalRecord, matcher)
+    }
+  } else { // 没有originalRecord
+    // 因为原始记录索引为0，所以originalMatcher为有原始记录所产生的matcher
+    originalMatcher = originalMatcher || matcher
+    // 如果matcher不是原始记录产生的matcher，说明此时matcher是由别名记录产生的，此时将matcher放入originalMatcher.alias中
+    if (originalMatcher !== matcher) originalMatcher.alias.push(matcher)
+    // 如果存在record.name并且是顶部记录，则删除路由（避免嵌套调用）
+    if (isRootAdd && record.name && !isAliasRecord(matcher))
+      removeRoute(record.name)
+  }
+
+  // 遍历children，递归addRoute
+  if ('children' in mainNormalizedRecord) {
+    const children = mainNormalizedRecord.children
+    for (let i = 0; i < children.length; i++) {
+      addRoute(
+        children[i],
+        matcher,
+        originalRecord && originalRecord.children[i]
+      )
+    }
+  }
+  // 如果originalRecord是方法传入的，那么originalRecord继续保持
+  // 如果originalRecord方法未传入。由于原始的matcher总是在索引为0的位置，所以如果有别名，那么这些别名的原始matcher会始终指向索引为0的位置
+  originalRecord = originalRecord || matcher
+  // 添加matcher
+  insertMatcher(matcher)
+}
+```
+
+在最后，`addRoute`会返回一个删除原始`matcher`的方法。
+
+在`addRoute`的过程中，会调用`createRouteRecordMatcher`方法来创建`matcher`，那么`matcher`究竟是什么？它是如何被创建的？接下来我们看下`createRouteRecordMatcher`的实现。那么在看`createRouteRecordMatcher`之前，我们先来了解`tokenizePath`、`tokensToParser`这两个函数，因为这两个函数是创建`matcher`的核心。
+`tokenizePath`的作用是将`path`转为一个`token`数组。而`tokensToParser`会根据`token`数组创建一个路径解析器。这里提到了一个`token`的概念，那么什么是`token`呢？我们看下`vue-router`中`token`的类型定义：
+
+```js
+interface TokenStatic {
+  type: TokenType.Static
+  value: string
+}
+
+interface TokenParam {
+  type: TokenType.Param
+  regexp?: string
+  value: string
+  optional: boolean
+  repeatable: boolean
+}
+
+interface TokenGroup {
+  type: TokenType.Group
+  value: Exclude<Token, TokenGroup>[]
+}
+
+export type Token = TokenStatic | TokenParam | TokenGroup
+```
+
+从其类型中我们可以看出token分为三种：
+
+1. `TokenStatic`：一种静态的`token`，说明`token`不可变；
+2. `TokenParam`：参数`token`，说明`token`是个参数；
+3. `TokenGroup`：分组的`token`；
+
+为了更好理解`token`，这里我们举几个例子：
+
+1. `/one/two/three`对应的`token`数组：
+
+```js
+[
+  [{ type: TokenType.Static, value: 'one' }],
+  [{ type: TokenType.Static, value: 'two' }],
+  [{ type: TokenType.Static, value: 'three' }]
+]
+```
+
+2. `/user/:id`对应的`token`数组是：
+
+```js
+[
+  [
+   {
+     type: TokenType.Static,
+     value: 'user',
+   },
+  ],
+  [
+   {
+     type: TokenType.Param,
+     value: 'id',
+     regexp: '',
+     repeatable: false,
+     optional: false,
+   }
+  ]
+]
+```
+
+3. /:id(\\d+)new对应的token数组：
+
+   ```js
+   [
+     [
+    {
+      type: TokenType.Param,
+      value: 'id',
+      regexp: '\\d+',
+      repeatable: false,
+      optional: false,
+    },
+    {
+      type: TokenType.Static,
+      value: 'new'
+    }
+     ]
+   ]
+   ```
+
+从上面几个例子可以看出，`token`数组详细描述了`path`的每一级路由的组成。例如第3个例子`/:id(\\d+)new`，通过`token`数组我们能够知道他是一个一级路由`（token.lenght = 1）`，并且它的这级路由是由两部分组成，其中第一部分是参数部分，第二部分是静态的，并且在参数部分还说明了参数的正则及是否重复、是否可选的配置。
+
+接下来我们看下`tokenizePath`是如何将`path`转为`token`的：
+
+##### 6.2.1.1. tokenizePath
+
+`tokenizePath`的过程就是利用[有限状态自动机](https://zh.wikipedia.org/wiki/有限状态机)生成token数组。
+
+```js
+export const enum TokenType {
+  Static,
+  Param,
+  Group,
+}
+
+const ROOT_TOKEN: Token = {
+  type: TokenType.Static,
+  value: '',
+}
+
+export function tokenizePath(path: string): Array<Token[]> {
+  if (!path) return [[]]
+  if (path === '/') return [[ROOT_TOKEN]]
+  // 如果path不是以/开头，抛出错误
+  if (!path.startsWith('/')) {
+    throw new Error(
+      __DEV__
+        ? `Route paths should start with a "/": "${path}" should be "/${path}".`
+        : `Invalid path "${path}"`
+    )
+  }
+  
+  function crash(message: string) {
+    throw new Error(`ERR (${state})/"${buffer}": ${message}`)
+  }
+
+  // token所处状态
+  let state: TokenizerState = TokenizerState.Static
+  // 前一个状态
+  let previousState: TokenizerState = state
+  const tokens: Array<Token[]> = []
+  //  声明一个片段，该片段最终会被存入tokens中
+  let segment!: Token[]
+
+  // 添加segment至tokens中，同时segment重新变为空数组
+  function finalizeSegment() {
+    if (segment) tokens.push(segment)
+    segment = []
+  }
+
+  let i = 0
+  let char: string
+  let buffer: string = ''
+  // custom regexp for a param
+  let customRe: string = ''
+
+  // 消费buffer，即生成token添加到segment中
+  function consumeBuffer() {
+    if (!buffer) return
+
+    if (state === TokenizerState.Static) {
+      segment.push({
+        type: TokenType.Static,
+        value: buffer,
+      })
+    } else if (
+      state === TokenizerState.Param ||
+      state === TokenizerState.ParamRegExp ||
+      state === TokenizerState.ParamRegExpEnd
+    ) {
+      if (segment.length > 1 && (char === '*' || char === '+'))
+        crash(
+          `A repeatable param (${buffer}) must be alone in its segment. eg: '/:ids+.`
+        )
+      segment.push({
+        type: TokenType.Param,
+        value: buffer,
+        regexp: customRe,
+        repeatable: char === '*' || char === '+',
+        optional: char === '*' || char === '?',
+      })
+    } else {
+      crash('Invalid state to consume buffer')
+    }
+    // 消费完后置空
+    buffer = ''
+  }
+
+  function addCharToBuffer() {
+    buffer += char
+  }
+
+  // 遍历path
+  while (i < path.length) {
+    char = path[i++]
+
+    // path='/\\:'
+    if (char === '\\' && state !== TokenizerState.ParamRegExp) {
+      previousState = state
+      state = TokenizerState.EscapeNext
+      continue
+    }
+
+    switch (state) {
+      case TokenizerState.Static:
+        if (char === '/') {
+          if (buffer) {
+            consumeBuffer()
+          }
+          // char === /时说明已经遍历完一层路由，这时需要将segment添加到tokens中
+          finalizeSegment()
+        } else if (char === ':') { // char为:时，因为此时状态是TokenizerState.Static，所以:后是参数，此时要把state变为TokenizerState.Param
+          consumeBuffer()
+          state = TokenizerState.Param
+        } else { // 其他情况拼接buffer
+          addCharToBuffer()
+        }
+        break
+
+      case TokenizerState.EscapeNext:
+        addCharToBuffer()
+        state = previousState
+        break
+
+      case TokenizerState.Param:
+        if (char === '(') { // 碰到(，因为此时state为TokenizerState.Param，说明后面是正则表达式，所以修改state为TokenizerState.ParamRegExp
+          state = TokenizerState.ParamRegExp
+        } else if (VALID_PARAM_RE.test(char)) {
+          addCharToBuffer()
+        } else { // 例如/:id/one，当遍历到第二个/时，消费buffer，state变为Static，并让i回退，回退后进入Static
+          consumeBuffer()
+          state = TokenizerState.Static
+          if (char !== '*' && char !== '?' && char !== '+') i--
+        }
+        break
+
+      case TokenizerState.ParamRegExp: 
+        // it already works by escaping the closing )
+        // TODO: is it worth handling nested regexp? like :p(?:prefix_([^/]+)_suffix)
+        // https://paths.esm.dev/?p=AAMeJbiAwQEcDKbAoAAkP60PG2R6QAvgNaA6AFACM2ABuQBB#
+        // is this really something people need since you can also write
+        // /prefix_:p()_suffix
+        if (char === ')') {
+          // 如果是\\)的情况,customRe = customRe去掉\\ + char
+          if (customRe[customRe.length - 1] == '\\')
+            customRe = customRe.slice(0, -1) + char
+          else state = TokenizerState.ParamRegExpEnd // 如果不是\\)说明正则表达式已经遍历完
+        } else {
+          customRe += char
+        }
+        break
+
+      case TokenizerState.ParamRegExpEnd: // 正则表达式已经遍历完
+        // 消费buffer
+        consumeBuffer()
+        // 重置state为Static
+        state = TokenizerState.Static
+        // 例如/:id(\\d+)new，当遍历到n时，使i回退，下一次进入Static分支中处理
+        if (char !== '*' && char !== '?' && char !== '+') i--
+        customRe = ''
+        break
+
+      default:
+        crash('Unknown state')
+        break
+    }
+  }
+
+  // 如果遍历结束后，state还是ParamRegExp状态，说明正则是没有结束的，可能漏了)
+  if (state === TokenizerState.ParamRegExp)
+    crash(`Unfinished custom RegExp for param "${buffer}"`)
+
+  // 遍历完path，进行最后一次消费buffer
+  consumeBuffer()
+  // 将segment放入tokens
+  finalizeSegment()
+
+  // 最后返回tokens
+  return tokens
+}
+```
+
+为了更好理解`tokenizePath`的过程。我们以`path = '/:id(\\d+)new'`例，我们看一下`tokenizePath`的过程：
+
+1. 初始状态：
+
+```js
+state=TokenizerState.Static;
+previousState=TokenizerState.Static;
+tokens=[];
+segment;
+buffer='';
+i=0;
+char='';
+customRe='';
+```
+
+2. 当`i=0`时，进入`TokenizerState.Static`分支，此时`char='/'`; `buffer='';`，不会执行`consumeBuffer`，执行`finalizeSegment`，该轮结束后发生变化的是：
+
+```js
+segment=[];
+i=1;
+char='/';
+```
+
+3. 当`i=1`时，进入`TokenizerState.Static`分支，此时`char=':';` `buffer='';`，执行`consumeBuffer`，因为`buffer=''`，所以`consumeBuffer`中什么都没做，最后`state=TokenizerState.Param`，该轮结束后发生变化的是：
+
+```js
+state=TokenizerState.Param;
+i=2;
+char=':';
+```
+
+4. 当i=2时，进入TokenizerState.Param分支，此时char='i'; buffer='';，执行addCharToBuffer，该轮结束后发生变化的是：
+
+```js
+buffer='i';
+i=3;
+char='i';
+```
+
+5. 当`i=3`时，过程同4，该轮结束后发生变化的是：
+
+```js
+buffer='id';
+i=4;
+char='d';
+```
+
+6. 当`i=4`时，进入`TokenizerState.Param`分支，此时`char='('`; `buffer='id';`，此时会将state变为`TokenizerState.ParamRegExp`，说明(后面是正则，该轮结束后发生变化的是：
+
+```js
+state=TokenizerState.ParamRegExp;
+i=5;
+char='(';
+```
+
+7. 当i=5时，进入TokenizerState.ParamRegExp分支，此时char='\\'; buffer='id';，执行customRe+=char，该轮结束后发生变化的是：
+
+```js
+char='\\';
+i=6;
+customRe='\\'
+```
+
+8. 当i=6、i=7时，过程同5，最终发生变化的是：
+
+```js
+i=8;
+char='+';
+customRe='\\d+'
+```
+
+9. 当i=8时，进入TokenizerState.ParamRegExp分支，此时char=')'; buffer='id'; customRe='\\d+'，state变为TokenizerState.ParamRegExpEnd，代表正则结束，该轮结束后发生变化的是：
+
+```js
+state=TokenizerState.ParamRegExpEnd;
+i=9;
+char=')';
+```
+
+10. 当i=9时，进入TokenizerState.ParamRegExpEnd分支，此时char='n'; buffer='id'; customRe='\\d+'，执行consumeBuffer，在consumeBuffer中会向segment添加一条token并将buffer置为空字符串，该token是{type: TokenType.Param, value: 'id', regexp: '\\d+', repeatable: false, optional: false}，执行完consumeBuffer后，state重置为Static，customRe重置为空字符串，i回退1，该轮结束后发生变化的是segment=[{...}]; 
+
+```js
+state=TokenizerState.ParamRegExpEnd;
+i=9; // 注意此时i=9
+char=')';
+state=TokenizerState.Static;
+buffer='';
+customRe='';
+char='n';，
+```
+
+11. 上一轮结束后i=9，进入TokenizerState.Static分支，此时此时char='n'; buffer='';，执行addCharToBuffer方法，该轮结束后发生变化的是：
+
+```js
+buffer='n';
+i=10;
+char='n'
+```
+
+12. 当i=10、i=11时，过程同11，结束后发生变化的是:
+
+```js
+buffer='new';
+i=12;
+char='w'
+```
+13. 当i=12，结束遍历，执行consumeBuffer，向segment添加{type: TokenType.Static, value: 'new'}一条记录并将buffer置为空字符串。然后执行finalizeSegment，将segment添加到tokens中，并将segment置为空数组。最后返回的tokens如下：
+
+```js
+[
+  [
+ {
+   type: TokenType.Param,
+   value: 'id',
+   regexp: '\\d+',
+   repeatable: false,
+   optional: false,
+ },
+ {
+   type: TokenType.Static,
+   value: 'new'
+ }
+  ]
+]
+```
+状态转移过程图示：
+
+<img src="/Volumes/F/zyl-study/web-zhuawa/20221203/vue3-状态转移过程.png" alt="vue3-状态转移过程" style="zoom:67%;" />
+
+##### 6.2.1.2 tokensToParser
+
+tokensToParser函数接收一个token数组和一个可选的extraOptions，在函数中会构造出path对应的正则表达式、动态参数列表keys、token对应的分数（相当于权重，该分数在后续path的比较中会用到）、一个可以从path中提取动态参数的函数（parse）、一个可以根据传入的动态参数生成path的函数（stringify），最后将其组成一个对象返回：
+
+```js
+const enum PathScore {
+  _multiplier = 10,
+  Root = 9 * _multiplier, // 只有一个/时的分数
+  Segment = 4 * _multiplier, // segment的基础分数
+  SubSegment = 3 * _multiplier, // /multiple-:things-in-one-:segment
+  Static = 4 * _multiplier, // type=TokenType.Static时的分数
+  Dynamic = 2 * _multiplier, // 动态参数分数 /:someId
+  BonusCustomRegExp = 1 * _multiplier, // 用户自定义正则的分数 /:someId(\\d+) 
+  BonusWildcard = -4 * _multiplier - BonusCustomRegExp, // /:namedWildcard(.*) we remove the bonus added by the custom regexp
+  BonusRepeatable = -2 * _multiplier, // 当正则是可重复时的分数 /:w+ or /:w*
+  BonusOptional = -0.8 * _multiplier, // 当正则是可选择时的分数 /:w? or /:w*
+  // these two have to be under 0.1 so a strict /:page is still lower than /:a-:b
+  BonusStrict = 0.07 * _multiplier, // options.strict: true时的分数
+  BonusCaseSensitive = 0.025 * _multiplier, // options.strict:true时的分数
+}
+const BASE_PATH_PARSER_OPTIONS: Required<_PathParserOptions> = {
+  sensitive: false,
+  strict: false,
+  start: true,
+  end: true,
+}
+const REGEX_CHARS_RE = /[.+*?^${}()[\]/\\]/g
+export function tokensToParser(
+  segments: Array<Token[]>,
+  extraOptions?: _PathParserOptions
+): PathParser {
+  const options = assign({}, BASE_PATH_PARSER_OPTIONS, extraOptions)
+
+  // 除了根段“/”之外，分数的数量与segments的长度相同
+  const score: Array<number[]> = []
+  // 正则的字符串形式
+  let pattern = options.start ? '^' : ''
+  // 保存路由中的动态参数
+  const keys: PathParserParamKey[] = []
+
+  for (const segment of segments) {
+    // 用一个数组保存token的分数，如果segment.length为0，使用PathScore.Root
+    const segmentScores: number[] = segment.length ? [] : [PathScore.Root]
+
+    // options.strict代表是否禁止尾部/，如果禁止了pattern追加/
+    if (options.strict && !segment.length) pattern += '/'
+    // 开始遍历每个token
+    for (let tokenIndex = 0; tokenIndex < segment.length; tokenIndex++) {
+      const token = segment[tokenIndex]
+      // 当前子片段（单个token）的分数：基础分数+区分大小写 ? PathScore.BonusCaseSensitive : 0
+      let subSegmentScore: number =
+        PathScore.Segment +
+        (options.sensitive ? PathScore.BonusCaseSensitive : 0)
+
+      if (token.type === TokenType.Static) {
+        // 在开始一个新的片段（tokenIndex !== 0）前pattern需要添加/
+        if (!tokenIndex) pattern += '/'
+        // 将token.value追加到pattern后。追加前token.value中的.、+、*、?、^、$等字符前面加上\\
+        // 关于replace，参考MDN：https://developer.mozilla.org/zh-CN/docs/Web/JavaScript/Reference/Global_Objects/String/replace
+        pattern += token.value.replace(REGEX_CHARS_RE, '\\$&')
+        subSegmentScore += PathScore.Static
+      } else if (token.type === TokenType.Param) {
+        const { value, repeatable, optional, regexp } = token
+        // 添加参数
+        keys.push({
+          name: value,
+          repeatable,
+          optional,
+        })
+        const re = regexp ? regexp : BASE_PARAM_PATTERN
+        // 用户自定义的正则需要验证正则的正确性
+        if (re !== BASE_PARAM_PATTERN) {
+          subSegmentScore += PathScore.BonusCustomRegExp
+          // 使用前确保正则是正确的
+          try {
+            new RegExp(`(${re})`)
+          } catch (err) {
+            throw new Error(
+              `Invalid custom RegExp for param "${value}" (${re}): ` +
+                (err as Error).message
+            )
+          }
+        }
+
+        // /:chapters*
+        // 如果是重复的，必须注意重复的前导斜杠
+        let subPattern = repeatable ? `((?:${re})(?:/(?:${re}))*)` : `(${re})`
+
+        // prepend the slash if we are starting a new segment
+        if (!tokenIndex)
+          subPattern =
+            // avoid an optional / if there are more segments e.g. /:p?-static
+            // or /:p?-:p2
+            optional && segment.length < 2
+              ? `(?:/${subPattern})`
+              : '/' + subPattern
+        if (optional) subPattern += '?'
+
+        pattern += subPattern
+
+        subSegmentScore += PathScore.Dynamic
+        if (optional) subSegmentScore += PathScore.BonusOptional
+        if (repeatable) subSegmentScore += PathScore.BonusRepeatable
+        if (re === '.*') subSegmentScore += PathScore.BonusWildcard
+      }
+
+      segmentScores.push(subSegmentScore)
+    }
+
+    score.push(segmentScores)
+  }
+
+  // only apply the strict bonus to the last score
+  if (options.strict && options.end) {
+    const i = score.length - 1
+    score[i][score[i].length - 1] += PathScore.BonusStrict
+  }
+
+  // TODO: dev only warn double trailing slash
+  if (!options.strict) pattern += '/?'
+
+  if (options.end) pattern += '$'
+  // allow paths like /dynamic to only match dynamic or dynamic/... but not dynamic_something_else
+  else if (options.strict) pattern += '(?:/|$)'
+
+  // 根据组装好的pattern创建正则表达式，options.sensitive决定是否区分大小写
+  const re = new RegExp(pattern, options.sensitive ? '' : 'i')
+
+  // 根据path获取动态参数对象
+  function parse(path: string): PathParams | null {
+    const match = path.match(re)
+    const params: PathParams = {}
+
+    if (!match) return null
+
+    for (let i = 1; i < match.length; i++) {
+      const value: string = match[i] || ''
+      const key = keys[i - 1]
+      params[key.name] = value && key.repeatable ? value.split('/') : value
+    }
+
+    return params
+  }
+
+  // 根据传入的动态参数对象，转为对应的path
+  function stringify(params: PathParams): string {
+    let path = ''
+    // for optional parameters to allow to be empty
+    let avoidDuplicatedSlash: boolean = false
+    for (const segment of segments) {
+      if (!avoidDuplicatedSlash || !path.endsWith('/')) path += '/'
+      avoidDuplicatedSlash = false
+
+      for (const token of segment) {
+        if (token.type === TokenType.Static) {
+          path += token.value
+        } else if (token.type === TokenType.Param) {
+          const { value, repeatable, optional } = token
+          const param: string | string[] = value in params ? params[value] : ''
+
+          if (Array.isArray(param) && !repeatable)
+            throw new Error(
+              `Provided param "${value}" is an array but it is not repeatable (* or + modifiers)`
+            )
+          const text: string = Array.isArray(param) ? param.join('/') : param
+          if (!text) {
+            if (optional) {
+              // if we have more than one optional param like /:a?-static and there are more segments, we don't need to
+              // care about the optional param
+              if (segment.length < 2 && segments.length > 1) {
+                // remove the last slash as we could be at the end
+                if (path.endsWith('/')) path = path.slice(0, -1)
+                // do not append a slash on the next iteration
+                else avoidDuplicatedSlash = true
+              }
+            } else throw new Error(`Missing required param "${value}"`)
+          }
+          path += text
+        }
+      }
+    }
+
+    return path
+  }
+
+  return {
+    re,
+    score,
+    keys,
+    parse,
+    stringify,
+  }
+}
+```
+然后我们来看createRouteRecordMatcher的实现
+
+```js
+export function createRouteRecordMatcher(
+  record: Readonly<RouteRecord>,
+  parent: RouteRecordMatcher | undefined,
+  options?: PathParserOptions
+): RouteRecordMatcher {
+  // 生成parser对象
+  const parser = tokensToParser(tokenizePath(record.path), options)
+
+  // 如果有重复的动态参数命名进行提示
+  if (__DEV__) {
+    const existingKeys = new Set<string>()
+    for (const key of parser.keys) {
+      if (existingKeys.has(key.name))
+        warn(
+          `Found duplicated params with name "${key.name}" for path "${record.path}". Only the last one will be available on "$route.params".`
+        )
+      existingKeys.add(key.name)
+    }
+  }
+
+  // 将record，parent合并到parser中，同时新增children，alias属性，默认值为空数组
+  const matcher: RouteRecordMatcher = assign(parser, {
+    record,
+    parent,
+    // these needs to be populated by the parent
+    children: [],
+    alias: [],
+  })
+
+  if (parent) {
+    // 两者都是alias或两者都不是alias
+    if (!matcher.record.aliasOf === !parent.record.aliasOf)
+      parent.children.push(matcher)
+  }
+
+  return matcher
+}
+```
+#### 6.2.2 resolve
+
+resolve根据传入的location进行路由匹配，找到对应的matcher的路由信息。方法接收一个location和currentLocation参数，返回一个MatcherLocation类型的对象，该对象的属性包含：name、path、params、matched、meta：
+
+```js
+function resolve(
+    location: Readonly<MatcherLocationRaw>,
+    currentLocation: Readonly<MatcherLocation>
+  ): MatcherLocation {
+    let matcher: RouteRecordMatcher | undefined
+    let params: PathParams = {}
+    let path: MatcherLocation['path']
+    let name: MatcherLocation['name']
+
+    if ('name' in location && location.name) { // 如果location存在name属性，可根据name从matcherMap获取matcher
+      matcher = matcherMap.get(location.name)
+
+      if (!matcher)
+        throw createRouterError<MatcherError>(ErrorTypes.MATCHER_NOT_FOUND, {
+          location,
+        })
+
+      name = matcher.record.name
+      // 合并location.params和currentLocation中的params
+      params = assign(
+        paramsFromLocation(
+          currentLocation.params,
+          matcher.keys.filter(k => !k.optional).map(k => k.name)
+        ),
+        location.params
+      )
+      // 如果不能通过params转为path抛出错误
+      path = matcher.stringify(params)
+    } else if ('path' in location) { // 如果location存在path属性，根据path从matchers获取对应matcher
+      path = location.path
+
+      if (__DEV__ && !path.startsWith('/')) {
+        warn(
+          `The Matcher cannot resolve relative paths but received "${path}". Unless you directly called \`matcher.resolve("${path}")\`, this is probably a bug in vue-router. Please open an issue at https://new-issue.vuejs.org/?repo=vuejs/router.`
+        )
+      }
+
+      matcher = matchers.find(m => m.re.test(path))
+
+      if (matcher) {
+        // 通过parse函数获取params
+        params = matcher.parse(path)!
+        name = matcher.record.name
+      }
+    } else { // 如果location中没有name、path属性，就使用currentLocation的name或path获取matcher
+      matcher = currentLocation.name
+        ? matcherMap.get(currentLocation.name)
+        : matchers.find(m => m.re.test(currentLocation.path))
+      if (!matcher)
+        throw createRouterError<MatcherError>(ErrorTypes.MATCHER_NOT_FOUND, {
+          location,
+          currentLocation,
+        })
+      name = matcher.record.name
+      params = assign({}, currentLocation.params, location.params)
+      path = matcher.stringify(params)
+    }
+
+    // 使用一个数组存储匹配到的所有路由
+    const matched: MatcherLocation['matched'] = []
+    let parentMatcher: RouteRecordMatcher | undefined = matcher
+    while (parentMatcher) {
+      // 父路由始终在数组的开头
+      matched.unshift(parentMatcher.record)
+      parentMatcher = parentMatcher.parent
+    }
+
+    return {
+      name,
+      path,
+      params,
+      matched,
+      meta: mergeMetaFields(matched),
+    }
+  }
+```
+
+#### 6.2.3 removeRoute
+
+删除路由。接收一个matcherRef参数，removeRoute会将matcherRef对应的matcher从matcherMap和matchers中删除，并清空matcherRef对应matcher的children与alias属性。由于matcherRef对应的matcher被删除后，其子孙及别名也就没用了，也需要把他们从matcherMap中和matchers中删除:
+
+```js
+function removeRoute(matcherRef: RouteRecordName | RouteRecordMatcher) {
+  // 如果是路由名字：string或symbol
+  if (isRouteName(matcherRef)) {
+    const matcher = matcherMap.get(matcherRef)
+    if (matcher) {
+      // 删除matcher
+      matcherMap.delete(matcherRef)
+      matchers.splice(matchers.indexOf(matcher), 1)
+      // 清空matcher中的children与alias，
+      matcher.children.forEach(removeRoute)
+      matcher.alias.forEach(removeRoute)
+    }
+  } else {
+    const index = matchers.indexOf(matcherRef)
+    if (index > -1) {
+      matchers.splice(index, 1)
+      if (matcherRef.record.name) matcherMap.delete(matcherRef.record.name)
+      matcherRef.children.forEach(removeRoute)
+      matcherRef.alias.forEach(removeRoute)
+    }
+  }
+}
+```
+
+#### 6.2.4 getRoutes
+获取所有matcher：
+
+```js
+function getRoutes() {
+  return matchers
+}
+```
+
+#### 6.2.5 getRecordMatcher
+根据路由名获取对应matcher：
+
+```js
+function getRecordMatcher(name: RouteRecordName) {
+  return matcherMap.get(name)
+}
+```
+#### 6.2.6 insertMatcher
+在添加matcher时，并不是直接matchers.add，而是根据matcher.score进行排序。比较分数时根据数组中的每一项挨个比较，不是比较总分：
+
+```js
+function insertMatcher(matcher: RouteRecordMatcher) {
+  let i = 0
+  while (
+    i < matchers.length &&
+    // matcher与matchers[i]比较，matchers[i]应该在前面
+    comparePathParserScore(matcher, matchers[i]) >= 0 &&
+    // matcher的path与matchers[i]不同或matcher不是matchers[i]的孩子
+    (matcher.record.path !== matchers[i].record.path ||
+      !isRecordChildOf(matcher, matchers[i]))
+  )
+    i++
+  // 插入matcher
+  matchers.splice(i, 0, matcher)
+  // 只添加原始matcher到map中
+  if (matcher.record.name && !isAliasRecord(matcher))
+    matcherMap.set(matcher.record.name, matcher)
+}
+```
+
+```js
+
+// 返回0表示a与b相等；返回>0，b先排序；返回<0，a先排序
+export function comparePathParserScore(a: PathParser, b: PathParser): number {
+  let i = 0
+  const aScore = a.score
+  const bScore = b.score
+  while (i < aScore.length && i < bScore.length) {
+    const comp = compareScoreArray(aScore[i], bScore[i])
+    if (comp) return comp
+
+    i++
+  }
+
+  return bScore.length - aScore.length
+}
+
+function compareScoreArray(a: number[], b: number[]): number {
+  let i = 0
+  while (i < a.length && i < b.length) {
+    const diff = b[i] - a[i]
+    // 一旦a与b对位索引对应的值有差值，直接返回
+    if (diff) return diff
+
+    i++
+  }
+  if (a.length < b.length) {
+      // 如果a.length为1且第一个值的分数为PathScore.Static + PathScore.Segment，返回-1，表示a先排序，否则返回1，表示b先排序
+    return a.length === 1 && a[0] === PathScore.Static + PathScore.Segment
+      ? -1
+      : 1
+  } else if (a.length > b.length) {
+    // 如果b.length为1且第一个值的分数为PathScore.Static + PathScore.Segment，返回-1，表示b先排序，否则返回1，表示a先排序
+    return b.length === 1 && b[0] === PathScore.Static + PathScore.Segment
+      ? 1
+      : -1
+  }
+
+  return 0
+}
+```
+假设matcherA是需要添加的，matchers中此时只有一个matcherB，matcherA.score=[[1, 2]]，matcherB.score=[[1,3]]，那么matcherA是怎么添加到matchers中的呢？过程如下：
+初始化matchers索引i=0；
+首先比较matcherA.score[0][0]与matcherB.score[0][0]，matcherB.score[0][0]-matcherA.score[0][0] === 0继续比较；
+matcherA.score[0][1]与matcherB.score[0][1]，因为matcherB.score[0][1]-matcherA.score[0][1] > 0，i++；
+i=1时，由于i=matchers.length，结束循环；
+执行matchers.splice(i, 0, matcher)，此时i=1,所以matcherA会被添加到索引为1的位置；
+如果matcherA.score=[[1,3,4]]呢？ 在比较时因为前两个索引对应的值都是一样的，这时会进入compareScoreArray的以下分支：
+
+```js
+
+if (a.length > b.length) {
+  return b.length === 1 && b[0] === PathScore.Static + PathScore.Segment
+    ? 1
+    : -1
+}
+
+```
+
+以上结果返回-1，matcherA会被添加索引为0的位置
+
+如果matcherA.score=[[1]]，进入compareScoreArray的以下分支：
+
+```js
+ 
+ if (a.length < b.length) {
+  return a.length === 1 && a[0] === PathScore.Static + PathScore.Segment
+    ? -1
+    : 1
+}
+
+```
+
+因为matcherA.score[0].length === 1，这时就需要考虑token的类型里，假设token是个Static类型的，那么返回-1，matcherA添加到索引为0的位置。如果token不是Static类型的，返回1，matcherA添加到索引为1的位置。
+所以insertMatcher，会将权重高的matcher放在matchers前面；matcherMap中只存放原始matcher。
+
+### 6.3 总结
+
+经过上面分析，我们知道了matcher是什么，如何实现的。
+在vue-router通过matcher完成路由的匹配、增删改查等操作，其中会使用matchers和matcherMap来存储matcher。matchers中权重（分数）高的matcher优先；matcherMap中的key是注册路由时路由表的name，只存放原始matcher。
+matcher中包含了路由path对应的正则re、路由的分数score、动态参数列表keys、可从path中提取动态参数的parse(path)函数、可传入参数对象将其转为对应path的stringify(param)函数、父matcher（parent）、路由的标准化版本record、子matcher（children）、由别名产生的matcher（alias）：
+
+```typescript
+export interface PathParser {
+  re: RegExp
+  score: Array<number[]>
+  keys: PathParserParamKey[]
+  parse(path: string): PathParams | null
+  stringify(params: PathParams): string
+}
+export interface RouteRecordMatcher extends PathParser {
+  record: RouteRecord
+  parent: RouteRecordMatcher | undefined
+  children: RouteRecordMatcher[]
+  // aliases that must be removed when removing this record
+  alias: RouteRecordMatcher[]
+}
+
+```
+
+在生成matcher的过程中会将patch转换成token数组（二维数组，第一维度中每个维度代表一级路由，第二维度中每个维度代表路由的组成），路由正则的生成、动态参数的的提取、分数的计算、stringify全都依托这个token数组实现
+
+
+## 7.createRouter解析
+### 7.1 使用demo
+
+```js
+const routerHistory = createWebHistory()
+export const router = createRouter({
+  history: routerHistory,
+  strict: true,
+  routes: [
+    { path: '/home', redirect: '/' },
+    {
+      path: '/',
+      components: { default: Home, other: component },
+      props: { default: to => ({ waited: to.meta.waitedFor }) },
+    },
+    {
+      path: '/nested',
+      alias: '/anidado',
+      component: Nested,
+      name: 'Nested',
+      children: [
+        {
+          path: 'nested',
+          alias: 'a',
+          name: 'NestedNested',
+          component: Nested,
+          children: [
+            {
+              name: 'NestedNestedNested',
+              path: 'nested',
+              component: Nested,
+            },
+          ],
+        },
+        {
+          path: 'other',
+          alias: 'otherAlias',
+          component: Nested,
+          name: 'NestedOther',
+        },
+        {
+          path: 'also-as-absolute',
+          alias: '/absolute',
+          name: 'absolute-child',
+          component: Nested,
+        },
+      ],
+    },
+  ],
+  async scrollBehavior(to, from, savedPosition) {
+    await scrollWaiter.wait()
+    if (savedPosition) {
+      return savedPosition
+    } else {
+      if (to.matched.every((record, i) => from.matched[i] !== record))
+        return { left: 0, top: 0 }
+    }
+    return false
+  },
+})
+
+```
+
+### 7.2 createRouter
+
+在分析createRouter之前，先来看下它的参数类型
+
+```typescript
+ export interface _PathParserOptions {
+  // 使用正则时区分大小写，默认false
+  sensitive?: boolean
+  // 是否禁止尾随斜杠，默认false
+  strict?: boolean
+  // 正则表达式前应该加^，默认true
+  start?: boolean
+  // 正则表达式以$结尾，默认为true
+  end?: boolean
+}
+
+export type PathParserOptions = Pick<
+  _PathParserOptions,
+  'end' | 'sensitive' | 'strict'
+  >
+
+export interface RouterOptions extends PathParserOptions {
+  history: RouterHistory
+  // 路由表
+  routes: RouteRecordRaw[]
+  // 在页面之间导航时控制滚动行为。可以返回一个 Promise 来延迟滚动。
+  scrollBehavior?: RouterScrollBehavior
+  // 用于自定义如何解析query
+  parseQuery?: typeof originalParseQuery
+  // 用于自定义查询对象如何转为字符串
+  stringifyQuery?: typeof originalStringifyQuery
+  // 激活RouterLink的默认类
+  linkActiveClass?: string
+  // 精准激活RouterLink的默认类
+  linkExactActiveClass?: string
+}
+
+```
+
+我们来看下createRouter具体做了什么。createRouter方法共885（包含空行）行，乍一看可能会觉得方法很复杂，仔细观察，其实很大一部分代码都是声明一些函数。我们可以先暂时抛开这些函数声明看其余部分。
+首先会使用createRouterMatcher方法创建了一个路由匹配器matcher，从options中提取parseQuery、stringifyQuery、history属性，如果options中没有history，抛出错误。
+
+```typescript
+
+const matcher = createRouterMatcher(options.routes, options)
+const parseQuery = options.parseQuery || originalParseQuery
+const stringifyQuery = options.stringifyQuery || originalStringifyQuery
+const routerHistory = options.history
+if (__DEV__ && !routerHistory)
+    throw new Error(
+      'Provide the "history" option when calling "createRouter()":' +
+        ' https://next.router.vuejs.org/api/#history.'
+    )
+
+```
+
+紧接着声明了一些全局守卫相关的变量，和一些关于params的处理方法，其中有关全局守卫的变量都是通过useCallbacks创建的，params相关方法通过applyToParams创建。
+
+```js
+// 全局前置守卫相关方法
+const beforeGuards = useCallbacks<NavigationGuardWithThis<undefined>>()
+// 全局解析守卫相关方法
+const beforeResolveGuards = useCallbacks<NavigationGuardWithThis<undefined>>()
+// 全局后置钩子方法
+const afterGuards = useCallbacks<NavigationHookAfter>()
+
+// 当前路由，浅层响应式对象
+const currentRoute = shallowRef<RouteLocationNormalizedLoaded>(
+  START_LOCATION_NORMALIZED
+)
+let pendingLocation: RouteLocation = START_LOCATION_NORMALIZED
+
+// 如果浏览器环境下设置了scrollBehavior，那么需要防止页面自动恢复页面位置
+// https://developer.mozilla.org/zh-CN/docs/Web/API/History/scrollRestoration
+if (isBrowser && options.scrollBehavior && 'scrollRestoration' in history) {
+  history.scrollRestoration = 'manual'
+}
+
+// 标准化params，转字符串
+const normalizeParams = applyToParams.bind(
+  null,
+  paramValue => '' + paramValue
+)
+// 编码param
+const encodeParams = applyToParams.bind(null, encodeParam)
+// 解码params
+const decodeParams: (params: RouteParams | undefined) => RouteParams =
+  applyToParams.bind(null, decode)
+
+```
+
+关于useCallbacks的实现：在useCallbacks中声明一个handlers数组用来保存所有添加的方法，useCallbacks的返回值中包括三个方法：add（添加一个handler，并返回一个删除handler的函数）、list（返回所有handler）、reset（清空所有handler）
+
+```js
+export function useCallbacks<T>() {
+  let handlers: T[] = []
+
+  function add(handler: T): () => void {
+    handlers.push(handler)
+    return () => {
+      const i = handlers.indexOf(handler)
+      if (i > -1) handlers.splice(i, 1)
+    }
+  }
+
+  function reset() {
+    handlers = []
+  }
+
+  return {
+    add,
+    list: () => handlers,
+    reset,
+  }
+}
+
+```
+applyToParams的实现：接收一个处理函数和params对象，遍历params对象，并对每一个属性值执行fn并将结果赋给一个新的对象：
+
+```js
+
+export function applyToParams(
+  fn: (v: string | number | null | undefined) => string,
+  params: RouteParamsRaw | undefined
+): RouteParams {
+  const newParams: RouteParams = {}
+
+  for (const key in params) {
+    const value = params[key]
+    newParams[key] = Array.isArray(value) ? value.map(fn) : fn(value)
+  }
+
+  return newParams
+}
+
+```
+
+然后声明了大量的函数，包括addRoute、removeRoute、getRoutes等，这些函数也就是我们日常使用的addRoute、removeRoute等。
+在createRouter的最后创建了一个router对象，并将其返回，该对象几乎包含了声明的所有函数。
+
+### 7.3 总结
+
+createRouter函数中声明了一些全局钩子所需的变量和很多函数，这些函数就是我们日常使用的一些方法，如addRoute、removeRoute等，在函数的最后，声明了一个router对象，前面所声明的函数多数都会被包含在这个对象里，最终会将router返回。
+
+## 8 createRouter内置方法解析
+
+这里分析分析router.addRoute、router.removeRoute、router.hasRoute、router.getRoutes的实现。
+### 8.1 使用
+
+1. addRoute：当使用addRoute添加路由时，如果第一个参数为路由name，那么会添加一个嵌套路由；否则添加的是个非嵌套路由。
+
+```js
+
+// 添加非嵌套路由
+router.addRoute({ name: 'admin', path: '/admin', component: Admin })
+// 添加嵌套路由
+router.addRoute('admin', { path: 'settings', component: AdminSettings })
+
+```
+
+以上代码等同于：
+
+```js
+
+router.addRoute({
+  name: 'admin',
+  path: '/admin',
+  component: Admin,
+  children: [{ path: 'settings', component: AdminSettings }],
+})
+
+```
+
+2. remove Router
+
+```js
+router.removeRoute('admin')
+
+```
+3. hashRoute
+
+```js
+
+router.hasRoute('admin')
+
+```
+- getRoutes
+
+```js
+
+router.getRoutes()
+
+```
+### 8.2 addRoute
+
+addRoute可接受两个参数：parentOrRoute（父路由的name或一个新的路由，如果是父路由的name，name第二个参数是必须的）、record（要添加的路由）。返回一个删除新增路由的函数。
+
+```js
+
+function addRoute(
+    parentOrRoute: RouteRecordName | RouteRecordRaw,
+    route?: RouteRecordRaw
+  ) {
+    let parent: Parameters<typeof matcher['addRoute']>[1] | undefined
+    let record: RouteRecordRaw
+    // 如果parentOrRoute是路由名称，parent为parentOrRoute对应的matcher，被添加的route是个嵌套路由
+    if (isRouteName(parentOrRoute)) {
+      parent = matcher.getRecordMatcher(parentOrRoute)
+      record = route!
+    } else { // 如果parentOrRoute不是路由名称，parentOrRoute就是要添加的路由
+      record = parentOrRoute
+    }
+
+    // 调用matcher.addRoute添加新的记录，返回一个移除路由的函数
+    return matcher.addRoute(record, parent)
+  }
+
+
+```
+
+在定义parent时，使用了一个Paramerer<Type>类型，对于该类型的使用可参考这里。在该方法中，parent的类型会取matcher.addRoute方法中的第2个参数的类型。
+isRouteName：通过判断name是否为string或symbol类型，来决定是不是routeName。
+```js
+export function isRouteName(name: any): name is RouteRecordName {
+  return typeof name === 'string' || typeof name === 'symbol'
+}
+
+```
+
+### 8.3 removeRoute
+
+删除路由。removeRoute接收一个name（现有路由的名称）参数。
+
+```js
+
+function removeRoute(name: RouteRecordName) {
+  // 根据name获取对应的routeRecordMatcher
+  const recordMatcher = matcher.getRecordMatcher(name)
+  if (recordMatcher) {
+    // 如果存在recordMatcher，调用matcher.removeRoute
+    matcher.removeRoute(recordMatcher)
+  } else if (__DEV__) {
+    warn(`Cannot remove non-existent route "${String(name)}"`)
+  }
+}
+
+```
+
+### 8.4 hashRoute
+
+用于判断路由是否存在。hasRoute接收一个name字符串，返回一个boolen值。
+通过matcher.getRecordMatcher来获取对应的matcher，在matcher.getRecordMatcher会在matcherMap中取寻找对应的matcher，如果没有找到说明路由不存在：
+
+```js
+
+function hasRoute(name: RouteRecordName): boolean {
+  return !!matcher.getRecordMatcher(name)
+}
+
+```
+
+### 8.5 getRoutes
+
+获取标准化后的路由列表。标准化后的路由会被存储到matcher.record中。
+
+```js
+
+function getRoutes() {
+  // 遍历matchers，routeMatcher.record中存储着路由的标准化版本
+  return matcher.getRoutes().map(routeMatcher => routeMatcher.record)
+}
+
+```
+
+### 8.6总结
+
+router.addRoute、router.removeRoute、router.hasRoute、router.getRoutes几个API全都依赖matcher实现，可见matcher是vue-router的核心。
+
+## 9. router.resolve
+
+### 9.1 使用
+
+router.resolve方法返回路由地址的标准化版本。
+
+```js
+
+router.resolve('admin')
+router.resolve({ path: '/admin' })
+
+```
+### 9.2 resolve
+
+resolve接收两个参数：rawLocation、currentLocation（可选）。其中rawLocation是待转换的路由，rawLocation可以是个对象也可以是个字符串。currentLocation不传默认是currentRoute。
+在resolve中有是两个分支：
+- 如果rawLocation是string类型；
+调用parseURL解析rawLocation；
+
+```js
+
+const locationNormalized = parseURL(
+  parseQuery,
+  rawLocation,
+  currentLocation.path
+)
+
+```
+
+parseURL接收三个参数：parseQuery（一个query解析函数）、location（被解析的location）、currentLocation（当前的location）。
+
+```js
+
+export function parseURL(
+  parseQuery: (search: string) => LocationQuery,
+  location: string,
+  currentLocation: string = '/'
+): LocationNormalized {
+let path: string | undefined,
+  query: LocationQuery = {},
+  searchString = '',
+  hash = ''
+
+  // location中?的位置
+  const searchPos = location.indexOf('?')
+  // location中#的位置，如果location中有?，在?之后找#
+  const hashPos = location.indexOf('#', searchPos > -1 ? searchPos : 0)
+  
+  // 如果
+  if (searchPos > -1) {
+    // 从location中截取[0, searchPos)位置的字符串作为path
+    path = location.slice(0, searchPos)
+    // 从location截取含search的字符串，不包含hash部分
+    searchString = location.slice(
+      searchPos + 1,
+      hashPos > -1 ? hashPos : location.length
+    )
+    // 调用parseQuery生成query对象
+    query = parseQuery(searchString)
+  }
+  // 如果location中有hash
+  if (hashPos > -1) {
+    path = path || location.slice(0, hashPos)
+    // 从location中截取[hashPos, location.length)作为hash（包含#）
+    hash = location.slice(hashPos, location.length)
+  }
+  
+  // 解析以.开头的相对路径
+  path = resolveRelativePath(path != null ? path : location, currentLocation)
+  // empty path means a relative query or hash `?foo=f`, `#thing`
+  
+  return {
+    // fullPath = path + searchString + hash
+    fullPath: path + (searchString && '?') + searchString + hash,
+    path,
+    query,
+    hash,
+  }
+}
+
+```
+
+来看下，相对路径的解析过程：
+
+```js
+
+export function resolveRelativePath(to: string, from: string): string {
+// 如果to以/开头，说明是个绝对路径，直接返回即可
+if (to.startsWith('/')) return to
+// 如果from不是以/开头，那么说明from不是绝对路径，也就无法推测出to的绝对路径，此时直接返回to
+if (__DEV__ && !from.startsWith('/')) {
+  warn(
+    `Cannot resolve a relative location without an absolute path. Trying to resolve "${to}" from "${from}". It should look like "/${from}".`
+  )
+  return to
+}
+
+if (!to) return from
+// 使用/分割from与to
+const fromSegments = from.split('/')
+const toSegments = to.split('/')
+
+// 初始化position默认为fromSegments的最后一个索引
+let position = fromSegments.length - 1
+let toPosition: number
+let segment: string
+
+for (toPosition = 0; toPosition < toSegments.length; toPosition++) {
+  segment = toSegments[toPosition]
+    // 保证position不会小于0
+    if (position === 1 || segment === '.') continue
+    if (segment === '..') position--
+    else break
+  }
+  
+  return (
+    fromSegments.slice(0, position).join('/') +
+    '/' +
+    toSegments
+      .slice(toPosition - (toPosition === toSegments.length ? 1 : 0))
+      .join('/')
+  )
+}
+
+```
+
+to=cc，from=/aa/bb，经过resolveRelativePath后：/aa/cc；
+to=cc，from=/aa/bb/，经过resolveRelativePath后：/aa/bb/cc；
+to=./cc，from=/aa/bb，经过resolveRelativePath后：/aa/cc；
+to=./cc，from=/aa/bb/，经过resolveRelativePath后：/aa/bb/cc；
+to=../cc，from=/aa/bb，经过resolveRelativePath后：/aa；
+to=../cc，from=/aa/bb/，经过resolveRelativePath后：/aa/cc；
+如果from/，to=cc、to=./cc、to=../cc、to=../../cc、to=./../cc、to=.././cc经过resolveRelativePath始终返回/cc。
+回到resolve中，解析完rawLocation后，调用matcher.resolve：
+
+```js
+const matchedRoute = matcher.resolve(
+  { path: locationNormalized.path },
+  currentLocation
+)
+// 使用routerHistory.createHref创建href
+const href = routerHistory.createHref(locationNormalized.fullPath)
+
+```
+
+最后返回对象：
+
+```js
+
+return assign(locationNormalized, matchedRoute, {
+  // 对params中的value进行decodeURIComponent
+  params:decodeParams(matchedRoute.params),
+  // 对hash进行decodeURIComponent
+  hash: decode(locationNormalized.hash),
+  redirectedFrom: undefined,
+  href,
+})
+
+```
+
+- rawLocation不是string类型
+
+  ```js
+  let matcherLocation: MatcherLocationRaw
+
+// 如果rawLocation中有path属性
+if ('path' in rawLocation) {
+  // rawLocation中的params会被忽略
+  if (
+    __DEV__ &&
+    'params' in rawLocation &&
+    !('name' in rawLocation) &&
+    Object.keys(rawLocation.params).length
+  ) {
+    warn(
+      `Path "${
+        rawLocation.path
+      }" was passed with params but they will be ignored. Use a named route alongside params instead.`
+    )
+  }
+  // 处理path为绝对路径
+  matcherLocation = assign({}, rawLocation, {
+    path: parseURL(parseQuery, rawLocation.path, currentLocation.path).path,
+  })
+} else {
+  // 删除空的参数
+  const targetParams = assign({}, rawLocation.params)
+  for (const key in targetParams) {
+    if (targetParams[key] == null) {
+      delete targetParams[key]
+    }
+  }
+  // 对params进行编码
+  matcherLocation = assign({}, rawLocation, {
+    params: encodeParams(rawLocation.params),
+  })
+  // 将当前位置的params编码 当前位置的参数被解码，我们需要对它们进行编码以防匹配器合并参数
+  currentLocation.params = encodeParams(currentLocation.params)
+}
+
+// 调用matcher.resolve获取路由相关信息
+const matchedRoute = matcher.resolve(matcherLocation, currentLocation)
+const hash = rawLocation.hash || ''
+
+if (__DEV__ && hash && !hash.startsWith('#')) {
+  warn(
+    `A \`hash\` should always start with the character "#". Replace "${hash}" with "#${hash}".`
+  )
+}
+
+// 由于matcher已经合并了当前位置的参数，所以需要进行解码
+matchedRoute.params = normalizeParams(decodeParams(matchedRoute.params))
+
+// 生成完整path
+const fullPath = stringifyURL(
+  stringifyQuery,
+  assign({}, rawLocation, {
+    hash: encodeHash(hash),
+    path: matchedRoute.path,
+  })
+)
+// routerHistory.createHref会删除#之前的任意字符
+const href = routerHistory.createHref(fullPath)
+if (__DEV__) {
+  if (href.startsWith('//')) {
+    warn(
+      `Location "${rawLocation}" resolved to "${href}". A resolved location cannot start with multiple slashes.`
+    )
+  } else if (!matchedRoute.matched.length) {
+    warn(
+      `No match found for location with path "${
+        'path' in rawLocation ? rawLocation.path : rawLocation
+      }"`
+    )
+  }
+}
+
+return assign(
+  {
+    fullPath,
+    hash,
+    query:
+    // 如果query是个嵌套对象，normalizeQuery会将嵌套的对象toString，如果用户使用qs等库，我们需要保持query的状态
+    // https://github.com/vuejs/router/issues/328#issuecomment-649481567
+      stringifyQuery === originalStringifyQuery
+        ? normalizeQuery(rawLocation.query)
+        : ((rawLocation.query || {}) as LocationQuery),
+  },
+  matchedRoute,
+  {
+    redirectedFrom: undefined,
+    href,
+  }
+)
+
+```
+
 
 
 
