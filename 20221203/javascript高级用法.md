@@ -14308,7 +14308,6 @@ function insertMatcher(matcher: RouteRecordMatcher) {
 ```
 
 ```js
-
 // 返回0表示a与b相等；返回>0，b先排序；返回<0，a先排序
 export function comparePathParserScore(a: PathParser, b: PathParser): number {
   let i = 0
@@ -14349,21 +14348,21 @@ function compareScoreArray(a: number[], b: number[]): number {
 }
 ```
 假设matcherA是需要添加的，matchers中此时只有一个matcherB，matcherA.score=[[1, 2]]，matcherB.score=[[1,3]]，那么matcherA是怎么添加到matchers中的呢？过程如下：
-初始化matchers索引i=0；
-首先比较matcherA.score[0][0]与matcherB.score[0][0]，matcherB.score[0][0]-matcherA.score[0][0] === 0继续比较；
-matcherA.score[0][1]与matcherB.score[0][1]，因为matcherB.score[0][1]-matcherA.score[0][1] > 0，i++；
-i=1时，由于i=matchers.length，结束循环；
-执行matchers.splice(i, 0, matcher)，此时i=1,所以matcherA会被添加到索引为1的位置；
-如果matcherA.score=[[1,3,4]]呢？ 在比较时因为前两个索引对应的值都是一样的，这时会进入compareScoreArray的以下分支：
+
+1. 初始化matchers索引i=0；
+2. 首先比较matcherA.score[0][0]与matcherB.score[0][0]，matcherB.score[0][0]-matcherA.score[0][0] === 0继续比较；
+   matcherA.score[0][1]与matcherB.score[0][1]，因为matcherB.score[0][1]-matcherA.score[0][1] > 0，i++；
+   i=1时，由于i=matchers.length，结束循环；
+
+3. 执行matchers.splice(i, 0, matcher)，此时i=1,所以matcherA会被添加到索引为1的位置；
+4. 如果matcherA.score=[[1,3,4]]呢？ 在比较时因为前两个索引对应的值都是一样的，这时会进入compareScoreArray的以下分支：
 
 ```js
-
 if (a.length > b.length) {
   return b.length === 1 && b[0] === PathScore.Static + PathScore.Segment
     ? 1
     : -1
 }
-
 ```
 
 以上结果返回-1，matcherA会被添加索引为0的位置
@@ -14371,13 +14370,11 @@ if (a.length > b.length) {
 如果matcherA.score=[[1]]，进入compareScoreArray的以下分支：
 
 ```js
- 
  if (a.length < b.length) {
   return a.length === 1 && a[0] === PathScore.Static + PathScore.Segment
     ? -1
     : 1
 }
-
 ```
 
 因为matcherA.score[0].length === 1，这时就需要考虑token的类型里，假设token是个Static类型的，那么返回-1，matcherA添加到索引为0的位置。如果token不是Static类型的，返回1，matcherA添加到索引为1的位置。
@@ -14509,14 +14506,12 @@ export interface RouterOptions extends PathParserOptions {
   // 精准激活RouterLink的默认类
   linkExactActiveClass?: string
 }
-
 ```
 
 我们来看下createRouter具体做了什么。createRouter方法共885（包含空行）行，乍一看可能会觉得方法很复杂，仔细观察，其实很大一部分代码都是声明一些函数。我们可以先暂时抛开这些函数声明看其余部分。
 首先会使用createRouterMatcher方法创建了一个路由匹配器matcher，从options中提取parseQuery、stringifyQuery、history属性，如果options中没有history，抛出错误。
 
 ```typescript
-
 const matcher = createRouterMatcher(options.routes, options)
 const parseQuery = options.parseQuery || originalParseQuery
 const stringifyQuery = options.stringifyQuery || originalStringifyQuery
@@ -14526,7 +14521,6 @@ if (__DEV__ && !routerHistory)
       'Provide the "history" option when calling "createRouter()":' +
         ' https://next.router.vuejs.org/api/#history.'
     )
-
 ```
 
 紧接着声明了一些全局守卫相关的变量，和一些关于params的处理方法，其中有关全局守卫的变量都是通过useCallbacks创建的，params相关方法通过applyToParams创建。
@@ -14588,12 +14582,10 @@ export function useCallbacks<T>() {
     reset,
   }
 }
-
 ```
 applyToParams的实现：接收一个处理函数和params对象，遍历params对象，并对每一个属性值执行fn并将结果赋给一个新的对象：
 
 ```js
-
 export function applyToParams(
   fn: (v: string | number | null | undefined) => string,
   params: RouteParamsRaw | undefined
@@ -14607,7 +14599,6 @@ export function applyToParams(
 
   return newParams
 }
-
 ```
 
 然后声明了大量的函数，包括addRoute、removeRoute、getRoutes等，这些函数也就是我们日常使用的addRoute、removeRoute等。
@@ -14625,53 +14616,43 @@ createRouter函数中声明了一些全局钩子所需的变量和很多函数�
 1. addRoute：当使用addRoute添加路由时，如果第一个参数为路由name，那么会添加一个嵌套路由；否则添加的是个非嵌套路由。
 
 ```js
-
 // 添加非嵌套路由
 router.addRoute({ name: 'admin', path: '/admin', component: Admin })
 // 添加嵌套路由
 router.addRoute('admin', { path: 'settings', component: AdminSettings })
-
 ```
 
 以上代码等同于：
 
 ```js
-
 router.addRoute({
   name: 'admin',
   path: '/admin',
   component: Admin,
   children: [{ path: 'settings', component: AdminSettings }],
 })
-
 ```
 
 2. remove Router
 
 ```js
 router.removeRoute('admin')
-
 ```
 3. hashRoute
 
 ```js
-
 router.hasRoute('admin')
-
 ```
 - getRoutes
 
 ```js
-
 router.getRoutes()
-
 ```
 ### 8.2 addRoute
 
 addRoute可接受两个参数：parentOrRoute（父路由的name或一个新的路由，如果是父路由的name，name第二个参数是必须的）、record（要添加的路由）。返回一个删除新增路由的函数。
 
 ```js
-
 function addRoute(
     parentOrRoute: RouteRecordName | RouteRecordRaw,
     route?: RouteRecordRaw
@@ -14690,7 +14671,6 @@ function addRoute(
     return matcher.addRoute(record, parent)
   }
 
-
 ```
 
 在定义parent时，使用了一个Paramerer<Type>类型，对于该类型的使用可参考这里。在该方法中，parent的类型会取matcher.addRoute方法中的第2个参数的类型。
@@ -14699,7 +14679,6 @@ isRouteName：通过判断name是否为string或symbol类型，来决定是不�
 export function isRouteName(name: any): name is RouteRecordName {
   return typeof name === 'string' || typeof name === 'symbol'
 }
-
 ```
 
 ### 8.3 removeRoute
@@ -14707,7 +14686,6 @@ export function isRouteName(name: any): name is RouteRecordName {
 删除路由。removeRoute接收一个name（现有路由的名称）参数。
 
 ```js
-
 function removeRoute(name: RouteRecordName) {
   // 根据name获取对应的routeRecordMatcher
   const recordMatcher = matcher.getRecordMatcher(name)
@@ -14718,7 +14696,6 @@ function removeRoute(name: RouteRecordName) {
     warn(`Cannot remove non-existent route "${String(name)}"`)
   }
 }
-
 ```
 
 ### 8.4 hashRoute
@@ -14727,11 +14704,9 @@ function removeRoute(name: RouteRecordName) {
 通过matcher.getRecordMatcher来获取对应的matcher，在matcher.getRecordMatcher会在matcherMap中取寻找对应的matcher，如果没有找到说明路由不存在：
 
 ```js
-
 function hasRoute(name: RouteRecordName): boolean {
   return !!matcher.getRecordMatcher(name)
 }
-
 ```
 
 ### 8.5 getRoutes
@@ -14739,12 +14714,10 @@ function hasRoute(name: RouteRecordName): boolean {
 获取标准化后的路由列表。标准化后的路由会被存储到matcher.record中。
 
 ```js
-
 function getRoutes() {
   // 遍历matchers，routeMatcher.record中存储着路由的标准化版本
   return matcher.getRoutes().map(routeMatcher => routeMatcher.record)
 }
-
 ```
 
 ### 8.6总结
