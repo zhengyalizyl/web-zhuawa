@@ -11397,7 +11397,7 @@ diff算法的目的是为了找到哪些节点发生了变化，哪些节点没�
 
 ### 3.1 vue2 diff-双端比较
 
-双端比较就是新列表和旧列表两个列表的头与尾互相对比，，在对比的过程中指针会逐渐向内靠拢，直到某一个列表的节点全部遍历过，对比停止；
+双端比较就是新列表和旧列表两个列表的头与尾互相对比，在对比的过程中指针会逐渐向内靠拢，直到某一个列表的节点全部遍历过，对比停止；
 
 #### 3.1.1  patch
 
@@ -16222,17 +16222,1681 @@ function markAsReady<E = any>(err?: E): E | void {
 
 ### 6.1 使用
 
+`onBeforeRouteLeave`、`onBeforeRouteUpdate`是`vue-router`提供的两个`composition api`，它们只能被用于`setup`中。
 
+```js
+export default {
+  setup() {
+    onBeforeRouteLeave() {}
+    
+    onBeforeRouteUpdate() {}
+  }
+}
+```
+
+### 6.2 onBeforeRouteLeave
+
+```js
+export function onBeforeRouteLeave(leaveGuard: NavigationGuard) {
+  // 开发模式下没有组件实例，进行提示并return
+  if (__DEV__ && !getCurrentInstance()) {
+    warn(
+      'getCurrentInstance() returned null. onBeforeRouteLeave() must be called at the top of a setup function'
+    )
+    return
+  }
+
+  // matchedRouteKey是在RouterView中进行provide的，表示当前组件所匹配到到的路由记录（经过标准化处理的）
+  const activeRecord: RouteRecordNormalized | undefined = inject(
+    matchedRouteKey,
+    // to avoid warning
+    {} as any
+  ).value
+
+  if (!activeRecord) {
+    __DEV__ &&
+      warn(
+        'No active route record was found when calling `onBeforeRouteLeave()`. Make sure you call this function inside of a component child of <router-view>. Maybe you called it inside of App.vue?'
+      )
+    return
+  }
+
+  // 注册钩子
+  registerGuard(activeRecord, 'leaveGuards', leaveGuard)
+}
+```
+
+因为`onBeforeRouteLeave`是作用在组件上的，所以`onBeforeRouteLeave`开头就需要检查当前是否有vue实例（只在开发环境下），如果没有实例进行提示并`return`。
+
+```js
+if (__DEV__ && !getCurrentInstance()) {
+  warn(
+    'getCurrentInstance() returned null. onBeforeRouteLeave() must be called at the top of a setup function'
+  )
+  return
+}
+```
+
+然后使用`inject`获取一个`matchedRouteKey`，并赋给一个`activeRecord`，那么个`activeRecord`是个什么呢？
+
+```js
+const activeRecord: RouteRecordNormalized | undefined = inject(
+  matchedRouteKey,
+  // to avoid warning
+  {} as any
+).value
+```
+
+要想知道`activeRecord`是什么，我们就需要知道`matchedRouteKey`是什么时候`provide`的。因为`onBeforeRouteLeave`式作用在路由组件中的，而路由组件一定是`RouterView`的子孙组件，所以我们可以从`RouterView`中找一下答案。
+
+在`RouterView`中的`setup`有这么几行代码：
+
+```js
+setup(props, ...) {
+  // ...
+  const injectedRoute = inject(routerViewLocationKey)!
+  const routeToDisplay = computed(() => props.route || injectedRoute.value)
+  const depth = inject(viewDepthKey, 0)
+  const matchedRouteRef = computed<RouteLocationMatched | undefined>(
+    () => routeToDisplay.value.matched[depth]
+  )
+
+  provide(viewDepthKey, depth + 1)
+  provide(matchedRouteKey, matchedRouteRef)
+  provide(routerViewLocationKey, routeToDisplay)
+  // ...
+}
+```
+
+可以看到就是在`RouterView`中进行了`provide(matchedRouteKey, matchedRouteRef)`的，那么`matchedRouteRef`是什么呢？
+
+首先`matchedRouteRef`是个计算属性，它的返回值是`routeToDisplay.value.matched[depth]`。接着我们看`routeToDisplay`和`depth`，先看`routeToDisplay`，`routeToDisplay`也是个计算属性，它的值是`props.route`或`injectedRoute.value`，因为`props.route`使用户传递的，所以这里我们只看`injectedRoute.value`，`injectedRoute`也是通过`inject`获取的，获取的`key`是`routerViewLocationKey`。看到这个`key`是不是有点熟悉，在`vue-router`进行`install`中向`app`中注入了几个变量，其中就有`routerViewLocationKey`。
+
+```js
+install(app) {
+  //...
+  app.provide(routerKey, router)
+  app.provide(routeLocationKey, reactive(reactiveRoute))
+  // currentRoute路由标准化对象
+  app.provide(routerViewLocationKey, currentRoute)
+  //...
+}
+```
+
+现在我们知道routeToDisplay是当前路由的标准化对象。接下来看depth是什么。depth也是通过inject(viewDepthKey)的方式获取的，但它有默认值，默认是0。你会发现紧跟着有一行provide(viewDepthKey, depth + 1)，RouterView又把viewDepthKey注入进去了，不过这次值加了1。为什么这么做呢？
+我们知道RouterView是允许嵌套的，来看下面代码：
+
+```js
+<RouterView>
+  <RouterView>
+    <RouterView />
+  </RouterView>
+</RouterView>
+```
+
+在第一层RouterView中，因为找不到对应的viewDepthKey，所以depth是0，然后将viewDepthKey注入进去，并+1；在第二层中，我们可以找到viewDepthKey（在第一次中注入），depth为1，然后再将viewDepthKey注入，并+1，此时viewDepthKey的值会覆盖第一层的注入；在第三层中，我们也可以找到viewDepthKey（在二层中注入，并覆盖了第一层的值），此时depth为2。是不是发现了什么？depth其实代表当前RouterView在嵌套RouterView中的深度（从0开始）。
+现在我们知道了routeToDisplay和depth，现在我们看routeToDisplay.value.matched[depth]。我们知道routeToDisplay.value.matched中存储的是当前路由所匹配到的路由，并且他的顺序是父路由在子路由前。那么索引为depth的路由有什么特别含义呢？我们看下面一个例子：
+
+```js
+// 注册的路由表
+const router = createRouter({
+  // ...
+  routes: {
+    path: '/parent',
+    component: Parent,
+    name: 'Parent',
+    children: [
+      {
+        path: 'child',
+        name: 'Child',
+        component: Child,
+        children: [
+          {
+            name: 'ChildChild',
+            path: 'childchild',
+            component: ChildChild,
+          },
+        ],
+      },
+    ],
+  }
+})
+```
+
+```js
+<!-- Parent -->
+<template>
+  <div>
+    <p>parent</p>
+    <router-view></router-view>
+  </div>
+</template>
+
+<!-- Child -->
+<template>
+  <div>
+    <p>child</p>
+    <router-view></router-view>
+  </div>
+</template>
+
+<!-- ChildChild -->
+<template>
+  <div>
+    <p>childchild</p>
+  </div>
+</template>
+```
+
+使用`router.resolve({ name: 'ChildChild' })`，打印其结果，观察matched属性。
+
+1. 在第一层`RouterView`中，`depth`为0，`matched[0]`为`{path:'/parent', name: 'Parent', ...}`(此处只列几个关键属性)，`level`为1；
+2. 在第二层`RouterView`中，`depth`为1，`matched[1]`为`{path:'/parent/child', name: 'Child', ...}`，`level`为2；
+3. 在第三层`RouterView`中，`depth`为2，`matched[2]`为`{path:'/parent/child/childchild', name: 'ChildChild', ...}`，`level`为3；
+
+通过观察，`depth`的值与路由的匹配顺序刚好一致。`matched[depth].name`恰好与当前`resolve`的`name`一致。也就是说`onBeforeRouteLeave`中的`activeRecord`当前组件所匹配到的路由。
+
+接下来看下钩子时如何注册的？在`onBeforeRouteLeave`，会调用一个`registerGuard`函数，`registerGuard`接收三个参数：
+
+1. `record`（所在组件所匹配到的标准化路由）；
+2. `name`（钩子名，只能取leaveGuards、updateGuards之一）;
+3. `guard`（待添加的导航守卫）;
+
+```js
+function registerGuard(
+  record: RouteRecordNormalized,
+  name: 'leaveGuards' | 'updateGuards',
+  guard: NavigationGuard
+) {
+  // 一个删除钩子的函数
+  const removeFromList = () => {
+    record[name].delete(guard)
+  }
+
+  // 卸载后移除钩子
+  onUnmounted(removeFromList)
+  // 被keep-alive缓存的组件失活时移除钩子
+  onDeactivated(removeFromList)
+
+  // 被keep-alive缓存的组件激活时添加钩子
+  onActivated(() => {
+    record[name].add(guard)
+  })
+
+  // 添加钩子，record[name]是个set，在路由标准化时处理的
+  record[name].add(guard)
+}
+```
+
+### 6.3 onBeforeRouteUpdate
+
+onBeforeRouteUpdate的实现与onBeforeRouteLeave的实现完全一致，只是调用registerGuard传递的参数不一样。
+
+```js
+export function onBeforeRouteUpdate(updateGuard: NavigationGuard) {
+  if (__DEV__ && !getCurrentInstance()) {
+    warn(
+      'getCurrentInstance() returned null. onBeforeRouteUpdate() must be called at the top of a setup function'
+    )
+    return
+  }
+
+  const activeRecord: RouteRecordNormalized | undefined = inject(
+    matchedRouteKey,
+    // to avoid warning
+    {} as any
+  ).value
+
+  if (!activeRecord) {
+    __DEV__ &&
+      warn(
+        'No active route record was found when calling `onBeforeRouteUpdate()`. Make sure you call this function inside of a component child of <router-view>. Maybe you called it inside of App.vue?'
+      )
+    return
+  }
+
+  registerGuard(activeRecord, 'updateGuards', updateGuard)
+}
+```
+
+## 7. useRoute、useRouter、useLink解析
+
+### 7.1 使用
+
+```typescript
+<script lant="ts" setup>
+  import { useRouter, useRoute } from 'vue-router'
+  
+  // router为创建的router实例
+  const router = useRouter()
+  // currentRoute当前路由
+  const currentRoute = useRoute()
+</script>
+```
+
+使用useLink可以自定义我们自己的RouterLink，如下面自定的MyRouterLink，如果是外部链接，我们需要让它新打开一个页面。
+
+```typescript
+<template>
+  <a
+    v-if="isExternalLink"
+    v-bind="$attrs"
+    :class="classes"
+    :href="to"
+    target="_blank"
+  >
+    <slot />
+  </a>
+  <a
+    v-else
+    v-bind="$attrs"
+    :class="classes"
+    :href="href"
+    @click="navigate"
+  >
+    <slot />
+  </a>
+</template>
+
+<script lang="ts">
+export default {
+  name: 'MyRouterLink',
+}
+</script>
+
+<script lang="ts" setup>
+import { useLink, useRoute, RouterLink } from 'vue-router'
+import { computed } from 'vue'
+
+const props = defineProps({
+  // @ts-ignore
+  ...RouterLink.props
+})
+
+const { route, href, navigate, isActive, isExactActive  } = useLink(props)
+
+const isExternalLink= computed(() => typeof props.to === 'string' && props.to.startsWith('http'))
+
+const currentRoute = useRoute()
+
+const classes = computed(() => ({
+  'router-link-active':
+    isActive.value || currentRoute.path.startsWith(route.value.path),
+  'router-link-exact-active':
+    isExactActive.value || currentRoute.path === route.value.path,
+}))
+</script>
+```
+
+`MyRouterLink`使用：
+
+```js
+<my-router-link to="https://www.xxx.com">MyRouterLink External Link</my-router-link>
+<my-router-link to="/home">MyRouterLink /home</my-router-link>
+```
+
+### 7.2 useRouter、useRoute
+
+```typescript
+export function useRouter(): Router {
+  return inject(routerKey)!
+}
+
+export function useRoute(): RouteLocationNormalizedLoaded {
+  return inject(routeLocationKey)!
+}
+```
+
+useRouter和useRoute都是使用inject来进行获取对应值。对应值都是在install过程中注入的。
+
+```js
+install(app) {
+  // ...
+  app.provide(routerKey, router)
+  app.provide(routeLocationKey, reactive(reactiveRoute))
+  // ...
+}
+```
+
+### 7.3 useLink
+
+```typescript
+export function useLink(props: UseLinkOptions) {
+  // router实例
+  const router = inject(routerKey)!
+  // 当前路由地址
+  const currentRoute = inject(routeLocationKey)!
+
+  // 目标路由相关信息
+  const route = computed(() => router.resolve(unref(props.to)))
+
+  // 被激活记录的索引
+  const activeRecordIndex = computed<number>(() => {
+    const { matched } = route.value
+    const { length } = matched
+    // 目标路由所匹配到的完整路由
+    const routeMatched: RouteRecord | undefined = matched[length - 1]
+    const currentMatched = currentRoute.matched
+    // 如果没有匹配到的目标路由或当前路由也没有匹配到的路由返回-1
+    if (!routeMatched || !currentMatched.length) return -1
+    // 在当前路由所匹配到的路由中寻找目标路由
+    const index = currentMatched.findIndex(
+      isSameRouteRecord.bind(null, routeMatched)
+    )
+    if (index > -1) return index
+    // 目标路由匹配到的路由的父路由的path（如果父路由是由别名产生，取源路由的path）
+    const parentRecordPath = getOriginalPath(
+      matched[length - 2] as RouteRecord | undefined
+    )
+    return (
+      length > 1 &&
+        // 如果目标路由的父路由与
+        getOriginalPath(routeMatched) === parentRecordPath &&
+        // 避免将孩子与父路由比较
+        currentMatched[currentMatched.length - 1].path !== parentRecordPath
+        ? currentMatched.findIndex(
+            isSameRouteRecord.bind(null, matched[length - 2])
+          )
+        : index
+    )
+  })
+
+  // 当前router-link是否处于激活状态，activeRecordIndex大于-1并且，当前路由的params与目标路由的params相同
+  const isActive = computed<boolean>(
+    () =>
+      activeRecordIndex.value > -1 &&
+      includesParams(currentRoute.params, route.value.params)
+  )
+  // 是否完全匹配，目标路由必须和当前路由所匹配到的路由最后一个相同
+  const isExactActive = computed<boolean>(
+    () =>
+      activeRecordIndex.value > -1 &&
+      activeRecordIndex.value === currentRoute.matched.length - 1 &&
+      isSameRouteLocationParams(currentRoute.params, route.value.params)
+  )
+
+  // 利用push或replace进行路由跳转
+  function navigate(
+    e: MouseEvent = {} as MouseEvent
+  ): Promise<void | NavigationFailure> {
+    // 对于一些特殊情况，不能进行跳转
+    if (guardEvent(e)) {
+      return router[unref(props.replace) ? 'replace' : 'push'](
+        unref(props.to)
+      ).catch(noop)
+    }
+    return Promise.resolve()
+  }
+
+  // devtools only
+  if ((__DEV__ || __FEATURE_PROD_DEVTOOLS__) && isBrowser) {
+    // ...
+  }
+
+  return {
+    route,
+    href: computed(() => route.value.href),
+    isActive,
+    isExactActive,
+    navigate,
+  }
+}
+```
+
+在进行路由跳转时，一些特殊情况下是不能跳转的，这些情况包括：
+
+1. 按住了`window`⊞（MAC的`commond`）键、`alt`键、`ctrl`键、`shift`键中的任一键；
+2. 调用过`e.preventDefault()`；
+3. 右键；
+4. `target='_blank'`；
+
+```typescript
+function guardEvent(e: MouseEvent) {
+  // don't redirect with control keys
+  if (e.metaKey || e.altKey || e.ctrlKey || e.shiftKey) return
+  // don't redirect when preventDefault called
+  if (e.defaultPrevented) return
+  // don't redirect on right click
+  if (e.button !== undefined && e.button !== 0) return
+  // don't redirect if `target="_blank"`
+  // @ts-expect-error getAttribute does exist
+  if (e.currentTarget && e.currentTarget.getAttribute) {
+    // @ts-expect-error getAttribute exists
+    const target = e.currentTarget.getAttribute('target')
+    if (/\b_blank\b/i.test(target)) return
+  }
+  // this may be a Weex event which doesn't have this method
+  if (e.preventDefault) e.preventDefault()
+
+  return true
+}
+```
+
+## 8. RouterLink解析
+
+## 8.1使用
+
+```js
+<RouterLink
+ to="/inex"
+ reaplace
+ custom
+ activeClass="active"
+ exactActiveClass="exact-active"
+ ariaCurrentValue="page"
+>To Index Page</RouterLink>
+```
+
+### 8.2 RouterLink
+
+```js
+export const RouterLinkImpl = /*#__PURE__*/ defineComponent({
+  name: 'RouterLink',
+  props: {
+    // 目标路由的链接
+    to: {
+      type: [String, Object] as PropType<RouteLocationRaw>,
+      required: true,
+    },
+    // 决定是否调用router.push()还是router.replace()
+    replace: Boolean,
+    // 链接被激活时，用于渲染a标签的class
+    activeClass: String,
+    // inactiveClass: String,
+    // 链接精准激活时，用于渲染a标签的class
+    exactActiveClass: String,
+    // 是否不应该将内容包裹在<a/>标签中
+    custom: Boolean,
+    // 传递给aria-current属性的值。https://developer.mozilla.org/en-US/docs/Web/Accessibility/ARIA/Attributes/aria-current
+    ariaCurrentValue: {
+      type: String as PropType<RouterLinkProps['ariaCurrentValue']>,
+      default: 'page',
+    },
+  },
+  useLink,
+
+  setup(props, { slots }) {
+    // 使用useLink创建router-link所需的一些属性和行为
+    const link = reactive(useLink(props))
+    // createRouter时传入的options
+    const { options } = inject(routerKey)!
+
+    // class对象
+    const elClass = computed(() => ({
+      [getLinkClass(
+        props.activeClass,
+        options.linkActiveClass,
+        'router-link-active'
+      )]: link.isActive, // 被激活时的class
+      [getLinkClass(
+        props.exactActiveClass,
+        options.linkExactActiveClass,
+        'router-link-exact-active'
+      )]: link.isExactActive, // 被精准激活的class
+    }))
+
+    return () => {
+      // 默认插槽
+      const children = slots.default && slots.default(link)
+      // 如果设置了props.custom，直接显示chldren，反之需要使用a标签包裹
+      return props.custom
+        ? children
+        : h(
+            'a',
+            {
+              'aria-current': link.isExactActive
+                ? props.ariaCurrentValue
+                : null,
+              href: link.href,
+              onClick: link.navigate,
+              class: elClass.value,
+            },
+            children
+          )
+    }
+  },
+})
+
+export const RouterLink = RouterLinkImpl as unknown as {
+  new (): {
+    $props: AllowedComponentProps &
+      ComponentCustomProps &
+      VNodeProps &
+      RouterLinkProps
+
+    $slots: {
+      default: (arg: UnwrapRef<ReturnType<typeof useLink>>) => VNode[]
+    }
+  }
+  useLink: typeof useLink
+}
+```
+
+## 9. RouterView解析
+
+### 9.1 使用
+
+```js
+<RouterView></RouterView>
+```
+
+### 9.2 RouterView
+
+```js
+export const RouterViewImpl = /*#__PURE__*/ defineComponent({
+  name: 'RouterView',
+  inheritAttrs: false,
+  props: {
+    // 如果设置了name，渲染对应路由配置下中components下的相应组件
+    name: {
+      type: String as PropType<string>,
+      default: 'default',
+    },
+    route: Object as PropType<RouteLocationNormalizedLoaded>,
+  },
+
+  // 为@vue/compat提供更好的兼容性
+  // https://github.com/vuejs/router/issues/1315
+  compatConfig: { MODE: 3 },
+
+  setup(props, { attrs, slots }) {
+    // 如果<router-view>的父节点是<keep-alive>或<transition>进行提示
+    __DEV__ && warnDeprecatedUsage()
+
+    // 当前路由
+    const injectedRoute = inject(routerViewLocationKey)!
+    // 要展示的路由，优先取props.route
+    const routeToDisplay = computed(() => props.route || injectedRoute.value)
+    // router-view的深度，从0开始
+    const depth = inject(viewDepthKey, 0)
+    // 要展示的路由匹配到的路由
+    const matchedRouteRef = computed<RouteLocationMatched | undefined>(
+      () => routeToDisplay.value.matched[depth]
+    )
+
+    provide(viewDepthKey, depth + 1)
+    provide(matchedRouteKey, matchedRouteRef)
+    provide(routerViewLocationKey, routeToDisplay)
+
+    const viewRef = ref<ComponentPublicInstance>()
+    
+    watch(
+      () => [viewRef.value, matchedRouteRef.value, props.name] as const,
+      ([instance, to, name], [oldInstance, from, oldName]) => {
+        if (to) {
+          // 当导航到一个新的路由，更新组件实例
+          to.instances[name] = instance
+          // 组件实例被应用于不同路由
+          if (from && from !== to && instance && instance === oldInstance) {
+            if (!to.leaveGuards.size) {
+              to.leaveGuards = from.leaveGuards
+            }
+            if (!to.updateGuards.size) {
+              to.updateGuards = from.updateGuards
+            }
+          }
+        }
+
+        // 触发beforeRouteEnter next回调
+        if (
+          instance &&
+          to &&
+          (!from || !isSameRouteRecord(to, from) || !oldInstance)
+        ) {
+          ;(to.enterCallbacks[name] || []).forEach(callback =>
+            callback(instance)
+          )
+        }
+      },
+      { flush: 'post' }
+    )
+
+    return () => {
+      const route = routeToDisplay.value
+      const matchedRoute = matchedRouteRef.value
+      // 需要显示的组件
+      const ViewComponent = matchedRoute && matchedRoute.components[props.name]
+      const currentName = props.name
+
+      // 如果找不到对应组件，使用默认的插槽
+      if (!ViewComponent) {
+        return normalizeSlot(slots.default, { Component: ViewComponent, route })
+      }
+
+      // 路由中的定义的props
+      const routePropsOption = matchedRoute!.props[props.name]
+      // 如果routePropsOption为空，取null
+      // 如果routePropsOption为true，取route.params
+      // 如果routePropsOption是函数，取函数返回值
+      // 其他情况取routePropsOption
+      const routeProps = routePropsOption
+        ? routePropsOption === true
+          ? route.params
+          : typeof routePropsOption === 'function'
+          ? routePropsOption(route)
+          : routePropsOption
+        : null
+
+      // 当组件实例被卸载时，删除组件实例以防止泄露
+      const onVnodeUnmounted: VNodeProps['onVnodeUnmounted'] = vnode => {
+        if (vnode.component!.isUnmounted) {
+          matchedRoute!.instances[currentName] = null
+        }
+      }
+
+      // 生成组件
+      const component = h(
+        ViewComponent,
+        assign({}, routeProps, attrs, {
+          onVnodeUnmounted,
+          ref: viewRef,
+        })
+      )
+
+      if (
+        (__DEV__ || __FEATURE_PROD_DEVTOOLS__) &&
+        isBrowser &&
+        component.ref
+      ) {
+        // ...
+      }
+
+      return (
+        // 有默认插槽则使用默认默认插槽，否则直接使用component
+        normalizeSlot(slots.default, { Component: component, route }) ||
+        component
+      )
+    }
+  },
+})
+```
+
+为了更好理解router-view的渲染过程，我们看下面的例子：
+先规定我们的路由表如下：
+
+```js
+const router = createRouter({
+  // ...
+  // Home和Parent都是两个简单组件
+  routes: [
+    {
+      name: 'Home',
+      path: '/',
+      component: Home,
+    },
+    {
+      name: 'Parent',
+      path: '/parent',
+      component: Parent,
+    },
+  ]
+})
+```
+
+假设我们的地址是`http://localhost:3000`。现在我们访问`http://localhost:3000`，肯定能够想到`router-view`中显示的肯定是`Home`组件。那么它是怎样渲染出来的呢？
+
+首先我们要知道`vue-router`在进行`install`时，会进行第一次的路由跳转并立马向`app`注入一个默认的`currentRoute（START_LOCATION_NORMALIZED）`，此时`router-view`会根据这个`currentRoute`进行第一次渲染。因为这个默认的`currentRoute`中的`matched`是空的，所以第一次渲染的结果是空的。等到第一次路由跳转完毕后，会执行一个`finalizeNavigation`方法，在这个方法中更新`currentRoute`，这时在`currentRoute`中就可以找到需要渲染的组件`Home`，`router-view`完成第二次渲染。第二次完成渲染后，紧接着触发`router-view`中的`watch`，将最新的组件实例赋给`to.instance[name]`，并循环执行`to.enterCallbacks[name]`通过在钩子中使用next()添加的函数，过程结束。
+
+然后我们从`http://localhost:3000`跳转至`http://localhost:3000/parent`，假设使用`push`进行跳转，同样在跳转完成后会执行`finalizeNavigation`，更新`currentRoute`，这时`router-view`监听到`currentRoute`的变化，找到需要渲染的组件，将其显示。在渲染前先执行旧组件卸载钩子，将路由对应的`instance`重置为`null`。渲染完成后，接着触发`watch`，将最新的组件实例赋给`to.instance[name]`，并循环执行`to.enterCallbacks[name]`，过程结束。
+
+在之前分析`router.push`的过程中，我们曾经得到过一个欠完整的导航解析流程，那么在这里我们可以将其补齐了：
+
+1. 导航被触发；
+2. 调用失活组件中的`beforeRouteLeave`钩子；
+3. 调用全局`beforeEach`钩子；
+4. 调用重用组件内的`beforeRouteUpdate`钩子；
+5. 调用路由配置中的`beforeEnter`钩子；
+6. 解析异步路由组件；
+7. 调用激活组件中的`beforeRouteEnter`钩子；
+8. 调用全局的`beforeResolve`钩子；
+9. 导航被确认；
+10. 调用全局的`afterEach`钩子；
+11. DOM更新；
+12. 调用`beforeRouteEnter`守卫中传给 next 的回调函数，创建好的组件实例会作为回调函数的参数传入；
+
+### 9.3 总结
+
+router-view根据currentRoute及depth找到匹配到的路由，然后根据props.name、slots.default来确定需要展示的组件。
+
+
+
+Vue2 diff 双端比较
+
+vue3 diff 优化点
+
+vue2全部需要比较，全量diff
+
+vue3则是：
+
+1. 静态标记+非全量diff
+2. 最长递增子序列，对于最长递增子序列不移动位置,dom的操作变少了
+
+# vue实战
+
+## 1.课程目标
 
 https://www.yuque.com/lpldplws/web/qpafpkpkcfufkgtl?singleDoc# 《Vue实战》 密码：fw42
+
+1. 通过Vue3 + Vite实现一个完整的Vue项目；
+
+## 2. 课程大纲
+
+- Vue3 + Vite初始化配置；
+- 项目布局设置；
+
+## 3. vue3+vite初始化
+
+### 3.1 创建项目
+
+首先我们要创建一个 Vue3+Vite 项目，目前 Vue 官方创建项目时默认就是 Vite 构建了，所以直接按照官网来就可以，如下：
+确保你安装了最新版本的 [Node.js](https://nodejs.org/en/)，然后在命令行中运行以下命令：
+
+```b
+npm init vue@latest
+
+# or
+
+pnpm create vue@latest
+```
+
+这一指令将会安装并执行 [create-vue](https://github.com/vuejs/create-vue)，它是 Vue 官方的项目脚手架工具。你将会看到一些诸如 TypeScript 和测试支持之类的可选功能提示，我们的选择如下：
+
+```js
+✔ Project name（项目名）: xianzao-vue-tools
+✔ Add TypeScript（添加TS）? : No
+✔ Add JSX Support（添加JSX支持）? : No
+✔ Add Vue Router for Single Page Application development（添加Vue-router）? : Yes
+✔ Add Pinia for state management（添加状态管理Pinia）? : Yes
+✔ Add Vitest for Unit testing（为单元测试添加Vitest）? : No
+✔ Add Cypress for both Unit and End-to-End testing（为单元测试与端到端测试添加Cypress）? : No
+✔ Add ESLint for code quality（为代码质量添加ESLint）? : Yes
+✔ Add Prettier for code formatting（为代码格式添加Prettier）? : Yes
+
+Scaffolding project in ./tooldog...
+Done.
+```
+
+到这一步就创建好了项目，按照提示执行：
+
+```js
+cd xianzao-vue-tools
+npm install
+npm run lint
+npm run dev
+```
+
+能够正常打开页面：
+
+![vue打开正常页面](/Volumes/F/zyl-study/web-zhuawa/20221203/vue打开正常页面.png)
+
+如果遇到了类似的报错：
+
+```
+Error: Cannot find module'node:url'
+```
+
+原因是使用了node相对较高版本的代码：
+
+```js
+// vite.config.js 中引入 node url 模块时使用了 'node:url'
+// 详见：https://nodejs.org/dist/latest-v16.x/docs/api/url.html#url
+import { fileURLToPath, URL } from 'node:url'
+```
+
+Vue 官方文档上明确说了开始项目之前，请确保安装了最新版本的 NodeJS，我们的 node 版本要在 v16+ 。
+这里推荐大家安装nvm和nrm，没有使用过的可以自行搜索。
+nvm：npm的包版本管理工具；
+nrm：设置npm源的管理工具；
+常见的指令如下：
+
+- nvm：
+
+```js
+nvm ls-remote # 查看node所有版本
+nvm install node # 安装最新node可用版本
+nvm version/nvm current # 查看当前nvm使用node版本
+nvm list available # 查看可安装node版本
+nvm list/nvm ls # 查看已安装版本
+nvm install <version> # 安装指定node版本
+nvm uninstall <version> # 卸载指定node版本
+nvm use <version> # 切换使用指定版本node
+nvm use [version] [arch] # 切换指定node版本和位数
+nvm reinstall-packages <version> # 在当前版本node环境下，重新全局安装指定版本号的npm包
+
+nvm on # 打开nodejs控制
+nvm off # 关闭nodejs控制
+nvm alias <name> <version> # 给不同的版本号添加别名
+nvm unalias <name> # 删除已定义别名
+nvm proxy # 查看设置与代理
+nvm node_mirror [url] # 设置setting.txt中的node_mirror，如果不设置的默认是 https://nodejs.org/dist/
+nvm npm_mirror [url] # 设置setting.txt中的npm_mirror,如果不设置的话默认的是： https://github.com/npm/npm/archive/.
+nvm root [path] # 设置和查看root路径
+```
+
+补充：在软件工程中，常见的软件版本型号（也是nvm的版本型号）
+
+```bash
+Dev # 开发版，频繁出新功能，另外还修复了一些Bug和不稳定因素
+Alpha # 软件或系统的内部测试版本，会有不少Bug，仅内部人员使用浏览器
+Beta # 软件或系统的测试版本，这一版本一般是在Alpha版本后，会有不少新功能，同时也有很多Bug
+Gamma # 软件或系统接近于成熟的版本，只须要作一些小的改进就能发行测试
+RC # 发行候选版本，和Beta版最大的差别在于Beta阶段会一直加入新的功能，但是到了RC版本，几乎不会加入新功能，主要在于除错。RC版本是最终发放给用户的最接近正式版的版本，发行后改正bug就是正式版，正式版之前的最后一个测试版。
+Release # 正式发布版本，最终交付用户使用的一个版本，该版本也称为标准版，也可用符号 ® 表示
+GA # 也代表正式发布版本，这个版本也是正式版本，国外大多都是用GA来说明Release版本
+Stable # 稳定版，在开源软件中，都有stable版，就是开源软件的最终发行版，此版本一般基于Beta版，已知Bug都被修复，一般情况下更新较慢
+LTS # 长期支持版，这一版本会持续进行支持，最早用在 Ubuntu
+```
+
+所以，LTS 就是长期支持版，在 node 中它代表此版本会长期进行支持，很稳定，放心使用的意思。
+而 Latest 就是字面理解的最新版本的意思。
+而大家可能接触比较少的Gallium 其实就是 node 发版对应的一个代号，这个就比较随意了，就是个情怀，比如大家耳熟能详的 Vue ，扒一扒发版记录，它的每次发版都有代号：
+
+```bash
+Vue3.0 # One Piece：海贼王
+Vue2.7 # Naruto：火影忍者
+Vue2.6 # Macross：超时空要塞
+Vue2.5 # Level E：灵异E接触
+Vue2.4 # Kill la Kill：斩服少女
+Vue2.3 # JoJo's Bizarre Adventure：JoJo的奇妙冒险
+Vue2.2 # Initial D：头文字D 
+Vue2.1 # Hunter X Hunter：全职猎人
+Vue2.0 # Ghost in the Shell：攻壳机动队
+Vue1.0 # Evangelion：新世纪福音战士
+Vue0.12 # Dragon Ball：龙珠
+Vue0.11 # Cowboy Bebop：星际牛仔
+Vue0.10 # Blade Runner：银翼杀手
+Vue0.9  # Animatrix：黑客帝国动画版
+```
+
+- nrm
+
+```bash
+nrm -h /nrm -help  # 查看 nrm 帮助（相关命令、信息）
+nrm -V             # 查看当前 nrm 版本
+nrm ls             # 查看当前 nrm 中可用的镜像源地址
+nrm current        # 查看当前使用镜像源
+
+nrm use <registry> # 切换为某个镜像源 registry-镜像源名
+nrm add <registry> <url> # 添加一个镜像源 registry-镜像源名 url-镜像源地址
+nrm del <registry>  # 删除一个镜像源
+nrm test <registry> # 测试该镜像源下载响应时间
+```
+
+### 3.2项目配置
+
+到此我们已经初步创建并启动了项目，其实很多人只关注代码开发相关的文件，并不会去纠结项目中和核心开发无关配置文件的作用，这是不对的，我们应该对自己的项目做到极致掌控，了解项目中每一个文件每一行代码对项目的作用，接下来就来一起看看我们创建的项目中所有文件的作用吧！
+
+在初始化创建项目时，默认创建了很多子文件（一些组件、样式文件等等），我们先把不需要的项目无关文件删干净，需要我们处理的无用文件都在 `src` 文件夹下：
+
+- 删除 `src/views` 下所有文件
+- 删除 `src/stores` 下所有文件
+- 删除 `src/components` 下所有文件
+- 删除 `src/assets` 下所有文件
+
+清除干净之后，我们在 `src/views` 文件夹下新建一个 `HomePage.vue` 文件：
+
+```js
+<script setup></script>
+
+<template>
+  <div>hello xianzao, This is home page!</div>
+</template>
+
+<style scoped></style>
+```
+
+修改一下 `router/index.js` 路由文件，删掉之前页面的路由，加上 `HomePage` 页面的路由：
+
+```js
+import { createRouter, createWebHistory } from 'vue-router'
+
+const router = createRouter({
+  history: createWebHistory(import.meta.env.BASE_URL),
+  routes: [
+    {
+      path: '/',
+      name: 'HomePage',
+      component: () => import('@/views/HomePage.vue')
+    }
+  ]
+})
+
+export default router
+```
+
+修改一下项目根组件src/App.vue 的内容：
+
+```js
+<script setup>
+import { RouterView } from 'vue-router'
+</script>
+
+<template>
+  <RouterView />
+</template>
+
+<style scoped></style>
+```
+
+最后，项目入口文件里，有一行 css 样式的引入，删除掉
+
+```js
+import { createApp } from 'vue'
+import { createPinia } from 'pinia'
+
+import App from './App.vue'
+import router from './router'
+
+// 删除掉，css文件已经删除过了
+// import './assets/main.css'
+
+const app = createApp(App)
+
+app.use(createPinia())
+app.use(router)
+
+app.mount('#app')
+```
+
+运行没有问题后，至此，实现了项目的初始化配置。
+
+#### 3.2.1 安装组件库
+
+这里我们用字节的 [arco.design](https://arco.design/vue/docs/start) （主要没用过，可以尝试下）。
+
+```bash
+npm install --save-dev @arco-design/web-vue
+
+# or 
+
+pnpm add -D @arco-design/web-vue
+```
+
+接下来，配置按需加载，我们使用 [unplugin-vue-components](https://github.com/antfu/unplugin-vue-components) 和 [unplugin-auto-import](https://github.com/antfu/unplugin-auto-import) 这两款 `vite` 插件来开启按需加载及自动导入，插件会自动解析模板中的使用到的组件，并导入组件和对应的样式文件。
+
+这两个插件一个是自动帮我们引入一些组件和指令（只做 `HTML` 中使用的常规组件例如各种 `.vue` 组件的引入以及指令的自动引入），另一个是自动帮我们做一些 `API` 组件的自动引入（像直接在 `script` 中引入的必须用 `API` 调用的 `Message` 组件以及后面我们还会用它做 `Vue` 的一些 `API` 自动引入等等）
+
+```js
+npm i unplugin-vue-components -D
+npm i -D unplugin-auto-import
+
+# or
+
+pnpm add -D unplugin-vue-components
+pnpm add -D unplugin-auto-import
+```
+
+在 `vite.config.js` 文件中配置使用一下插件：
+
+```js
+import { fileURLToPath, URL } from "node:url";
+
+import { defineConfig } from "vite";
+import vue from "@vitejs/plugin-vue";
+
+import AutoImport from "unplugin-auto-import/vite";
+import Components from "unplugin-vue-components/vite";
+import { ArcoResolver } from "unplugin-vue-components/resolvers";
+
+// https://vitejs.dev/config/
+export default defineConfig({
+  plugins: [
+    vue(),
+    AutoImport({
+      resolvers: [ArcoResolver()],
+    }),
+    Components({
+      resolvers: [
+        ArcoResolver({
+          sideEffect: true,
+        }),
+      ],
+    }),
+  ],
+  resolve: {
+    alias: {
+      "@": fileURLToPath(new URL("./src", import.meta.url)),
+    },
+  },
+});
+```
+
+可以看到上面我们在 `unplugin-vue-components/resolvers` 中导出了一个 `ArcoResolver` ，它是什么呢？
+
+其实，它是插件内置的解析器，像常用的组件库（`element`、`antd` 等）自动引入的一些配置都被内置了，[查看内置支持的组件库解析器](https://github.com/antfu/unplugin-vue-components#importing-from-ui-libraries)，我们只需要导出对应 UI库 的解析器用就可以了。
+
+OK，现在组件库和自动引入都做好了，先试一试，我们在 `home` 页面分别用 `ArcoVue` 的普通按钮 `AButton` 组件和全局提示 `AMessage` 组件试一试。
+
+```js
+<script setup>
+const handleClickMini = () => {
+  AMessage.info("hello xianzao, click mini AButton!");
+};
+</script>
+<template>
+  <div>hello xianzao, This is home page!</div>
+  <a-space>
+    <a-button type="primary" size="mini" @click="handleClickMini"
+      >Mini</a-button
+    >
+    <a-button type="primary" size="small">Small</a-button>
+    <a-button type="primary">Medium</a-button>
+    <a-button type="primary" size="large">Large</a-button>
+  </a-space>
+</template>
+<style scoped lang="scss"></style>
+```
+
+接下来就可以在项目内不引入组件，随意使用组件库中的组件了
+
+这里强烈建议大家，可以好好参考下这两个插件的实现，后续按照此类实现，就不用在项目中重复引入组件代码了。
+
+![vue-arcoVue组件展示](/Volumes/F/zyl-study/web-zhuawa/20221203/vue-arcoVue组件展示.png)
+
+#### 3.2.2 配置项目内组件 & api的自动引入
+
+我们在使用 `Vue` 的过程中，每个 `script` 以及 `js` 文件中或多或少需要引入一些像 `ref`、`reactive` 等 `VueAPI`，包括 `VueRouter`、`Pinia` 等都要引入一些 API，还有我们自己写的组件也都需要我们手动去引入使用。
+
+那既然配置了组件库自动引入，我们接下来也配置API、以及页面组件的自动引入。
+
+还是在 `vite.config.js` 文件中进行修改：
+
+```js
+import { fileURLToPath, URL } from "node:url";
+
+import { defineConfig } from "vite";
+import vue from "@vitejs/plugin-vue";
+
+import AutoImport from "unplugin-auto-import/vite";
+import Components from "unplugin-vue-components/vite";
+import { ArcoResolver } from "unplugin-vue-components/resolvers";
+
+// https://vitejs.dev/config/
+export default defineConfig({
+  plugins: [
+    vue(),
+    AutoImport({
+      // 需要去解析的文件
+      include: [
+        /\.[tj]sx?$/, // .ts, .tsx, .js, .jsx
+        /\.vue$/,
+        /\.vue\?vue/, // .vue
+        /\.md$/, // .md
+      ],
+      // imports 指定自动引入的包位置（名）
+      imports: ["vue", "pinia", "vue-router"],
+      // 生成相应的自动导入json文件。
+      eslintrc: {
+        // 启用
+        enabled: true,
+        // 生成自动导入json文件位置
+        filepath: "./.eslintrc-auto-import.json",
+        // 全局属性值
+        globalsPropValue: true,
+      },
+      resolvers: [ArcoResolver()],
+    }),
+    Components({
+      // imports 指定组件所在目录，默认为 src/components
+      dirs: ["src/components/", "src/view/"],
+      // 需要去解析的文件
+      include: [/\.vue$/, /\.vue\?vue/, /\.md$/],
+      resolvers: [
+        ArcoResolver({
+          sideEffect: true,
+        }),
+      ],
+    }),
+  ],
+  resolve: {
+    alias: {
+      "@": fileURLToPath(new URL("./src", import.meta.url)),
+    },
+  },
+});
+```
+
+如上，在 API 自动引入插件 AutoImport 中我们写了指定要去解析的文件 include 配置，然后在 import 选项中指定了自动引入的包名，并且所有自动引入的 API 在被自动引入时会添加记录到根目录的 ./.eslintrc-auto-import.json 文件中，方便我们查看都自动引入了哪些东西，后面我们使用这几个包的 API ，就不需要手动引入了，插件会帮我们在文件解析时自动引入。
+
+同样的，在组件自动引入插件 Components 中，我们配置了指定要去解析的文件 include 配置，然后在 import 选项中指定了自动引入的组件目录，以后只要是在这几个目录下写的组件，我们在使用时都必须要手动去引入了
+
+ok，我们来试一下。
+
+我们在 src/components 文件夹下新建一个 HelloWorld.vue 文件，写上下面内容。
+
+```js
+<script setup>
+const name = ref("xianzao");
+</script>
+<template>
+  <div>hello {{ name }}, this is helloworld components</div>
+</template>
+
+<style scoped></style>
+```
+
+然后，直接在 `src/views/HomePage.vue` 文件中使用 `HelloWorld` 组件，不要引入，如下：
+
+```js
+<script setup>
+const handleClickMini = () => {
+  AMessage.info("hello xianzao, click mini AButton!");
+};
+</script>
+<template>
+  <div>hello xianzao, This is home page!</div>
+  <a-space>
+    <a-button type="primary" size="mini" @click="handleClickMini"
+      >Mini</a-button
+    >
+    <a-button type="primary" size="small">Small</a-button>
+    <a-button type="primary">Medium</a-button>
+    <a-button type="primary" size="large">Large</a-button>
+  </a-space>
+
+  <!-- 这里 -->
+  <HelloWorld />
+</template>
+<style scoped lang="scss"></style>
+```
+
+然后，直接在 `src/views/HomePage.vue` 文件中使用 `HelloWorld` 组件，不要引入，如下：
+
+```js
+<script setup>
+const handleClickMini = () => {
+  AMessage.info("hello xianzao, click mini AButton!");
+};
+</script>
+<template>
+  <div>hello xianzao, This is home page!</div>
+  <a-space>
+    <a-button type="primary" size="mini" @click="handleClickMini"
+      >Mini</a-button
+    >
+    <a-button type="primary" size="small">Small</a-button>
+    <a-button type="primary">Medium</a-button>
+    <a-button type="primary" size="large">Large</a-button>
+  </a-space>
+
+  <!-- 这里 -->
+  <HelloWorld />
+</template>
+<style scoped lang="scss"></style>
+```
+
+这里我们在创建的 `HelloWorld` 组件中使用了 Vue 的 `ref API`，并没有引入它，而后在 `HomePage` 页面中使用该组件也没有引入，效果如下：
+
+![vue-arcoVue组件展示2](/Volumes/F/zyl-study/web-zhuawa/20221203/vue-arcoVue组件展示2.png)
+
+后面我们使用 `Vue`、`VueRouter`、`Pinia`、`ArcoVue` 包括自建组件等等都不需要手动引入了。
+
+#### 3.2.3 安装vueuse
+
+[VueUse](https://vueuse.org/) 可以把它理解为一个基于 `Vue` 的工具库，`Vue2`、`Vue3` 都可以用，有很多实用的方法、组件包括指令，超级方便，后续我们会用到其中的一些方法，所以先装上。
+
+##### 3.2.3.1 安装
+
+```js
+npm i @vueuse/core
+
+// or
+
+pnpm add @vueuse/core
+```
+
+##### 3.2.3.2 配置自动引入
+
+`VueUse` 不止有方法，还有组件和指令，所以我们还是需要上面两个自动引入的插件去处理，那由于作者是一个人，解析器都内置在自动引入插件中了，所以我们直接导出用就可以了。
+
+我们配置 `VueUse` 的组件和指令自动引入需要两个解析器，还是在 `vite.config.js` 配置文件中引入，如下：
+
+```js
+// ArcoVue、VueUse 组件和指令的自动引入解析器
+import {
+  ArcoResolver,
+  VueUseComponentsResolver,
+  VueUseDirectiveResolver,
+} from "unplugin-vue-components/resolvers";
+```
+
+使用的话，只需要在配置文件 `plugins` 模块中之前写过的 `Components` 插件中使用一下这两个解析器就好了：
+
+```js
+Components({
+  // imports 指定组件所在目录，默认为 src/components
+  dirs: ["src/components/", "src/views/"],
+  // 需要去解析的文件
+  include: [/\.vue$/, /\.vue\?vue/, /\.md$/],
+  resolvers: [
+    ArcoResolver({
+      sideEffect: true,
+    }),
+    VueUseComponentsResolver(),
+    VueUseDirectiveResolver(),
+  ],
+}),
+```
+
+API 方法的自动引入就很简单了，还是配置文件中只需要在之前用过的 AutoImport 插件中添加一个 VueUse 包名配置就行了：
+
+```js
+AutoImport({
+  // 需要去解析的文件
+  include: [
+    /\.[tj]sx?$/, // .ts, .tsx, .js, .jsx
+    /\.vue$/,
+    /\.vue\?vue/, // .vue
+    /\.md$/, // .md
+  ],
+  // 新增 '@vueuse/core'
+  imports: ["vue", "pinia", "vue-router", "@vueuse/core"],
+  // 生成相应的自动导入json文件。
+  eslintrc: {
+    // 启用
+    enabled: true,
+    // 生成自动导入json文件位置
+    filepath: "./.eslintrc-auto-import.json",
+    // 全局属性值
+    globalsPropValue: true,
+  },
+  resolvers: [ArcoResolver()],
+}),
+```
+
+这样我们就可以在项目中随时随地的使用 `VueUse` 了！
+
+建议大家有时间可以去看看 `VueUse` 的源码实现，也并不复杂，它有很多最佳实践，可以给我们使用 `Vue3` 提供很大的帮助。
+
+#### 3.2.4 配置Eslint和Prettier
+
+上述内容中，我们配置了自动引入，但是大家会发现，由于之前我们给项目安装了 `ESLint` 和 `Prettier` ，虽然还没有进行配置，但是默认配置会给那些自动引入的 `API` 报红，就比如下面这样：
+
+![img](https://cdn.nlark.com/yuque/0/2023/png/2340337/1675332162964-d31495c0-7101-46b7-9435-827659f92fd3.png)
+
+查看当前项目中的`.eslintrc.cjs`，这是 `ESLint` 配置，当前默认如下：
+
+```js
+/* eslint-env node */
+require("@rushstack/eslint-patch/modern-module-resolution");
+
+module.exports = {
+  root: true,
+  extends: [
+    "plugin:vue/vue3-essential",
+    "eslint:recommended",
+    "@vue/eslint-config-prettier",
+  ],
+  parserOptions: {
+    ecmaVersion: "latest",
+  },
+};
+```
+
+根目录下的 `.prettierrc.json` 是 `Prettier` 配置，当前默认如下
+
+```js
+{}
+```
+
+如何让我们自动引入的那些 API 不报红呢？
+还记得我们自动引入配置的那个导出文件吗？我们所有自动引入的 API 都生成了记录在这个文件，你只需要将它写入 ESLint 配置的 extends 中让 Lint 工具识别下就好了，如下：
+
+```js
+/* eslint-env node */
+require('@rushstack/eslint-patch/modern-module-resolution')
+
+module.exports = {
+  root: true,
+  'extends': [
+    // 这里
+    './.eslintrc-auto-import.json',
+    'plugin:vue/vue3-essential',
+    'eslint:recommended',
+    '@vue/eslint-config-prettier'
+  ],
+  parserOptions: {
+    ecmaVersion: 'latest'
+  }
+}
+```
+
+注意，`extends` 这个继承配置的是一个数组，最终会将所有规则项进行合并，出现冲突的时候，后面的会覆盖前面的，我们在初始化项目安装时默认给加上去了 3 个：
+
+- `plugin:vue/vue3-essential` ：ESLint Vue3 插件扩展
+- `eslint:recommended`：ESLint 官方扩展
+- `@vue/eslint-config-prettier` ：Prettier NPM 扩展
+
+我们把 Prettier 扩展放到最后面，原因是 Prettier 会格式化代码，是为了保证最终代码格式统一。
+
+
+
+接下来，由于我们接下来要使用 `Vue3` 的 `CompositionAPI`，那 Vue3 有几个可以直接在 `<script setup> `中可用的全局 API，比如 `defineProps`、`defineEmits`、`defineExpose`，如果你使用 TS，还会用到 `withDefaults` 。
+
+那我们的 `ESLint` 默认是识别不了这些全局 API 的，此时需要向 `ESlint` 规则中添加需要辨认的全局变量。
+
+那 `ESLint` 配置中的 `globals` 属性就是让项目在 `lint` 执行期间访问额外的全局变量，简单说就是开发者自定义的全局变量，我们依次加上这些属性就可以了。
+
+```js
+/* eslint-env node */
+require("@rushstack/eslint-patch/modern-module-resolution");
+
+module.exports = {
+  root: true,
+  extends: [
+    "./.eslintrc-auto-import.json",
+    "plugin:vue/vue3-essential",
+    "eslint:recommended",
+    "@vue/eslint-config-prettier",
+  ],
+  // 这里
+  globals: {
+    defineEmits: "readonly",
+    defineProps: "readonly",
+    defineExpose: "readonly",
+    withDefaults: "readonly",
+  },
+  parserOptions: {
+    ecmaVersion: "latest",
+  },
+};
+```
+
+如上，添加全局属性时，`readonly` 代表只读，`writable` 代表可写，可写就是可以手动覆盖这个全局变量的意思，我们当然是不允许覆盖了，所以全部都设置成了 `readonly`。
+
+我们可以看到在 `.eslintrc.cjs` 文件中第一行有个 `/* eslint-env node */`注释，它是用来指定文件为 `node` 环境的。
+
+如果不想这样展示，只要在`eslint`中用 `node` 规则解析即可。这里我们给 `ESLint` 指定一下常用环境，即 `env` 属性配置，让 `ESLint` 自己去匹配，我们不写这个配置的话默认它只支持浏览器 `browser` 的规则解析，写上环境配置：
+
+```js
+require("@rushstack/eslint-patch/modern-module-resolution");
+
+module.exports = {
+  // 这里
+  env: {
+    // 浏览器环境
+    browser: true,
+    // Node环境
+    node: true,
+    // 启用除了modules以外的所有 ECMAScript 6 特性
+    es2021: true,
+  },
+  root: true,
+  extends: [
+    "./.eslintrc-auto-import.json",
+    "plugin:vue/vue3-essential",
+    "eslint:recommended",
+    "@vue/eslint-config-prettier",
+  ],
+  globals: {
+    defineEmits: "readonly",
+    defineProps: "readonly",
+    defineExpose: "readonly",
+    withDefaults: "readonly",
+  },
+  parserOptions: {
+    ecmaVersion: "latest",
+  },
+  rules: {
+    semi: ["warn", "never"], // 禁止尾部使用分号
+    "no-debugger": "warn", // 禁止出现 debugger
+  },
+};
+```
+
+如上所示，我们在环境这块配置了三个：
+
+1. browser ── 浏览器环境；
+2. node ── Node 环境；
+3. es6 ── 启用除了 modules 以外的所有 ECMAScript 6 特性；
+
+都用的到，直接都开启就好。
+可能我们也都发现了，我们新增了一个 rules 属性，如单词字面意思，就是规则的配置，可以配置启用一些规则及其各自的错误级别，那由于每个人的喜好不同，所以我没有过多配置，只配置了 2 个。
+rules 的规则配置有三种：
+
+1. off 或 0 关闭对该规则的校验；
+2. warn 或 1 启用规则，不满足时抛出警告，不会退出编译进程；
+3. error 或 2 启用规则，不满足时抛出错误，会退出编译进程；
+
+配置完了 ESLint ，我们再来看Prettier，我这边配置了几个常用的，如下
+
+```js
+{
+  "semi": false,
+  "singleQuote": true,
+  "printWidth": 80,
+  "trailingComma": "none",
+  "arrowParens": "avoid",
+  "tabWidth": 2
+}
+```
+
+1. `semi` 代码结尾是否加分号；
+2. `singleQuote` 是否使用单引号；
+3. `printWidth` 超过多少字符强制换行；
+4. `trailingComma` 代码末尾不需要逗号；
+5. `arrowParens` 单个参数的箭头函数不加括号 `x => x`；
+6. `tabWidth` 使用 n 个空格缩进；
+
+Prettier 配置就比较简单，按照文档和喜好在 `.prettierrc.json` 文件中配置就可以。
+
+#### 3.2.5 styles公共样式管理、初始化样式
+
+接下来我们简单做一下 `CSS` 公共样式的处理，我们在项目 src 目录下新增一个 `styles` 文件夹，此文件夹我们后期可以放一些公共的样式文件。
+
+大家都知道，`HTML` 标签是有默认样式的，一般我们在写项目时都会直接清除掉这个默认样式，也就是做个重置。
+
+那相较于 [Eric Merer](https://meyerweb.com/eric/tools/css/reset/) 原版的清楚样式文件，`Normalize.css` 它在默认的 HTML 元素样式上提供了跨浏览器的高度一致性，是一种现代的、为 HTML5 准备的优质替代方案，所以我们直接使用它就好了。
+
+下载 [Normalize.css](https://necolas.github.io/normalize.css/latest/normalize.css) 到 Styles 文件夹下，当然你也可以直接 npm 安装它，不过我比较喜欢直接下载下来这个文件。
+
+下载下来之后直接在 `main.js`最上面引入一下就行了，如下
+
+```js
+import { createApp } from 'vue'
+import { createPinia } from 'pinia'
+// 这里
+import '@/styles/normalize.css'
+
+import App from './App.vue'
+import router from './router'
+
+const app = createApp(App)
+
+app.use(createPinia())
+app.use(router)
+
+app.mount('#app')
+```
+
+其他的公共 `css` 文件我们用到的时候也可以这样引入一下就可以了。
+
+#### 3.2.6 配置Unocss
+
+CSS 这块，我们的原则是能简单就简单，所以我们基于 ACSS 即原子化的 CSS 框架来做。
+
+[Tailwind CSS](https://tailwindcss.com/) 大家应该都知道， [WindiCSS](https://windicss.org/) 算是他的一个超集，由于`WindiCSS` 作者们都不咋维护了，然后 [UnoCSS](https://github.com/unocss/unocss) 又这么便捷，配置文件都不需要写，直接引入 `Vite` 插件和对应的预设就可以了，所以这里选择unoCSS。
+
+`UnoCSS`，官方说它是一个按需原子 `CSS` 引擎，它默认提供了流行实用程序优先框架 `Tailwind CSS`、`Windi CSS`、`Bootstrap`、`Tachyon` 等的通用超集，如果你习惯这些框架，依旧可以按照熟悉的方式写，无缝衔接。
+
+这里看个人喜好了，用不用，有什么，怎么用，还是看具体个人使用。
+
+```js
+npm install --save-dev unocss @unocss/preset-uno @unocss/preset-attributify @unocss/transformer-directives
+
+# or
+
+pnpm i -D unocss @unocss/preset-uno @unocss/preset-attributify @unocss/transformer-directives
+```
+
+##### 3.2.6.1 安装
+
+如上，我们装了 4 个包
+
+1. [unocss](https://github.com/unocss/unocss) 核心插件；
+2. [@unocss/preset-uno](https://github.com/unocss/unocss/tree/main/packages/preset-uno) 默认预设，`Tailwind` / `WindiCSS` 等超集；
+3. [@unocss/preset-attributify](https://github.com/unocss/unocss/tree/main/packages/preset-attributify) 属性预设，为其他预设和规则提供[属性模式](https://github.com/unocss/unocss/tree/main/packages/preset-attributify#attributify-mode)；
+
+- [@unocss/transformer-directives](https://github.com/unocss/unocss/blob/main/packages/transformer-directives/README.md) 指令转换器插件，允许使用 `@apply`指令在 `style` 中写原子化 css；
+
+##### 3.2.6.2 配置
+
+还是在 `Vite` 插件配置中，也就是 `vite.config.js` 文件中配置
+
+```js
+import { fileURLToPath, URL } from 'node:url'
+
+import { defineConfig } from 'vite'
+import vue from '@vitejs/plugin-vue'
+
+// ...
+
+// Unocss 插件
+import Unocss from 'unocss/vite'
+// Unocss 默认预设
+import presetUno from '@unocss/preset-uno'
+// Unocss 属性模式预设
+import presetAttributify from '@unocss/preset-attributify'
+// Unocss 指令转换插件
+import transformerDirective from '@unocss/transformer-directives'
+
+// https://vitejs.dev/config/
+export default defineConfig({
+  plugins: [
+    // ...
+
+    // 新增一个 Unocss 插件配置
+    Unocss({
+      // 预设
+      presets: [presetUno(), presetAttributify()],
+      // 指令转换插件
+      transformers: [transformerDirective()],
+      // 自定义规则
+      rules: []
+    }),
+  ]
+
+  // ...
+})
+```
+
+##### 3.2.6.3 使用
+
+在使用之前我们先在入口文件 main.js中一下 UnoCSS 的 css 文件：
+
+```js
+import { createApp } from 'vue'
+import { createPinia } from 'pinia'
+import '@/styles/normalize.css' 
+
+// 导入Unocss样式 
+import 'uno.css' 
+```
+
+##### 3.2.6.4 基础使用
+
+```js
+<button class="bg-blue-400 hover:bg-blue-500 text-sm text-white font-mono font-light py-2 px-4 rounded border-2 border-blue-200 dark:bg-blue-500 dark:hover:bg-blue-600">
+  Button
+</button>
+```
+
+如果不熟悉，可以直接在[此文档](https://uno.antfu.me/)查看对应属性。
+
+除此外，既然我们用的预设支持 `Tailwind / WindiCSS` ，可以参考这两个文档，了解一个大概，按照这两个东西的写法来就可以，有不会的去这两个的文档里搜
+
+- [TailwindCSS](https://tailwindcss.com/)；
+- [WindiCSS](https://windicss.org/)；
+
+除此外，我们上面安装了 `@unocss/preset-attributify` 属性预设，所以我们也可以使用属性模式，可以将实用程序分为多个属性，这样写：
+
+```js
+<button 
+  bg="blue-400 hover:blue-500 dark:blue-500 dark:hover:blue-600"
+  text="sm white"
+  font="mono light"
+  p="y-2 x-4"
+  border="2 rounded blue-200"
+>
+  Button
+</button>
+```
+
+如果有人觉得原子化 CSS 全写在 HTML 中，太多的话，就可以使用指令转换器插件 @unocss/transformer-directives 。
+它允许我们使用 @apply指令在 style 中写原子化 CSS ：
+
+```js
+<button class="btn-style">
+  Button
+</button>
+
+<style>
+.btn-style{
+  @apply bg-blue-400 text-sm text-white font-mono font-light py-2 px-4 rounded border-2 border-blue-200;
+  @apply hover:bg-blue-500;
+  @apply dark:bg-blue-500 dark:hover:bg-blue-600;
+}
+</style>
+```
+
+##### 3.2.6.5 其他
+
+我们安装一下 `UnoCSS` 官方的 `VSCode` 插件，`VSCode` 扩展中搜索：`UnoCSS`。
+
+详细的原子化CSS也会在后面的工程化&实战中介绍使用。
+
+#### 3.2.7 Utils、Hooks、API 管理
+
+我们在项目 `src` 目录下添加一个 `utils` 文件夹，此文件夹用于存放我们项目中用到的一些公共方法文件；
+
+同样的，我们在项目 `src` 目录下添加一个 `hooks` 文件夹，此文件夹用于存放我们项目中用到的一些 `hooks` 文件，因为我们用 `Vue3` 的 `CompsitionAPI`，后面用多了自然会有很多 `hooks` 文件，针对一些公用的，我们统一管理在此文件夹下；
+
+平常我们做项目，一般和请求相关的文件都统一放在一个文件夹下，所以我们在项目 `src` 目录下添加一个 `api` 文件夹，用于存放和请求相关的文件；
+
+#### 3.2.8 其他vite配置
+
+这里使用vite的[环境配置](https://cn.vitejs.dev/guide/env-and-mode.html#env-files)，在 env 目录下新建下面 3 个文件
+1.env 所有模式下都会加载；
+2.env.development 只在开发模式下加载；
+3.env.production 只在生产模式下加载；
+.env 文件在所有模式下都会加载，所以这里我们可以写一些所有环境都通用的环境变量，如下：
+
+```js
+# 所有环境都会加载
+
+# 项目标识代码
+VITE_APP_CODE="XIANZAO_VUE_TOOLS"
+
+# 项目名
+VITE_APP_NAME="工具类"
+
+# 项目描述
+VITE_APP_DESCRIPTION="工具类集合"
+```
+
+
+
+
 
 https://www.yuque.com/lpldplws/web/abbfgk?singleDoc# 《编译器》 密码：uteo
 
 # React
 
+React是一个声明式，高效灵活的构建用户界面的js库
+
+UI=render(data) 单向数据流
+
+Mvc
+
+tauri
+
+jsx能防止xss攻击
+
 https://react.iamkasong.com/
 
-由react控制的值是受控组件，无法控制的值是非受控组件
+由react控制的值是受控组件，无法控制的值是非受控组件，
+
+受控组件是能set value和get value
 
 比如
 
@@ -16242,8 +17906,45 @@ https://react.iamkasong.com/
 
 flushSync ???
 
+```jsx
+this.setState((state,props)=>{
+    return {
+        counter:state.counter+props.increment
+    }
+})
+```
+
+HOC,入参是一个组件，返回是一个组件
 
 
 
+https://www.yuque.com/lpldplws/atomml/tmbe7ykqmslqszhe?singleDoc# 《JavaScript高级用法(1/2)》 密码：bwxh
+https://www.yuque.com/lpldplws/atomml/os260aysmxgeyhhm?singleDoc# 《JavaScript高级用法(2/2)》 密码：ih4c
+
+（建议有时间的同学可以精读一下，对理解JS有很大的帮助）：http://es5.github.io/#x8.7
+
+https://www.yuque.com/lpldplws/atomml/dh5rlaq0xygdkok5?singleDoc# 《浏览器事件模型&请求》 密码：qnyz
+
+https://www.yuque.com/lpldplws/atomml/my01zht47ol0dh2u?singleDoc# 《JavaScript的垃圾回收和内存泄漏》 密码：kb86
+
+https://www.yuque.com/lpldplws/atomml/xnudhigbps5in504?singleDoc# 《JavaScript的运行机制》 密码：zglx
+
+https://www.yuque.com/lpldplws/atomml/gtn6hvlf3fh1gl6e?singleDoc# 《前端异步处理规范及应用》 密码：cdik
+
+https://www.yuque.com/lpldplws/web/dn72m7?singleDoc# 《Vue基础用法》 密码：xrw9
+https://www.yuque.com/lpldplws/web/ck0csfxciuzol315?singleDoc# 《Vue高级用法》 密码：tczl
+https://www.yuque.com/lpldplws/web/hadz6f?singleDoc# 《Vue2源码解析（1/2）》 密码：mq90
+https://www.yuque.com/lpldplws/web/xx3ygi?singleDoc# 《Vue2源码解析（2/2）》 密码：ya0n
+https://www.yuque.com/lpldplws/web/gdw840?singleDoc# 《Vue3新特性&源码解析（1/3）》 密码：mmo8
+https://www.yuque.com/lpldplws/web/myfkf4?singleDoc# 《配套习题》 密码：oir9
+https://www.yuque.com/lpldplws/web/gmptis?singleDoc# 《Vue3新特性&源码解析（2/3）》 密码：qke4
+https://www.yuque.com/lpldplws/web/ty5nga?singleDoc# 《Vue3新特性&源码解析（3/3）》 密码：apwp
+https://www.yuque.com/lpldplws/web/sp3cao?singleDoc# 《配套习题》 密码：kv13
 
 https://github.com/XiNiHa/streaming-ssr-showcase 流式渲染的例子
+
+https://www.yuque.com/lpldplws/web/xhqomd?singleDoc# 《前端模块化》 密码：xnou
+
+https://www.yuque.com/lpldplws/web/xpzv1mgsqh7s7b0a?singleDoc# 《函数式编程》 密码：hcu6
+
+https://www.yuque.com/lpldplws/web/bgn3sl?singleDoc# 《react学习路径》 密码：ei05
