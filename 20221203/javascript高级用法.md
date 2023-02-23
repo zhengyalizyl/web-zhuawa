@@ -1,5 +1,7 @@
 # javascript高级用法(1/2)
 
+https://vgbixa7nr9.feishu.cn/drive/folder/fldcnuszmspfoSJwl5QFtPrsCGg
+
 ## 原型&原型链
 
 函数 prototype指向的是一个对象，这个对象是调用该构造函数创建的实例的原型
@@ -6107,6 +6109,8 @@ export function appendChild (node: Node, child: Node) {
 ## 1.课程目标
 
 掌握Vue2.6（目前2.X最高版本）的核心源码；
+
+https://www.yuque.com/lpldplws/web/xx3ygi?singleDoc# 《Vue2源码解析（2/2）》 密码：ya0n
 
 ## 2.课程大纲
 
@@ -17874,21 +17878,4428 @@ VITE_APP_NAME="工具类"
 VITE_APP_DESCRIPTION="工具类集合"
 ```
 
+注意，我们在 Vite 中配置的环境变量默认只有以 VITE_ 开头的配置，才会暴露给客户端，我们才能在项目中获取到。
+开发模式 .env.development配置：
 
+```bash
+# 开发环境加载
 
+# 环境标识
+VITE_APP_ENV="development"
 
+# 公共基础路径
+VITE_BASE="/"
+
+# 代理URL路径
+VITE_BASE_URL ="/api"
+
+# 模拟数据接口路径
+VITE_BASE_MOCK_URL ="/mock-api"
+
+# 服务端接口路径
+VITE_BASE_SERVER_URL = "..."
+
+# 打包是否使用Mock
+VITE_APP_PRODMOCK=false
+```
+
+那生产环境除了环境标识 `VITE_APP_ENV` 和开发模式标识不同，其他配置项应尽量保持一致，只是配置项的内容不同而已，不一一的展示了。
+
+接下来修改下 `package.json` 脚本命令如下：
+
+```js
+{
+    "scripts": {
+    "serve": "vite --mode development",
+    "build": "vite build --mode production",
+    "preview": "vite preview --port 8081",
+    "lint": "eslint . --ext .vue,.js,.jsx,.cjs,.mjs --fix --ignore-path .gitignore"
+  }
+}
+```
+
+在 serve 脚本命令配置中，我们还传了一个 mode，其实这个 mode 就是对应我们的环境文件 .env.[mode]
+开发环境默认 mode 就是 development，生产环境默认 mode 就是 development，所以脚本命令这里我不传 mode 也可以，但是如果大家把开发环境文件由 .env.development 改成 .env.dev，那脚本中 mode 就得传 --mode dev，build 时也是一样的道理，如果有其他环境，那脚本命令传入对应的 mode 就可以了。
+如果想要在 vite.config.js 文件中获取对应运行 mode 环境变量的配置，我们可以使用 vite 的 [loadEnv API](https://cn.vitejs.dev/guide/api-javascript.html#loadenv)。
+Vite 的 defineConfig 方法也可以接收一个返回配置对象的回调函数，回调函数的参数里我们可以拿到运行脚本命令时传入的 mode 值，从而使用 loadEnv 方法去在 Vite 配置文件中获取对应 mode 下的环境变量，如下：
+
+```js
+// export default defineConfig({}) 修改
+
+export default defineConfig(({mode}) => {
+	return {}
+})
+```
+
+截止到这里，我们的配置为：
+
+```js
+import { fileURLToPath, URL } from 'node:url'
+
+import { defineConfig, loadEnv } from 'vite'
+import vue from '@vitejs/plugin-vue'
+
+// API自动引入插件
+import AutoImport from 'unplugin-auto-import/vite'
+// 组件自动引入插件
+import Components from 'unplugin-vue-components/vite'
+// ArcoVue、VueUse 组件和指令自动引入解析器
+import {
+  ArcoResolver,
+  VueUseComponentsResolver,
+  VueUseDirectiveResolver
+} from 'unplugin-vue-components/resolvers'
+// icon 插件
+import Icons from 'unplugin-icons/vite'
+// icon 自动引入解析器
+import IconsResolver from 'unplugin-icons/resolver'
+// icon 加载 loader
+import { FileSystemIconLoader } from 'unplugin-icons/loaders'
+// Unocss 插件
+import Unocss from 'unocss/vite'
+// Unocss 默认预设
+import presetUno from '@unocss/preset-uno'
+// Unocss 属性模式预设
+import presetAttributify from '@unocss/preset-attributify'
+// Unocss 指令插件
+import transformerDirective from '@unocss/transformer-directives'
+
+// https://vitejs.dev/config/
+export default defineConfig(({ mode }) => {
+  const viteEnv = loadEnv(mode, './')
+
+  return {
+    base: viteEnv.VITE_BASE,
+    server: {
+      host: '0.0.0.0',
+      port: '8080',
+      open: true,
+      // 端口占用直接退出
+      strictPort: true
+      // 本地服务 CORS 是否开启
+      // cors: true,
+      // proxy: {
+      //   [viteEnv.VITE_BASE_URL]: {
+      //     target: viteEnv.VITE_BASE_SERVER_URL,
+      //     // 允许跨域
+      //     changeOrigin: true,
+      //     rewrite: path => path.replace(viteEnv.VITE_BASE_URL, '/')
+      //   }
+      // }
+    },
+    build: {
+      outDir: 'dist',
+      assetsDir: 'static/assets',
+      // sourcemap: true,
+      // 规定触发警告的 chunk 大小，消除打包大小超过500kb警告
+      chunkSizeWarningLimit: 2000,
+      // 静态资源打包到dist下的不同目录
+      rollupOptions: {
+        output: {
+          chunkFileNames: 'static/js/[name]-[hash].js',
+          entryFileNames: 'static/js/[name]-[hash].js',
+          assetFileNames: 'static/[ext]/[name]-[hash].[ext]'
+        }
+      }
+    },
+    resolve: {
+      alias: {
+        '@': fileURLToPath(new URL('./src', import.meta.url))
+      }
+    },
+    plugins: [
+      vue(),
+      // 使用Unocss
+      Unocss({
+        // 预设
+        presets: [presetUno(), presetAttributify()],
+        // 指令转换插件
+        transformers: [transformerDirective()],
+        // 自定义规则
+        rules: []
+      }),
+      AutoImport({
+        include: [
+          /\.[tj]sx?$/, // .ts, .tsx, .js, .jsx
+          /\.vue$/,
+          /\.vue\?vue/, // .vue
+          /\.md$/ // .md
+        ],
+        imports: ['vue', 'pinia', 'vue-router', '@vueuse/core'],
+        // 生成相应的自动导入json文件。
+        // eslint globals Docs - https://eslint.org/docs/user-guide/configuring/language-options#specifying-globals
+        eslintrc: {
+          enabled: true,
+          filepath: './.eslintrc-auto-import.json', // Default `./.eslintrc-auto-import.json`
+          globalsPropValue: true // Default `true`, (true | false | 'readonly' | 'readable' | 'writable' | 'writeable')
+        },
+        resolvers: [ArcoResolver()]
+      }),
+      Components({
+        // imports 指定组件所在位置，默认为 src/components
+        dirs: ['src/components/', 'src/view/'],
+        include: [/\.vue$/, /\.vue\?vue/, /\.md$/],
+        resolvers: [
+          ArcoResolver({
+            sideEffect: true
+          }),
+          VueUseComponentsResolver(),
+	  VueUseDirectiveResolver(),
+          IconsResolver({
+            // icon自动引入的组件前缀 - 为了统一组件icon组件名称格式
+            prefix: 'icon',
+            // 自定义的icon模块集合
+            customCollections: ['user', 'home']
+          })
+        ]
+      }),
+      Icons({
+        compiler: 'vue3',
+        customCollections: {
+          // user图标集，给svg文件设置fill="currentColor"属性，使图标的颜色具有适应性
+          user: FileSystemIconLoader('src/assets/svg/user', svg =>
+            svg.replace(/^<svg /, '<svg fill="currentColor" ')
+          ),
+          // home 模块图标集
+          home: FileSystemIconLoader('src/assets/svg/home', svg =>
+            svg.replace(/^<svg /, '<svg fill="currentColor" ')
+          )
+        },
+        autoInstall: true
+      })
+    ]
+  }
+})
+```
+
+#### 3.2.8 添加Config配置
+
+上面说了，环境变量默认以 `VITE_` 开头的配置，才会暴露给客户端，我们也写了几个 `VITE_` 开头的配置，所以在项目运行时，我们可以直接 `import.meta.env.VITE_XXX` 去查看配置，但是这样太麻烦了，所以我们写一个统一的配置文件去获取环境变量，包括项目后期的一些全局配置也可以写里面
+
+项目 src 目录下新建 `config/config.js` 文件，写入下面文件：
+
+```js
+// 获取环境变量
+const ENV = import.meta.env
+// 配置文件
+let config = {}
+// 默认配置文件
+const configSource = {
+  appCode: ENV.VITE_APP_CODE,
+  // 项目标识代码
+  projectCode: `${ENV.VITE_APP_CODE}_${ENV.VITE_APP_ENV}`,
+  // 项目名
+  projectName: ENV.VITE_APP_NAME,
+  // 项目描述
+  projectDesc: ENV.VITE_APP_DESCRIPTION,
+  // 资源base地址
+  base: ENV.VITE_BASE,
+  // 接口代理URL路径
+  baseUrl: ENV.VITE_BASE_URL,
+  // 模拟数据接口路径
+  mockBaseUrl: ENV.VITE_BASE_MOCK_URL,
+  // 服务端接口路径
+  serverUrl: ENV.VITE_BASE_SERVER_URL
+}
+
+const setConfig = cfg => {
+  config = Object.assign(config, cfg)
+  return config
+}
+
+const resetConfig = () => {
+  config = { ...configSource }
+  return config
+}
+resetConfig()
+
+const getConfig = key => {
+  if (typeof key === 'string') {
+    const arr = key.split('.')
+    if (arr && arr.length) {
+      let data = config
+      arr.forEach(v => {
+        if (data && typeof data[v] !== 'undefined') {
+          data = data[v]
+        } else {
+          data = null
+        }
+      })
+      return data
+    }
+  }
+  if (Array.isArray(key)) {
+    const data = config
+    if (key && key.length > 1) {
+      let res = {}
+      key.forEach(v => {
+        if (data && typeof data[v] !== 'undefined') {
+          res[v] = data[v]
+        } else {
+          res[v] = null
+        }
+      })
+      return res
+    }
+    return data[key]
+  }
+  return { ...config }
+}
+
+export { getConfig, setConfig, resetConfig }
+```
+
+这样，我们写入配置时，只需要在 configSource 对象中写入就可以了，项目中使用起来的话如下：
+
+```js
+import { getConfig, setConfig, resetConfig } from "@/config/config.js"
+
+// 获取配置
+getConfig("a")
+getConfig("a.b")
+getConfig("a.b.c")
+
+// 动态设置
+setConfig({ ... })
+
+// 重置配置
+resetConfig()
+```
+
+至此，一个Vue3 + Vite的基础项目配置就已经配置完成了，代码可以参考[此链接](https://github.com/xianzao/xianzao-vue-tools/tree/init_config)；
+
+## 4. 项目布局
+
+### 4.1 布局思路梳理
+
+我们平常所说的多布局比较笼统，仔细分来其实有两种需要多布局的场景，大家可以自行匹配一下：
+
+1. 项目有很多页面，有些页面是一样的布局，但还有些页面是另外一种布局，所以我们需要多种布局提供给不同的页面；
+2. 项目有很多页面，页面都是统一的布局，但是我们需要提供多种可以自由切换的布局，让用户在生产环境自己去选择；
+
+#### 4.1.1 多页面不同布局
+
+如果只是需要在不同的页面使用不同的布局，那么很简单。
+
+因为你只需要写多个不同的布局组件，然后使用二级路由通过指定父级路由的 `component` 就可以决定采用哪个布局，如下：
+
+假如我们有 2 个布局：
+
+```js
+// layout 1
+Layout1.vue
+
+// layout 2
+Layout2.vue
+```
+
+页面 `page_a` 想要使用`Layout1`布局，页面 `page_b` 想要使用 `Layout2` 布局，那么只需在配置路由时如下：
+
+```js
+{
+  routes: [
+    {
+      path: '/layout1',
+      name: 'Layout1',
+      component: () => import('***/Layout1.vue'),
+      redirect: '/layout1/page_a',
+      children: [
+        {
+          path: 'page_a',
+          name: 'PageA',
+          component: () => import('***/PageA.vue')
+        },
+	
+        // ...
+      ]
+    },
+    {
+      path: '/layout2',
+      name: 'Layout2',
+      component: () => import('***/Layout2.vue'),
+      redirect: '/layout2/page_b',
+      children: [
+        {
+          path: 'page_b',
+          name: 'PageB',
+          component: () => import('***/PageB.vue')
+        },
+	
+        // ...
+      ]
+    }
+  ]
+}
+```
+
+只需要在根组件和布局组件中写上 `<router-view />`即可。
+
+#### 4.1.2. 可动态切换的布局
+
+再来看可以动态切换的布局，一般来说，我们使用 Vue 的 `component` 组件，通过 `is` 属性去动态的渲染布局组件就可以了，如下：
+
+```vue
+<!-- SwitchLayout.vue -->
+<script setup>
+  const isOneLayout = ref(true)
+  import Layout1 from "./Layout1.vue"
+  import Layout2 from "./Layout2.vue"
+</script>
+
+<template>
+  <button @click="isOneLayout = !isOneLayout" />
+  <component :is="isOneLayout ? Layout1 : Layout2" />
+</template>
+```
+
+然后，我们直接在父路由中引入此页面，就可以通过改变状态来动态切换所有的子路由布局了，如下：
+
+```js
+{
+  routes: [
+    {
+      path: '/',
+      component: () => import('***/SwitchLayout.vue'),
+      redirect: '/page_a',
+      children: [
+        {
+          path: 'page_a',
+          name: 'PageA',
+          component: () => import('***/PageA.vue')
+        },
+	
+        // ...
+      ]
+    },
+}
+```
+
+### 4.2 准备工作
+
+咱们先写一个可以动态切换的布局，首先，在项目 `src` 目录下创建一个布局文件夹 `layout` 。
+
+接下来我们在 `src/layout` 文件下创建一个可切换布局的入口组件 `SwitchIndex.vue`，内容和上面所写的差不多，如下：
+
+```vue
+<script setup></script>
+
+<template>
+  <div class="switch-index">
+    <!-- <component :is="" /> -->
+  </div>
+</template>
+
+<style scoped></style>
+```
+
+`component` 组件我们暂且注释，因为目前还没有布局组件。
+
+接下来我们创建两个布局组件，由于我们要把这两种布局的选择权交给用户，所以我们在 `layout` 文件夹下新建一个 `switch` 文件夹，把可以切换的这两个布局组件放到里面统一管理下。
+
+创建可切换的默认布局文件：`layout/switch/DefaultLayout.vue`：
+
+```vue
+<script setup></script>
+
+<template>
+  <div>DefaultLayout</div>
+</template>
+
+<style scoped></style>
+```
+
+创建可切换的边栏布局文件：`layout/switch/SidebarLayout.vue`：
+
+```vue
+<script setup></script>
+
+<template>
+  <div>SidebarLayout</div>
+</template>
+
+<style scoped></style>
+```
+
+布局形式如下：
+
+![img](https://cdn.nlark.com/yuque/0/2023/png/2340337/1675332168117-4e9dc9e7-4e66-44f2-b8af-fac4d9057671.png)
+
+其实就是两种很普通很常见的布局，一种是有侧边栏的 `SidebarLayout`（ 下文叫它边栏布局）、一种无侧边栏的 `DefaultLayout`（下文叫它默认布局），先了解下格式。
+
+### 4.3 默认布局组件 DefaultLayout
+
+修改一下 `DefaultLayout` 组件，如下：
+
+```vue
+<script setup></script>
+
+<template>
+  <div>
+    DefaultLayout
+    <router-view v-slot="{ Component }">
+      <component :is="Component" />
+    </router-view>
+  </div>
+</template>
+
+<style scoped></style>
+```
+
+然后直接在 SwitchIndex 组件引入使用这个布局，上文中我们虽然配置了组件自动引入，但是并没有配置 layout 目录，所以 layout 文件夹下的组件是不会被自动引入的，那我们还需要现在 vite.config.js 配置文件中把 layout 目录加上，如下：
+
+```js
+export default defineConfig(({ mode }) => {
+  return {
+     // ...
+
+    plugins: [
+      // ...
+
+      Components({
+        // 新增 'src/layout' 目录配置
+        dirs: ['src/components/', 'src/view/', 'src/layout'],
+        include: [/\.vue$/, /\.vue\?vue/, /\.md$/],
+        resolvers: [
+          ArcoResolver({
+            sideEffect: true
+          }),
+          VueUseComponentsResolver(),
+          VueUseDirectiveResolver(),
+          IconsResolver({
+            prefix: 'icon',
+            customCollections: ['user', 'home']
+          })
+        ]
+      }),
+    ]
+  }
+})
+```
+
+然后就可以直接在 SwitchIndex 组件中使用 DefaultLayout 布局组件了，我们写的组件是匿名组件，默认组件名即文件名，如下：
+
+```js
+<script setup></script>
+
+<template>
+  <div class="switch-index">
+    <!-- <component :is="" /> -->
+    <DefaultLayout />
+  </div>
+</template>
+
+<style scoped></style>
+```
+
+接下来，修改下路由文件 router/index.js ，把 SwitchIndex 组件作为一级路由组件，那此路由下的所有子路由就都可以使用我们的布局了：
+
+```js
+routes: [
+  {
+    path: '/',
+    name: 'Layout',
+    component: () => import('@/layout/SwitchIndex.vue'),
+    redirect: '/',
+    children: [
+      {
+        path: '/',
+        name: 'HomePage',
+        meta: {
+          title: 'TOOLSDOG'
+        },
+        component: () => import('@/views/HomePage.vue')
+      }
+    ]
+  }
+]
+```
+
+#### 4.3.1 设计样式
+
+上文我们已经装好了 ArcoDesign，同样也配置了其组件自动引入，这里我们直接使用 ArcoDesign 的 layout 布局组件做一个常规的上中下三分布局即可，需要注意的是，我们给 Navbar 导航部分加了一个固钉组件 a-affix，用于固定在页面顶部。
+注意：ArcoDesign 组件均以子母 a 开头。
+修改 DefaultLayout 组件，如下：
+
+```js
+<script setup></script>
+
+<template>
+  <div>
+    <div class="default-layout">
+      <a-layout>
+        <a-affix>
+          <a-layout-header> Navbar </a-layout-header>
+        </a-affix>
+        <a-layout-content>
+          <router-view v-slot="{ Component }">
+            <component :is="Component" />
+          </router-view>
+        </a-layout-content>
+        <a-layout-footer> Footer </a-layout-footer>
+      </a-layout>
+    </div>
+  </div>
+</template>
+
+<style scoped></style>
+```
+
+注意，
+
+1. CSS 这里我们接上文的配置，使用的是原子化 CSS 框架 [UnoCSS](https://github.com/unocss/unocss) ；
+2. 由于我们想保证风格统一，对于一些颜色、字体、尺寸方面，我这边直接全使用了 `ArcoDesign` 抛出的 `CSS` 变量，没有自己去自定义一套基础变量；
+
+这里，我们参考ArcoDesign的[设计变量](https://arco.design/react/docs/token)
+
+![img](https://cdn.nlark.com/yuque/0/2023/png/2340337/1675332167237-8f88976e-d159-4480-a11b-f537eff8c18f.png)
+
+如上，我们直接使用对应的 CSS 变量即可。
+布局样式如下：
+
+```vue
+<script setup></script>
+
+<template>
+  <div>
+    <div class="default-layout">
+      <a-layout class="min-h-[calc(100vh+48px)]">
+        <a-affix>
+          <a-layout-header> Navbar </a-layout-header>
+        </a-affix>
+        <a-layout-content>
+          <router-view v-slot="{ Component }">
+            <component :is="Component" />
+          </router-view>
+        </a-layout-content>
+        <a-layout-footer> Footer </a-layout-footer>
+      </a-layout>
+    </div>
+  </div>
+</template>
+
+<style scoped>
+  @apply
+  .default-layout :deep(.arco-layout-header),
+  .default-layout :deep(.arco-layout-footer),
+  .default-layout :deep(.arco-layout-content) {
+    @apply text-[var(--color-text-1)] text-14px;
+  }
+
+  .default-layout :deep(.arco-layout-header) {
+    @apply w-full h-58px overflow-hidden;
+    @apply bg-[var(--color-bg-3)]  border-b-[var(--color-border-1)] border-b-solid border-b-width-1px box-border;
+  }
+  .default-layout :deep(.arco-layout-content) {
+    @apply flex flex-col justify-center items-center;
+    @apply bg-[var(--color-bg-1)] relative;
+  }
+  .default-layout :deep(.arco-layout-footer) {
+    @apply w-full flex justify-center items-center;
+    @apply border-t-[var(--color-border-1)] border-t-solid border-t-width-1px box-border;
+    @apply bg-[var(--color-bg-2)] text-[var(--color-text-1)] text-14px;
+  }
+</style>
+```
+
+如上，我们做了这样的事情：
+
+1. 给`Navbar` 一个下边框以及 `58px` 高度；
+2. 给 `Footer` 一个上边框；
+3. 给 `Navbar`、`Content`、`Footer` 加了不同级别的背景颜色（`AcroDesign` 背景色 CSS 变量）；
+4. 为了让 `Footer` 首页不显示出来，给 `a-layout-content` 组件加了一个最小高度，使用视口高度 `100vh` 减去 `Navbar` 的高度就是该组件的最小高度了；
+
+#### 4.3.2 导航组件Navbar
+
+接下来填充布局内容，先来做 Navbar 组件。
+
+我们想要实现的两种布局都有导航栏，唯一的区别就是菜单的位置，所以我们这里把导航栏中的各个元素单独拆分作为独立的组件，使用插槽的方式在 Navbar 组件去使用，Navbar 组件相当于导航栏的一个布局组件。这样导航栏组件在哪种布局中都是可用的，避免重复代码。
+
+在 src/layout 文件夹下新建 components 文件夹存放布局相关的公共组件。
+
+在 src/layout/components文件夹下创建 Navbar.vue 文件，内容如下：
+
+```vue
+<template>
+  <div class="w-full h-full flex px-20px box-border">
+    <div class="h-full flex">
+      <slot name="left" />
+    </div>
+    <div class="h-full flex-1">
+      <slot />
+      <slot name="center" />
+    </div>
+    <div class="h-full flex flex-shrink-0 items-center">
+      <div>
+        <slot name="right" />
+      </div>
+    </div>
+  </div>
+</template>
+```
+
+如上，我们给 Navbar 组件做了三个具名插槽，采用左中右这种结构并使用 flex 布局将中间的插槽撑满，同时我们也将默认插槽放在了中间的插槽位置，这样默认会往布局中间填充内容。
+注意，导航区域的高度在布局组件中已经固定写死 58px 了，导航组件这里我没有设置高度，让它自己撑满就行了。因为在任何布局下，导航栏高度是相同的。
+我们在 DefaultLayout 布局组件中的 a-layout-header 标签中使用一下导航条组件，同样无需引入直接使用，如下：
+
+```vue
+<a-layout-header>
+  <Navbar>
+    <!-- left插槽 -->
+    <template #left></template>
+
+    <!-- 默认插槽和center插槽，默认插槽可不加template直接写内容，作用同center插槽 -->
+    <template #center></template>
+
+    <!-- right插槽 -->
+    <template #right></template>
+  </Navbar>
+</a-layout-header>
+```
+
+由于插槽中没有写内容，所以页面上没有东西，导航条壳子搞好了，接下来我们开始填充内容。
+
+左侧插槽我们写一个 `Logo` 组件，中间插槽就是导航菜单 Menu 组件了，右侧插槽则是一些页面小功能组件，暂定为 `Github` 组件（用来跳转 `Github` 的）、做布局切换的 `SwitchLayout` 组件。
+
+### 4.3.3. Logo 组件
+
+在 src/layout/components 文件夹下新建 Logo.vue 文件，写入如下内容：
+
+```vue
+<script setup>
+const route = useRoute()
+const title = useTitle()
+
+watchEffect(() => {
+  title.value = route.meta.title || 'TOOLSDOG'
+})
+</script>
+<template>
+  <div
+    class="h-full flex items-center text-16px font-700 text-shadow-sm cursor-pointer"
+    @click="$router.push('/')"
+  >
+    <div
+      class="w-36px h-36px rounded-[50%] flex justify-center items-center mr-2px cursor-pointer"
+      hover="bg-[var(--color-fill-1)]"
+    >
+      <icon-ri-hammer-fill class="text-18px" />
+    </div>
+    {{ title }}
+  </div>
+</template>
+```
+
+然后把 `Logo` 组件填充到我们 `DefaultLayout` 组件下 `Navbar` 组件的 左侧插槽中即可：
+
+```vue
+<Navbar>
+  <template #left>
+    <Logo />
+  </template>
+</Navbar>
+```
+
+关于 logo 我们直接在 [iconify](https://icones.js.org/) 图标库中找了一个图标用，我们这里用的是 `ri:hammer-fill` 图标，另外，点击 logo 会跳转首页。
+
+标题直接用 Vue 的 `watchEffect` 方法监听了当前路由 `meta` 对象中的 `title` 属性并赋值给响应式变量 `title` ，这样后面我们每次跳转到某个功能页面时， `Logo` 旁边的文字信息以及浏览器 `Tab` 页签都会变成该页面路由中配置的 `title` 信息。
+
+`useRoute` 方法是 `Vue3` 组合式 `API`，它返回一个当前页面路由的响应式对象，同样 `Vue` 的核心 API 我们都做了自动引入，所以这里没有引入。
+
+`watchEffect` 也是 `Vue3` 的 `API`，该方法会立即运行一个函数，同时响应式地追踪其依赖，并在依赖更改时重新执行。简单来说就是只要该回调中有响应式数据，这些响应式数据的依赖发生改变时就会重新执行此回调，默认会立即执行一次。那在这个场景下就比 watch 好用多了。
+
+那响应式变量 title 是怎么来的呢？代码中我们使用了 `useTitle` 方法，同样没有引入，它不是 Vue 的 API，其实，它是 VueUse 库中的[一个方法](https://vueuse.org/core/usetitle/#usetitle)，在上文我们已经给 `VueUse` 这个库的方法做了自动引入，所以可以直接用，该方法会返回一个响应式变量，这个响应式变量在改变时会自动改变我们的网页标题，注意这里的标题指的是浏览器 Tab 标签中的标题，
+
+#### 4.3.4 Github跳转组件
+
+写 `Github` 跳转组件之前我们需要在 `config/index.js` 文件中配置一下 `GitHub Url` 地址。
+
+在 `config/index.js` 文件的 `configSource` 对象中新增一个 github 属性，属性值写上我们的项目地址，如下：
+
+```js
+const configSource = {
+  // ...
+
+  github: 'https://github.com/xianzao/xianzao-vue-tools'
+}
+```
+
+`Github` 跳转组件很简单，就是字面意思，我们搞一个图标放上去，然后能够点击打开一个新标签跳转到项目的 `GitHub` 地址就行了。在 `src/layout/components` 文件夹下新建 `Github.vue` 文件，写入如下内容：
+
+```js
+<script setup>
+import { getConfig } from '@/config'
+const openNewWindow = () => window.open(getConfig('github'), '_blank')
+</script>
+<template>
+  <a-button type="text" @click="openNewWindow">
+    <template #icon>
+      <icon-mdi-github class="text-[var(--color-text-1)] text-16px" />
+    </template>
+  </a-button>
+</template>
+```
+
+`GitHub` 的图标我们用的 `iconify` 图标库中 `mdi:github` 图标。
+
+接着我们去使用一下，把 Github 组件填充到默认布局 `DefaultLayout` 组件下 `Navbar` 组件的右侧插槽中即可：
+
+```vue
+<Navbar>
+  <template #right>
+    <Github />
+  </template>
+</Navbar>
+```
+
+#### 4.3.5 菜单组件Menu
+
+这里实现一个路由页面。
+
+首先，在 `src/views` 文件夹下新建 `DemoPage.vue` 文件作为demo页面组件：
+
+```js
+<script setup></script>
+
+<template>
+  <div>demo</div>
+</template>
+
+<style scoped></style>
+```
+
+接着我们要配置一下路由，注意，由于现在写的页面路由它同时还是个菜单，所以我们把这些可以作为菜单的路由单独写一个路由文件，这样我们后期可以直接可以导出当作菜单项配置用。
+
+在 `src/router` 文件夹下新建 `menuRouter`.js 文件，导出一个菜单路由数组，如下：
+
+```js
+export const menuRouter = []
+```
+
+在 `src/router/index.js` 中使用一下：
+
+```vue
+import { createRouter, createWebHistory } from 'vue-router'
+  // 导入菜单路由
+  import { menuRouter } from './menuRouter'
+
+  const router = createRouter({
+    history: createWebHistory(import.meta.env.BASE_URL),
+    routes: [
+      {
+        path: '/',
+        name: 'Layout',
+        component: () => import('@/layout/index.vue'),
+        redirect: '/',
+        children: [
+          {
+            path: '/',
+            name: 'HomePage',
+            meta: {
+              title: 'XIANZAO VUE DASHBOARD'
+            },
+            component: () => import('@/views/HomePage.vue')
+          },
+          // 使用菜单路由
+          ...menuRouter
+        ]
+      }
+    ]
+  })
+
+  export default router
+```
+
+接下来我们配置菜单路由数组，由于我们将来可能会写到很多不同种类的功能，所以我们使用多级路由的方式给这些页面做个分类，假设demo页面属于开发工具类，所以我们给它一个 `devtools` 的父级路由，另外，在菜单路由中，每个父级菜单我们给他在 `meta` 对象中添加一个 `icon` 属性，然后导入一个图片组件作为对应 icon 的值，这样做的目的是将来要在导航菜单中给每个分类的菜单都加个图标。
+
+修改 `menuRouter.js` 文件如下
+
+```js
+import IconMaterialSymbolsCodeBlocksOutline from '~icons/material-symbols/code-blocks-outline'
+
+export const menuRouter = [
+  {
+    path: 'devtools',
+    name: 'DevTools',
+    meta: {
+      title: '开发工具',
+      icon: markRaw(IconMaterialSymbolsCodeBlocksOutline)
+    },
+    redirect: { name: 'DemoPage' },
+    children: [
+      {
+        path: 'demo',
+        name: 'DemoPage',
+        meta: {
+          title: 'demo'
+        },
+        component: () => import('@/views/DemoPage.vue')
+      }
+    ]
+  }
+]
+```
+
+如上，我们如果想要访问此页面，只需要访问 /devtools/demo 路由即可，那可能有些人注意到该配置中的父级路由的重定向中我们使用的是 name 来做的重定向，这里不用 path 是为了更安全，这个安全指的是由于我们单独抽离出了这个菜单路由模块，虽然目前是在把它引入并写在了 / 路由下，但是将来万一改变了一级路由，那整体的 path 都会改变，而使用 name 字段重定向就不存在这个问题，我们只需要注意下各个路由的 name 字段配置不重复即可。
+
+注意，我们上面手动引入了 iconify 图标库中的图标，可能有人会问不是做了 iconify 的自动引入吗？为什么还要手动去引入？其实，组件的自动引入是靠解析识别组件模板中引入的组件再做的匹配，而这里我们没有在组件模板中使用，而是在 JS 中直接使用的，包括我们做项目经常会做的菜单配置，都是只存一个图标名，它是靠我们在运行时通过图标名去匹配组件，这是一个运行时动态的过程，开发时是做不了自动引入的，这类情况我们需要手动引入一下。
+
+已经有菜单了数据了，我们去写菜单 Menu 组件。先理一下思路，通常组件库中会有 Menu 组件，当然 ArcoDesign 也不例外，我们可以直接拿过来封装一层去使用。封装什么呢？虽然我们目前只有一个路由，但是我们在应该要考虑到多级的情况，那其实解决办法就是做一个可以无限递归的菜单组件。
+OK，在写菜单组件之前，路由菜单数据还需要处理下，我们写个递归方法拼接一下每个菜单的完整路由，并把每个路由菜单中的 meta 对象压平到菜单里，方便我们后面使用，还是在 src/router 文件夹下的 menuRouter.js 文件，新增一个 menuRouterFormat 方法处理菜单数据并将处理后的数据导出，如下：
+
+```js
+export const menuRouter = [
+  // ...
+]
+
+/**
+ * @description 菜单路由数组 format
+ * @param { Array } router 路由数组
+ * @param { String } parentPath 父级路由 path
+ * @return { Array }
+ */
+export const menuRouterFormat = (router, parentPath) => {
+  return router.map(item => {
+    // 拼接路由，例：'devtools' -> '/devtools'  'demo' -> '/devtools/demo'
+    item.path = parentPath ? `${parentPath}/${item.path}` : `/${item.path}`
+
+    // 存在 children 属性，且 children 数组长度大于 0，开始递归
+    if (item.children && item.children.length > 0) {
+      item.children = menuRouterFormat(item.children, item.path)
+    }
+
+    return Object.assign({}, item, item.meta || {})
+  })
+}
+
+// 解析后 路由菜单列表
+export const menuRouterFormatList = menuRouterFormat([...menuRouter])
+```
+
+在 src/layout/components 文件夹下新建 Menu/index.vue 文件：
+
+```vue
+<script setup>
+import { menuRouterFormatList } from '@/router/menuRouter.js'
+
+// 菜单数据
+const menuList = ref(menuRouterFormatList)
+
+const router = useRouter()
+// 子菜单点击事件
+const onClickMenuItem = key => {
+  router.push(key)
+}
+
+const route = useRoute()
+// 当前选中菜单
+const selectedKeys = computed(() => [route.path])
+</script>
+
+<template>
+  <a-menu
+    class="menu"
+    auto-open-selected
+    :selected-keys="selectedKeys"
+    @menuItemClick="onClickMenuItem"
+    mode="horizontal"
+    :accordion="true"
+  >
+    <MenuItem v-for="menu of menuList" :key="menu.path" :menu="menu" />
+  </a-menu>
+</template>
+
+<style scoped>
+.menu.arco-menu-horizontal {
+  @apply bg-[var(--color-bg-3)];
+}
+.menu.arco-menu-horizontal :deep(.arco-menu-icon) {
+  @apply mr-4px leading-[1.2] flex-none align-inherit;
+}
+.menu.arco-menu-horizontal :deep(.arco-menu-pop-header) {
+  @apply bg-transparent;
+}
+.menu.arco-menu-horizontal :deep(.arco-menu-pop-header):hover {
+  @apply bg-[var(--color-fill-2)];
+}
+.menu :deep(.arco-menu-overflow-wrap) {
+  @apply flex justify-end;
+}
+</style>
+```
+
+上述代码中，我们先导入了之前 `menuRouter.js `中的菜单解析后的数据 `menuRouterFormatList` 对菜单数据进行了一个初始化。
+
+再来看模板，我们用到了 `arcoDesign` 组件库的 `a-menu` 组件。
+
+1. `accordion` 开启手风琴效果；
+2. `mode` 属性是设置菜单模式（水平或垂直），我们给它设置成水平即 `horizontal` ；
+3. `menuItemClick` 子菜单点击时触发，该回调参数为 `key`；
+4. `selected-keys` 选中的菜单项 `key` 数组；
+5. `auto-open-selected` 默认展开选中的菜单；
+
+子菜单点击方法中我们直接使用 router.push 传入 key 跳转路由即可。那对于 selectedKeys ，我们直接用计算属性 computed 返回了当前路由对象 route 中 path 属性值组成的数组，这样每次路由改变该方法就会被触发，selectedKeys 数组值就会响应式的改变。key 值即子菜单的唯一标识，下面我们写子菜单组件时会将每个子菜单的 key 设置为菜单对应的路由 path 。
+
+上面我们用到了一个还没有创建的 MenuItem 组件，它其实就是我们的子菜单组件，接下来我们还是在 src/layout/components/Menu 文件夹下新建 MenuItem.vue 文件，内容如下：
+
+```vue
+<script setup>
+const props = defineProps({
+  menu: {
+    type: Object,
+    required: true
+  }
+})
+const { menu } = toRefs(props)
+</script>
+
+<template>
+  <template v-if="!menu.children">
+    <a-menu-item :key="menu.path">
+      <template #icon v-if="menu?.icon">
+        <component :is="menu?.icon"></component>
+      </template>
+      {{ menu.title }}
+    </a-menu-item>
+  </template>
+
+  <a-sub-menu v-else :key="menu.path" :title="menu.title">
+    <template #icon v-if="menu?.icon">
+      <component :is="menu?.icon"></component>
+    </template>
+    <MenuItem
+      v-for="menuChild of menu.children"
+      :key="menuChild.path"
+      :menu="menuChild"
+    />
+  </a-sub-menu>
+</template>
+
+<style scoped></style>
+```
+
+把 `Menu` 组件填充到默认布局 `DefaultLayout` 组件下 `Navbar` 组件的中间插槽或者默认插槽中即可：
+
+```vue
+<a-layout-header>
+  <Navbar>
+    <!-- ... -->
+
+    <!-- 默认插槽和center插槽，默认插槽可不加template直接写内容，作用同center插槽 -->
+    <template #center>
+      <Menu />
+    </template>
+
+    <!-- ... -->
+  </Navbar>
+</a-layout-header>
+```
+
+到此默认布局的导航组件就写的差不多了。
+
+#### 4.3.6 页尾组件Footer
+
+页尾区域我们在布局组件中没有设置高度，因为页尾的高度不固定，可能随时会在页尾加个内容啥的。
+由于页尾需要展示一些个人信息，所以我们统一把这些数据都放在 config/index.js 中的基础配置对象里
+
+```js
+// ...
+
+const configSource = {
+  // ...
+
+  // 个人配置
+  me: {
+    name: 'xianzao',
+    // github
+    github: 'https://github.com/xianzao/xianzao-vue-tools'
+  }
+}
+```
+
+我们在 `src/components` 文件夹下新建 `Footer.vue` 文件，`Footer` 组件比较简单，暂时也没写太多内容，这里我就不会多描述了，直接看代码吧。
+
+```vue
+<script setup>
+import { getConfig } from '@/config'
+</script>
+<template>
+  <div class="w-1200px flex justify-between items-center min-h-48px">
+    <div class="w-full h-48px flex justify-center items-center">
+      <span> Copyright ⓒ 2022</span>
+      <a-link :href="getConfig('me.github')" target="_blank">
+        {{ getConfig('me.name') }}
+      </a-link>
+      <a-link href="<https://beian.miit.gov.cn/>" target="_blank">
+        {{ getConfig('icp') }}
+      </a-link>
+    </div>
+  </div>
+</template>
+```
+
+在布局文件中使用一下：
+在 DefaultLayout 默认布局组件中的 a-layout-footer 组件标签中使用一下 Footer 组件，同样无需引入直接使用，如下：
+
+```vue
+<a-layout-footer>
+  <Footer />
+</a-layout-footer>
+```
+
+#### 4.3.7 首页修改HomePage
+
+打开 src/views/HomePage.vue 文件，清空当前内容，写入下面代码：
+
+```vue
+<template>
+  <div class="w-full flex justify-center items-center flex-1">
+    <div class="w-full h-300px flex justify-center items-center">
+      <div
+        class="w-150px h-150px rounded-[50%] bg-[var(--color-fill-1)] flex justify-center items-center"
+      >
+        <icon-ri-hammer-fill class="text-52px" />
+      </div>
+    </div>
+  </div>
+</template>
+```
+
+### 4.4 边栏布局组件 SidebarLayout
+
+接下来就开始写边栏布局 `SidebarLayout`，这个组件在上文中已经建好了，所以无需再建。
+
+首先我们需要修改下 `src/layout/SwitchIndex.vue` 文件，先把布局组件写死 `SidebarLayout`，如下：
+
+```vue
+<script setup></script>
+
+<template>
+  <div class="switch-index">
+    <!-- <component :is="" /> -->
+    <!-- <DefaultLayout /> -->
+    <SidebarLayout />
+  </div>
+</template>
+
+<style scoped></style>
+```
+
+接着修改 `src/layout/switch/SidebarLayout.vue` 边栏布局组件如下：
+
+```js
+<script setup></script>
+
+<template>
+  <div>
+    SidebarLayout
+    <router-view v-slot="{ Component }">
+      <component :is="Component" />
+    </router-view>
+  </div>
+</template>
+
+<style scoped></style>
+```
+
+#### 4.4.1 设计样式
+
+![img](https://cdn.nlark.com/yuque/0/2023/png/2340337/1675332168111-da1056b0-eedd-425c-af79-6093d541cfc1.png)其实就是多一个侧边栏，至于侧边栏，其实组件库中也有组件，我们可以直接使用 `ArcoDesign` 组件库中的 `a-layout-sider` 组件即可，修改 `SidebarLayout` 组件，如下：
+
+```vue
+<script setup>
+// 侧边栏收缩状态
+const collapsed = ref(false)
+
+// 侧边栏收缩触发事件
+const handleCollapse = (val, type) => {
+  const content = type === 'responsive' ? '响应式触发' : '点击触发'
+  console.log(`${content}侧边栏，当前状态：${val}`)
+  collapsed.value = val
+}
+</script>
+
+<template>
+  <div class="sidebar-layout">
+    <a-layout>
+      <a-affix>
+        <a-layout-header> Navbar </a-layout-header>
+      </a-affix>
+
+      <a-layout>
+        <a-affix :offsetTop="58">
+          <a-layout-sider
+            breakpoint="lg"
+            :width="220"
+            height="calc(100vh-58px)"
+            collapsible
+            :collapsed="collapsed"
+            @collapse="handleCollapse"
+          >
+            Menu
+          </a-layout-sider>
+        </a-affix>
+
+        <a-layout>
+          <a-layout-content class="min-h-[calc(100vh-58px)]">
+            <router-view v-slot="{ Component }">
+              <component :is="Component" />
+            </router-view>
+          </a-layout-content>
+          <a-layout-footer> Footer </a-layout-footer>
+        </a-layout>
+      </a-layout>
+    </a-layout>
+  </div>
+</template>
+
+<style scoped>
+.sidebar-layout :deep(.arco-layout-header),
+.sidebar-layout :deep(.arco-layout-footer),
+.sidebar-layout :deep(.arco-layout-content) {
+  @apply text-[var(--color-text-1)] text-14px;
+}
+
+.sidebar-layout :deep(.arco-layout-header) {
+  @apply w-full h-58px;
+  @apply bg-[var(--color-bg-3)]  border-b-[var(--color-border-1)] border-b-solid border-b-width-1px box-border;
+}
+.sidebar-layout :deep(.arco-layout-content) {
+  @apply flex flex-col items-center;
+  @apply bg-[var(--color-bg-1)] relative;
+}
+.sidebar-layout :deep(.arco-layout-footer) {
+  @apply w-full flex justify-center items-center;
+  @apply border-t-[var(--color-border-1)] border-t-solid border-t-width-1px box-border;
+  @apply bg-[var(--color-bg-2)] text-[var(--color-text-1)] text-14px;
+}
+
+.sidebar-layout :deep(.arco-layout-sider) {
+  @apply h-[calc(100vh-58px)];
+}
+.sidebar-layout :deep(.arco-layout-sider),
+.sidebar-layout :deep(.arco-layout-sider-trigger) {
+  @apply border-r-[var(--color-border-1)] border-r-solid border-r-width-1px box-border;
+}
+</style>
+```
+
+接下来我们把之前写的公用组件填充一下：
+
+```vue
+<template>
+  <div class="sidebar-layout">
+    <a-layout>
+      <a-affix>
+        <a-layout-header>
+          <Navbar>
+            <template #left> <Logo /> </template>
+
+            <template #right> <Github /> </template>
+          </Navbar>
+        </a-layout-header>
+      </a-affix>
+
+      <a-layout>
+        <a-affix :offsetTop="58">
+          <a-layout-sider
+            breakpoint="lg"
+            :width="220"
+            height="calc(100vh-58px)"
+            collapsible
+            :collapsed="collapsed"
+            @collapse="handleCollapse"
+          >
+            Menu
+          </a-layout-sider>
+        </a-affix>
+
+        <a-layout>
+          <a-layout-content class="min-h-[calc(100vh-58px)]">
+            <router-view v-slot="{ Component }">
+              <component :is="Component" />
+            </router-view>
+          </a-layout-content>
+          <a-layout-footer> <Footer /> </a-layout-footer>
+        </a-layout>
+      </a-layout>
+    </a-layout>
+  </div>
+</template>
+```
+
+其实我们之前写的 Menu 组件还是可以复用的，只需要把菜单的 `mode` 设置成垂直即 `vertical` 就行了。
+
+#### 4.4.2 修改Menu菜单组件
+
+修改 src/layout/components/Menu/index.vue 文件如下：
+
+```js
+<script setup>
+import { menuRouterFormat, menuRouter } from '@/router/menuRouter.js'
+
+// 新增
+const props = defineProps({
+  mode: {
+    type: String,
+    default: 'horizontal'
+  }
+})
+// 菜单模式，horizontal 水平，vertical 垂直
+const mode = toRef(props, 'mode')
+
+const menuList = ref(menuRouterFormat(menuRouter))
+
+const router = useRouter()
+const onClickMenuItem = key => {
+  router.push(key)
+}
+
+const route = useRoute()
+const selectedKeys = computed(() => [route.path])
+</script>
+<template>
+  <a-menu
+    class="menu"
+    auto-open-selected
+    :selected-keys="selectedKeys"
+    @menuItemClick="onClickMenuItem"
+    :mode="mode"
+    :accordion="true"
+  >
+    <MenuItem v-for="menu of menuList" :key="menu.path" :menu="menu" />
+  </a-menu>
+</template>
+
+<style scoped>
+/* 没改动，略... */
+</style>
+```
+
+`Menu` 组件改完了，我们之前写的默认布局不需要改了，因为 `Menu` 目前不传参数默认就是水平菜单，那我们在侧边栏布局中使用一下 `Menu` 组件，修改 `SidebarLayout` 布局文件，在该组件的 `a-layout-sider` 标签下使用 `Menu` 组件如下：
+
+```js
+<a-affix :offsetTop="58">
+  <a-layout-sider
+    breakpoint="lg"
+    :width="220"
+    height="calc(100vh-58px)"
+    collapsible
+    :collapsed="collapsed"
+    @collapse="handleCollapse"
+  >
+    <Menu mode="vertical" />
+  </a-layout-sider>
+</a-affix>
+```
+
+#### 4.5 动态切换布局
+
+切换布局的思路文章开头已经说过了，还是老套路，我们先处理一下可切换的布局数据，目前我们就两个布局，接下来我们就用一种相对高级点的方式处理它。
+
+#### 4.5.1 vite中Glob
+
+在`webpack` 中有个 API 叫 `require.context`：
+
+```js
+require.context(directory, useSubdirectories, regExp)
+```
+
+1. directory ── 表示检索的目录；
+2. useSubdirectories ── 表示是否检索子文件夹；
+3. regExp ── 匹配文件的正则表达式，一般是文件名；
+
+有经验的同学可能知道，我们在 Vue2 还在使用 webpack 的时候经常会使用 require.context 这个 API 来批量引入组件，那么 Vite 有没有类似的 API 呢？答案是有的，import.meta.glob ，可以参考 [Vite Glob](https://cn.vitejs.dev/guide/features.html#glob-import)。
+那接下来我们就用 Vite Glob API 来批量处理布局组件，先解析一下各个布局组件，把他们组成我们想要的一个布局列表数据，当然，用法有很多，这里就当作给大家做个小示范吧。
+在 src/layout/switch 文件夹下新建 index.js 文件，写入如下内容：
+
+```js
+const modules = import.meta.glob('./*.vue', { eager: true })
+
+let switchLayoutList = []
+for (const path in modules) {
+  switchLayoutList.push(modules[path].default)
+}
+
+export default switchLayoutList
+```
+
+上文 `index.js` 文件中我们拿到这些布局组件的 `modules` 后，遍历 `modules` 将每个组件都 `push` 到了 `switchLayoutList` 布局数组列表中并导出，留待后用。
+
+我们在`src/layout/SwitchIndex.vue` 文件中导入 `index.js` 并输出一下 `switchLayoutList` 布局数组，修改如下：
+
+```js
+<script setup>
+import switchLayoutList from '@/layout/switch/index.js'
+console.log(switchLayoutList)
+</script>
+
+<template>
+  <div class="switch-index">
+    <!-- <component :is="" /> -->
+    <!-- <DefaultLayout /> -->
+    <SidebarLayout />
+  </div>
+</template>
+
+<style scoped></style>
+```
+
+#### 4.5.2 修改布局组件具名并填充布局信息
+
+其实到此我们已经拿到了 `src/layout/switch` 文件夹下的所有可切换布局组件，在 `SidebarLayout` 组件文件中新增如下代码：
+
+```js
+<script>
+import IconRiLayout5Fill from '~icons/ri/layout-5-fill'
+export default {
+  name: 'SidebarLayout',
+  icon: IconRiLayout5Fill,
+  title: '边栏布局'
+}
+</script>
+
+<script setup>
+// ...
+</script>
+
+<template>
+<!-- ... -->
+</template>
+```
+
+再写一下默认组件，在 组件中新增如下代码：
+
+```js
+<script>
+import IconRiLayoutTopFill from '~icons/ri/layout-top-fill'
+export default {
+  name: 'DefaultLayout',
+  icon: IconRiLayoutTopFill,
+  title: '默认布局'
+}
+</script>
+```
+
+#### 4.5.3 Pinia共享布局状态
+
+由于将来我们的布局组件信息需要跨页面共享，所以这里就需要用到 `Pinia` 了，`Pinia` 和 `Vuex` 具有相同的功效，是 Vue 的核心存储库，它允许我们跨 组件/页面 共享状态，所以用在这儿很合适，本身 `Pinia` 就是作为下一代 Vuex 产生的，那现在我们使用官方包创建项目都只会询问我们是否安装 `Pinia` 而不是 `Vuex` 了，那 Pinia 同时支持 `OptionsAPI` 和 `CompositionAPI` 两种语法。
+
+初始化项目时我们就已经装了 `Pinia`， `src/stores` 文件夹就是我们的共享状态文件夹，里面有个建项目时创建的 `counter.js `文件，直接删掉即可。
+
+接着，在 `src/stores` 文件夹下创建 `system.js` 文件，`system` 模块即项目的系统配置模块，布局相关的状态数据都放在这里即可：
+
+```js
+export const useSystemStore = defineStore('system', () => {
+  // 当前可切换布局
+  const currentSwitchlayout = shallowRef(null)
+  // 可切换布局列表
+  const switchLayoutList = shallowRef([])
+
+    return {
+      currentSwitchlayout,
+      switchLayoutList
+    }
+})
+```
+
+如上，其实用 CompositionAPI 语法写起来和平常在 setup 中没有太大区别。
+上面我们创建了当前可切换布局对象 currentSwitchlayout 默认是 null 以及可切换布局列表 switchLayoutList 默认是空数组两个响应式属性。可能大家注意到了，我们这里使用的是 shallowRef 而不是 ref，因为我们把整个布局组件都作为数据源了，如果使用 ref，它会一直递归给布局组件的各个属性做响应式，而这些我们都不需要，太消耗资源，我们只需浅层响应就可以了。
+接下来我们还需要在 system 模块中写一个初始化布局的方法：
+
+```js
+export const useSystemStore = defineStore('system', () => {
+  // 当前可切换布局
+  const currentSwitchlayout = shallowRef(null)
+  // 可切换布局列表
+  const switchLayoutList = shallowRef([])
+
+  // 初始化可切换布局方法
+  const initSwitchLayout = list => {
+    if (list && list.length > 0) {
+      switchLayoutList.value = [...list]
+
+      if (!currentSwitchlayout.value) {
+        currentSwitchlayout.value = switchLayoutList.value[0]
+      }
+    }
+  }
+
+  return {
+    currentSwitchlayout,
+    switchLayoutList,
+    initSwitchLayout
+  }
+})
+```
+
+初始化方法接收一个布局列表，就是为 `switchLayoutList` 赋值，然后判断当前布局组件对象 `currentSwitchlayout` 是否有值，没有的话给它一个默认值仅此而已。
+
+那么要在哪里进行布局初始化呢？没错就是 `SwitchIndex` 组件，修改 `src/layout/SwitchIndex.vue` 文件如下：
+
+```js
+<script setup>
+import switchLayoutList from '@/layout/switch/index.js'
+import { useSystemStore } from '@/stores/system'
+
+const systemStore = useSystemStore()
+
+// 初始化布局列表
+systemStore.initSwitchLayout(switchLayoutList)
+</script>
+
+<template>
+  <div class="switch-index">
+    <component :is="systemStore.currentSwitchlayout" />
+  </div>
+</template>
+
+<style scoped></style>
+```
+
+如上，我们在 `SwitchIndex` 组件中引入了 `pinia system` 模块方法 `useSystemStore`，此方法返回一个 `systemStore` 对象，即我们 `system` 模块的 `store` 数据对象（就是上面写 `useSystemStore` 方法时 `return` 的那些数据集）。
+
+接着使用布局初始化方法传入我们之前引入的布局组件列表 `switchLayoutList` 给布局组件进行初始化。
+
+其实我们的当前布局对象本身就是布局组件，所以直接在模板中将当前布局组件对象 `currentSwitchlayout` 传入 `component` 组件 `is` 属性中渲染布局即可。
+
+#### 4.5.4 切换布局组件SwitchLayout
+
+切换布局组件还是放在导航条上哈，在 `src/layout/components` 文件夹下新建 `SwitchLayout.vue` 文件：
+
+```vue
+<script setup>
+import { useSystemStore } from '@/stores/system.js'
+const { currentSwitchlayout, switchLayoutList } = storeToRefs(useSystemStore())
+
+// 下拉菜单选中事件
+const handleSelect = val => (currentSwitchlayout.value = val)
+
+const { next } = useCycleList(switchLayoutList.value, {
+  initialValue: currentSwitchlayout
+})
+</script>
+
+<template>
+  <a-dropdown @select="handleSelect" trigger="hover" class="layout-dropdown">
+    <a-button type="text" @click="next()">
+      <template #icon>
+        <component
+          :is="currentSwitchlayout.icon"
+          class="text-[var(--color-text-1)] text-16px"
+        ></component>
+      </template>
+    </a-button>
+    <template #content>
+      <a-doption
+        v-for="item in switchLayoutList"
+        :key="item.name"
+        :value="item"
+      >
+        <template #icon v-if="currentSwitchlayout.name === item.name">
+          <icon-material-symbols-check-small class="text-[var(--color-text-1)] text-14px" />
+        </template>
+        <template #default>{{ item.title }}</template>
+      </a-doption>
+    </template>
+  </a-dropdown>
+</template>
+
+<style scoped>
+.layout-dropdown .arco-dropdown-option {
+  @apply flex justify-end items-center;
+}
+</style>
+```
+
+至于 `template` 模板内容，我们使用了一个下拉菜单组件，展示到页面上的图标就是当前布局的图标。
+
+还记得我们写布局组件时给每个布局组件都自定义了一个 icon 属性并赋值了一个图标组件吗？这里直接使用 `Vue` 内置的 `component` 组件渲染出来就行。鼠标悬浮到当前布局图标上展示下拉菜单面板，这个面板就遍历一下布局组件列表 `switchLayoutList` 把对应的布局组件名放上去即可，除此之外还给选中的菜单项在下拉菜单中用一个 `iconify` 图标 `material-symbols:check-small` 标注了下（就是个对号图标）。
+
+接下来使用一下 `SwitchLayout` 组件，两个布局组件都需要使用，放在 Navbar 组件右侧插槽中即可。
+
+修改 `DefaultLayout` 组件（只展示了修改处代码）：
+
+```js
+<a-layout-header>
+  <Navbar>
+    <template #left> <Logo /> </template>
+    <template #center> <Menu /> </template>
+
+    <template #right>
+      <SwitchLayout />
+      <Github />
+    </template>
+  </Navbar>
+</a-layout-header>
+```
+
+修改 `SidebarLayout` 组件（只展示了修改处代码）：
+
+```vue
+<a-layout-header>
+  <Navbar>
+    <template #left> <Logo /> </template>
+
+    <template #right>
+    <SwitchLayout />
+    <Github />
+    </template>
+    </Navbar>
+</a-layout-header>
+```
+
+### 4.6 Pinia状态持久化
+
+虽然布局做好了，但是我们点击切换布局之后刷新页面会重新走初始化布局流程，刷新一下布局就变回原来的样子了，所以我们还需要给当前布局对象做个持久化。
+
+其实 `Vue3` 中我们完全可以写 `Hooks` 来做一些简单的状态共享，并不一定需要 `Pinia`，之所以还使用 `Pinia`，是因为 `Pinia` 有两个好处：
+
+1. `Pinia` 可以使用 `Vue` 浏览器插件 `Vue Devtools` 去追踪状态变化；
+2. `Pinia` 有插件系统，可以使用插件处理一些东西；
+
+那 Pinia 模块状态持久化就可以用插件很便捷的做，这里我们使用一个[开源的状态持久化插件](https://github.com/prazdevs/pinia-plugin-persistedstate)。
+
+#### 4.6.1 安装
+
+```js
+pnpm i pinia-plugin-persistedstate
+
+// or
+
+npm i pinia-plugin-persistedstate
+```
+
+#### 4.6.2 使用
+
+```js
+import { createPinia } from 'pinia'
+import piniaPluginPersistedstate from 'pinia-plugin-persistedstate'
+
+const pinia = createPinia()
+pinia.use(piniaPluginPersistedstate)
+```
+
+安装好了之后去使用一下此插件，我们是在入口文件 src/main.js 中创建的 Pinia 实例，所以要在这里使用插件，先看下目前的 main.js 文件内容：
+
+```js
+import { createApp } from 'vue'
+import { createPinia } from 'pinia'
+import '@/styles/normalize.css'
+// 导入Unocss样式
+import 'uno.css'
+
+import { getConfig } from '@/config/index'
+console.log(getConfig('projectCode'))
+console.log(getConfig('projectName'))
+console.log(import.meta.env.VITE_APP_ENV)
+
+import App from './App.vue'
+import router from './router'
+
+const app = createApp(App)
+
+app.use(createPinia())
+app.use(router)
+
+app.mount('#app')
+```
+
+把没有用的代码删一删，然后使用一下 `Pinia` 插件，修改 `main.js` 如下：
+
+```js
+import { createApp } from 'vue'
+import { createPinia } from 'pinia'
+
+// 引入 Pinia 状态持久化插件
+import piniaPluginPersistedstate from 'pinia-plugin-persistedstate'
+
+import '@/styles/normalize.css'
+// 导入Unocss样式
+import 'uno.css'
+
+import App from './App.vue'
+import router from './router'
+
+const app = createApp(App)
+
+// 创建 Pinia 实例
+const pinia = createPinia()
+// 使用 Pinia 状态持久化插件
+pinia.use(piniaPluginPersistedstate)
+
+app.use(pinia)
+
+app.use(router)
+
+app.mount('#app')
+```
+
+接下来去 `src/stores/system.js` 文件中做一下配置：
+
+```js
+import { getConfig } from '@/config/index'
+
+export const useSystemStore = defineStore(
+  'system',
+  () => {
+    // ...
+  },
+  // 新增第三个参数
+  {
+    persist: {
+      key: `${getConfig('appCode')}-pinia-system`,
+      enabled: true,
+      storage: window.localStorage,
+      paths: ['currentSwitchlayout']
+    }
+  }
+)
+```
+
+如上，我们新增第三个参数对象，该对象中配置 `persist` 属性为 `true` 会默认开启该模块所有状态的持久化，显然我们只需要给模块中的当前布局对象 `currentSwitchlayout` 做持久化就可以了，所以我们需要将 `persist` 属性配置为一个对象，这个对象有如下几个参数：
+
+1. `key` 属性用来配置持久化时缓存数据的 key，默认是模块名；
+2. `enabled` 属性代表是否开启持久化；
+3. `storage` 属性可以配置如何进行持久化存储，可以写成 `sessionStorage`，默认是使用 `localStorage` ，所以这里我们其实不写也可以；
+4. `paths` 属性即配置模块中需要做持久化的状态列表，不写就是默认缓存该模块中的全部状态；
+5. `serializer` 此对象可以自定义序列化方法，默认使用 `JSON.stringify/JSON.parse`做序列化；
+
+上面我们的配置是给模块中的 `currentSwitchlayout` 持久化存储到 `localStorage` 中。
+
+然后，修改 `src/stores/system.js`中布局初始化方法如下：
+
+```js
+const initSwitchLayout = list => {
+  if (list && list.length > 0) {
+    switchLayoutList.value = [...list]
+
+    if (!currentSwitchlayout.value) {
+      currentSwitchlayout.value = switchLayoutList.value[0]
+    } else {
+      // 通过name属性找到布局对象并赋值，因为持久化数据中没有组件渲染的render函数
+      currentSwitchlayout.value = switchLayoutList.value.find(
+        item => item.name === currentSwitchlayout.value.name
+      )
+    }
+  }
+}
+```
+
+至此，vue实战的基础项目就实现完成了。可以参考[此链接](https://github.com/xianzao/xianzao-vue-tools/tree/master)。
+
+# Vue编译器
 
 https://www.yuque.com/lpldplws/web/abbfgk?singleDoc# 《编译器》 密码：uteo
 
-# React
+## 1.课程目标
 
-React是一个声明式，高效灵活的构建用户界面的js库
+1. 掌握编译原理的基本思路；
+2. 掌握一个简单的编译器的实现；
+
+## 2. 课程大纲
+
+- 什么是编译器；
+- 编译器的基本思路；
+- 一个简单的编译器的实现；
+
+## 3.什么是编译器
+
+### 3.1. 背景
+
+在babel的[官网](https://babeljs.io/)里，最显著的内容就是：
+
+Babel is a JavaScript compiler
+
+那么什么是所谓的JavaScript compiler？我们应当如何学习和理解compiler？
+
+### 3.2 编译器介绍
+
+compiler也叫编译器，是一种电脑程序，它会将用某种编程语言写成的源代码，转换成另一种编程语言。
+
+从维基百科的定义来看，编译器就是个将当前语言转为其他语言的过程，回到babel上，它所做的事就是语法糖之类的转换，比如ES6/ES7/JSX转为ES5或者其他指定版本，因此称之为compiler也是正确的，换言之，像我们平时开发过程中所谓的其他工具，如：
+
+- Less/Saas
+- TypeScript/coffeeScript
+- Eslint
+- etc...
+
+都可以看到compiler的身影，也是通过这些工具，才使得目前的前端工程化能走入相对的深水区，以下会详细介绍下compiler的实现思路及具体demo，帮助同学们了解compiler的基本实现。
+
+## 4 编译器的基本思路
+
+此处主要讲解compiler的思路
+
+### 4.1 词法分析(Lexical Analysis)
+
+#### 4.1.1 目标
+
+将文本分割成一个个的“token”，例如：init、main、init、x、;、x、=、3、;、}等等。同时它可以去掉一些注释、空格、回车等等无效字符；
+
+#### 4.1.2 生成方式
+
+词法分析生成token的办法有2种：
+
+**1. 使用正则进行词法分析**
+
+需要写大量的正则表达式，正则之间还有冲突需要处理，不容易维护，性能不高，所以正则只适合一些简单的模板语法，真正复杂的语言并不合适。并且有的语言并不一定自带正则引擎。
+
+**2. 使用自动机进行词法分析**
+
+自动机可以很好的生成token；
+
+有穷状态自动机（finite state machine）：在有限个输入的情况下，在这些状态中转移并期望最终达到终止状态。
+
+有穷状态自动机根据确定性可以分为：
+
+“确定有穷状态自动机”（DFA - Deterministic finite automaton）
+
+在输入一个状态时，只得到一个固定的状态。DFA 可以认为是一种特殊的 NFA；
+
+“非确定有穷自动机”（NFA - Non-deterministic finite automaton）
+
+当输入一个字符或者条件得到一个状态机的集合。JavaScript 正则采用的是 NFA 引擎，具体看后文；
+
+### 4.2 语法分析（Syntactic Analysis）
+
+我们日常所说的编译原理就是将一种语言转换为另一种语言。编译原理被称为形式语言，它是一类无需知道太多语言背景、无歧义的语言。而自然语言通常难以处理，主要是因为难以识别语言中哪些是名词哪些是动词哪些是形容词。例如：“进口汽车”这句话，“进口”到底是动词还是形容词？所以我们要解析一门语言，前提是这门语言有严格的语法规定的语言，而定义语言的语法规格称为**文法**。
+
+1956年，乔姆斯基将文法按照规范的严格性分为0型、1型、2型和3型共4中文法，从0到3文法规则是逐渐增加严的。一般的计算机语言是2型，因为0和1型文法定义宽松，将大大增加解析难度、降低解析效率，而3型文法限制又多，不利于语言设计灵活性。2型文法也叫做上下文无关文法（CFG）。
+
+ 语法分析的目的就是通过词法分析器拿到的token流 + 结合文法规则，通过一定算法得到一颗抽象语法树（AST）。抽象语法树是非常重要的概念，尤其在前端领域应用很广。典型应用如babel插件，它的原理就是：es6代码 → Babylon.parse → AST → babel-traverse → 新的AST → es5代码。
+
+ 从生成AST效率和实现难度上，前人总结主要有2种解析算法：自顶向下的分析方法和自底向上的分析方法。自底向上算法分析文法范围广，但实现难度大。而自顶向下算法实现相对简单，并且能够解析文法的范围也不错，所以一般的compiler都是采用深度优先索引的方式。
+
+### 4.3 代码转换（Transformation）
+
+在得到AST后，我们一般会先将AST转为另一种AST，目的是生成更符合预期的AST，这一步称为代码转换。
+
+代码转换的优势：主要是产生工程上的意义
+
+- 易移植：与机器无关，所以它作为中间语言可以为生成多种不同型号的目标机器码服务；
+- 机器无关优化：对中间码进行机器无关优化，利于提高代码质量；
+- 层次清晰：将AST映射成中间代码表示，再映射成目标代码的工作分层进行，使编译算法更加清晰 ；
+
+对于一个Compiler而言，在转换阶段通常有两种形式：
+
+同语言的AST转换；
+
+AST转换为新语言的AST；
+
+这里有一种通用的做法是，对我们之前的AST从上至下的解析（称为traversal），然后会有个映射表（称为visitor），把对应的类型做相应的转换。
+
+### 4.4 代码生成（Code Generation）
+
+在实际的代码处理过程中，可能会递归的分析（**recursive**）我们最终生成的AST，然后对于每种type都有个对应的函数处理，当然，这可能是最简单的做法。总之，我们的目标代码会在这一步输出，对于我们的目标语言，它就是HTML了。
+
+### 4.5 完整链路(Compiler)
+
+至此，我们就完成了一个完整的compiler的所有过程：
+
+```js
+input => tokenizer => tokens; // 词法分析
+tokens => parser => ast; // 语法分析，生成AST
+ast => transformer => newAst; // 中间层代码转换
+newAst => generator => output; // 生成目标代码
+```
+
+## 5. 一个简单的编译器的实现
+
+此处实现一个基础的compiler
+
+### 5.1 前置内容
+
+```js
+/**
+ * 今天我们要一起写一个编译器。但不仅仅是任何编译器......
+ * 超级小的编译器！一个很小的编译器，如果你
+ * 删除所有注释，这个文件只有大约 200 行实际代码。
+ *
+ * 我们将把一些类似语义化代码的函数调用编译成一些类似 C 的函数
+ * 函数调用。
+ *
+ * 如果您不熟悉其中之一。我只是给你一个快速的介绍。
+ *
+ * 如果我们有两个函数 `add` 和 `subtract` 他们会写成这样：
+ *
+ * 类似 C
+ *
+ * 2 + 2 (加 2 2) 加 (2, 2)
+ * 4 - 2 (减 4 2) 减 (4, 2)
+ * 2 + (4 - 2) (加 2 (减 4 2)) 加 (2, 减 (4, 2))
+ *
+ *
+ * 很好，因为这正是我们要编译的。虽然这
+ * 不是完整的 C 语法，它的语法足以
+ * 演示现代编译器的许多主要部分。
+ */
+
+/**
+ * 大多数编译器分为三个主要阶段：解析、转换、
+ * 和代码生成
+ *
+ * 1. *解析* 将原始代码转化为更抽象的代码
+ * 代码的表示。
+ *
+ * 2. *转换* 采用这种抽象表示并进行操作
+ * 无论编译器想要什么。
+ *
+ * 3. *代码生成*采用转换后的代码表示，并
+ * 将其转换为新代码。
+ */
+```
+
+```js
+/**
+ * 解析
+ * --------
+ *
+ * 解析通常分为两个阶段：词法分析和
+ * 句法分析。
+ *
+ * 1. *词法分析*获取原始代码并将其拆分成这些东西
+ * 被称为标记器（或词法分析器）的东西称为标记。
+ *
+ * Tokens 是一组微小的对象，描述了一个孤立的部分
+ * 的语法。它们可以是数字、标签、标点符号、运算符、
+ *    任何。
+ *
+ * 2. *句法分析*获取标记并将它们重新格式化为
+ * 描述语法的每个部分及其关系的表示
+ *    彼此。这被称为中间表示或
+ * 抽象语法树。
+ *
+ * 抽象语法树，简称 AST，是一个深度嵌套的对象，
+ * 以一种既易于使用又能告诉我们很多信息的方式表示代码
+ * 信息。
+ *
+ * 对于以下语法：
+ *
+ * (加 2 (减 4 2))
+ *
+ * 令牌可能看起来像这样：
+ *
+ *   [
+ *     { type: 'paren',  value: '('        },
+ *     { type: 'name',   value: 'add'      },
+ *     { type: 'number', value: '2'        },
+ *     { type: 'paren',  value: '('        },
+ *     { type: 'name',   value: 'subtract' },
+ *     { type: 'number', value: '4'        },
+ *     { type: 'number', value: '2'        },
+ *     { type: 'paren',  value: ')'        },
+ *     { type: 'paren',  value: ')'        },
+ *   ]
+ *
+ * 抽象语法树 (AST) 可能如下所示：
+ *
+ *   {
+ *     type: 'Program',
+ *     body: [{
+ *       type: 'CallExpression',
+ *       name: 'add',
+ *       params: [{
+ *         type: 'NumberLiteral',
+ *         value: '2',
+ *       }, {
+ *         type: 'CallExpression',
+ *         name: 'subtract',
+ *         params: [{
+ *           type: 'NumberLiteral',
+ *           value: '4',
+ *         }, {
+ *           type: 'NumberLiteral',
+ *           value: '2',
+ *         }]
+ *       }]
+ *     }]
+ *   }
+ */
+```
+
+```js
+
+/**
+ * 转换
+ * --------------
+ *
+ * 编译器的下一个阶段是转换。再次，这只是
+ * 从最后一步获取 AST 并对其进行更改。它可以操纵
+ * 使用相同语言的 AST，或者它可以将其翻译成全新的
+ * 语。
+ *
+ * 让我们看看如何转换 AST。
+ *
+ * 您可能会注意到我们的 AST 中的元素看起来非常相似。
+ * 这些对象具有类型属性。这些中的每一个都被称为
+ * AST 节点。这些节点在它们上定义了描述一个
+ * 树的隔离部分。
+ *
+ * 我们可以有一个“NumberLiteral”的节点：
+ *
+*   {
+ *     type: 'NumberLiteral',
+ *     value: '2',
+ *   }
+ *
+ * Or maybe a node for a "CallExpression":
+ *
+ *   {
+ *     type: 'CallExpression',
+ *     name: 'subtract',
+ *     params: [...nested nodes go here...],
+ *   }
+ *
+ * 转换 AST 时，我们可以通过以下方式操作节点
+ * 添加/删除/替换属性，我们可以添加新节点，删除节点，或者
+ * 我们可以不理会现有的 AST 并创建一个全新的基于
+ * 在上面。
+ *
+ * 由于我们的目标是一种新语言，我们将专注于创建一个
+ * 特定于目标语言的全新 AST。
+ *
+ * 遍历
+ * ---------
+ *
+ * 为了浏览所有这些节点，我们需要能够
+ * 遍历它们。这个遍历过程会到达 AST 中的每个节点
+ * 深度优先。
+ *
+ *   {
+ *     type: 'Program',
+ *     body: [{
+ *       type: 'CallExpression',
+ *       name: 'add',
+ *       params: [{
+ *         type: 'NumberLiteral',
+ *         value: '2'
+ *       }, {
+ *         type: 'CallExpression',
+ *         name: 'subtract',
+ *         params: [{
+ *           type: 'NumberLiteral',
+ *           value: '4'
+ *         }, {
+ *           type: 'NumberLiteral',
+ *           value: '2'
+ *         }]
+ *       }]
+ *     }]
+ *   }
+ *
+ * 所以对于上面的 AST，我们会去：
+ *
+ * 1. Program - 从 AST 的顶层开始
+ * 2. CallExpression (add) - 移动到程序主体的第一个元素
+ * 3. NumberLiteral (2) - 移动到 CallExpression 参数的第一个元素
+ * 4. CallExpression (subtract) - 移动到 CallExpression 参数的第二个元素
+ * 5. NumberLiteral (4) - 移动到 CallExpression 参数的第一个元素
+ * 6. NumberLiteral (2) - 移动到 CallExpression 参数的第二个元素
+ *
+ * 如果我们直接操作这个 AST，而不是创建一个单独的 AST，
+ * 我们可能会在这里引入各种抽象。但只是参观
+ * 树中的每个节点都足以完成我们正在尝试做的事情。
+ *
+ * 我使用“访问”这个词的原因是因为有这样的模式
+ * 表示对对象结构元素的操作。
+*
+ * Visitors
+ * --------
+ *
+ * 这里的基本思想是我们将创建一个“访问者”对象，
+ * 具有将接受不同节点类型的方法。
+ *
+ *   var visitor = {
+ *     NumberLiteral() {},
+ *     CallExpression() {},
+ *   };
+ *
+ * 当我们遍历我们的 AST 时，我们会在任何时候调用这个访问者的方法
+ * “输入”一个匹配类型的节点。
+ *
+ * 为了使它有用，我们还将传递节点和引用
+ * 父节点。
+ *
+ *   var visitor = {
+ *     NumberLiteral(node, parent) {},
+ *     CallExpression(node, parent) {},
+ *   };
+ *
+ * 但是，也存在在“退出”时调用事物的可能性。想象
+ * 我们之前的树形结构以列表形式：
+ *
+ *   - Program
+ *     - CallExpression
+ *       - NumberLiteral
+ *       - CallExpression
+ *         - NumberLiteral
+ *         - NumberLiteral
+ *
+ * 当我们向下遍历时，我们将到达有死胡同的分支。正如我们
+ * 完成我们“退出”它的树的每个分支。所以我们顺着树走
+ *“进入”每个节点，然后返回我们“退出”。
+ *
+ *   -> Program (enter)
+ *     -> CallExpression (enter)
+ *       -> Number Literal (enter)
+ *       <- Number Literal (exit)
+ *       -> Call Expression (enter)
+ *          -> Number Literal (enter)
+ *          <- Number Literal (exit)
+ *          -> Number Literal (enter)
+ *          <- Number Literal (exit)
+ *       <- CallExpression (exit)
+ *     <- CallExpression (exit)
+ *   <- Program (exit)
+ *
+ * 为了支持这一点，我们的访问者的最终形式将如下所示：
+ *
+ *   var visitor = {
+ *     NumberLiteral: {
+ *       enter(node, parent) {},
+ *       exit(node, parent) {},
+ *     }
+ *   };
+ */
+```
+
+```js
+/**
+ * 代码生成
+ * ---------------
+ *
+ * 编译器的最后阶段是代码生成。有时编译器会做
+ * 与转换重叠的东西，但大部分是代码
+ * 生成只是意味着取出我们的 AST 和字符串化代码。
+ *
+ * 代码生成器有几种不同的工作方式，一些编译器会重用
+ * 早期的令牌，其他人将创建一个单独的表示
+ *代码，以便他们可以线性打印节点，但据我所知
+ * 将使用我们刚刚创建的相同 AST，这是我们将重点关注的内容。
+ *
+ * 实际上，我们的代码生成器将知道如何“打印”所有不同的
+ * AST的节点类型，它会递归调用自己打印嵌套
+ * 节点，直到所有内容都打印成一长串代码。
+ */
+
+/**
+ *就是这样！这就是编译器的所有不同部分。
+ *
+ * 现在这并不是说每个编译器看起来都和我在这里描述的完全一样。
+ * 编译器有许多不同的用途，它们可能需要更多的步骤
+ * 我有详细的。
+ *
+ * 但是现在您应该对大多数编译器的外观有一个大致的高级概念
+ * 喜欢。
+ *
+ * 现在我已经解释了所有这些，你们都可以自己写了
+ * 编译器对吗？
+ *
+ * 开个玩笑，这就是我来帮忙的：P
+ *
+ * 那么让我们开始吧...
+ */
+```
+
+### 5.2 词法分析
+
+```js
+/**
+ * ============================================================================
+ *                                   (/^▽^)/
+ *                                词法分析！
+ * ============================================================================
+ */
+
+function tokenizer(input) {
+  let current = 0;
+
+  let tokens = [];
+
+  while (current < input.length) {
+    let char = input[current];
+
+    if (char === '(') {
+      tokens.push({
+        type: 'paren',
+        value: '(',
+      });
+
+      current++;
+
+      continue;
+    }
+
+    if (char === ')') {
+      tokens.push({
+        type: 'paren',
+        value: ')',
+      });
+      current++;
+      continue;
+    }
+
+    let WHITESPACE = /\s/;
+    if (WHITESPACE.test(char)) {
+      current++;
+      continue;
+    }
+
+    let NUMBERS = /[0-9]/;
+    if (NUMBERS.test(char)) {
+      let value = '';
+
+      while (NUMBERS.test(char)) {
+        value += char;
+        char = input[++current];
+      }
+
+      tokens.push({ type: 'number', value });
+
+      continue;
+    }
+
+    if (char === '"') {
+      let value = '';
+
+      char = input[++current];
+
+      while (char !== '"') {
+        value += char;
+        char = input[++current];
+      }
+
+      char = input[++current];
+
+      tokens.push({ type: 'string', value });
+
+      continue;
+    }
+
+    let LETTERS = /[a-z]/i;
+    if (LETTERS.test(char)) {
+      let value = '';
+
+      while (LETTERS.test(char)) {
+        value += char;
+        char = input[++current];
+      }
+
+      tokens.push({ type: 'name', value });
+
+      continue;
+    }
+
+    throw new TypeError('I dont know what this character is: ' + char);
+  }
+  return tokens;
+}
+```
+
+### 5.3 语法分析
+
+```js
+/**
+ * ============================================================================
+ *                                 ヽ/❀o ل͜ o\ﾉ
+ *                                THE 解析!!!
+ * ============================================================================
+ */
+
+function parser(tokens) {
+  let current = 0;
+
+  function walk() {
+    let token = tokens[current];
+
+    if (token.type === 'number') {
+      current++;
+
+      return {
+        type: 'NumberLiteral',
+        value: token.value,
+      };
+    }
+
+    if (token.type === 'string') {
+      current++;
+
+      return {
+        type: 'StringLiteral',
+        value: token.value,
+      };
+    }
+
+    if (token.type === 'paren' && token.value === '(') {
+      token = tokens[++current];
+
+      let node = {
+        type: 'CallExpression',
+        name: token.value,
+        params: [],
+      };
+
+      token = tokens[++current];
+
+      while (token.type !== 'paren' || (token.type === 'paren' && token.value !== ')')) {
+        node.params.push(walk());
+        token = tokens[current];
+      }
+
+      current++;
+
+      return node;
+    }
+
+    throw new TypeError(token.type);
+  }
+
+  let ast = {
+    type: 'Program',
+    body: [],
+  };
+
+  while (current < tokens.length) {
+    ast.body.push(walk());
+  }
+  return ast;
+}
+```
+
+### 5.4 代码转换
+
+```js
+/**
+ * ============================================================================
+ *                                 ⌒(❀>◞౪◟<❀)⌒
+ *                              代码转换方法!!!
+ * ============================================================================
+ */
+
+function traverser(ast, visitor) {
+  function traverseArray(array, parent) {
+    array.forEach(child => {
+      traverseNode(child, parent);
+    });
+  }
+
+  function traverseNode(node, parent) {
+    let methods = visitor[node.type];
+
+    if (methods && methods.enter) {
+      methods.enter(node, parent);
+    }
+
+    switch (node.type) {
+      case 'Program':
+        traverseArray(node.body, node);
+        break;
+
+      case 'CallExpression':
+        traverseArray(node.params, node);
+        break;
+
+      case 'NumberLiteral':
+      case 'StringLiteral':
+        break;
+
+      default:
+        throw new TypeError(node.type);
+    }
+
+    if (methods && methods.exit) {
+      methods.exit(node, parent);
+    }
+  }
+
+  traverseNode(ast, null);
+}
+
+/**
+ * ============================================================================
+ *                                   ⁽(◍˃̵͈̑ᴗ˂̵͈̑)⁽
+ *                              代码转换!!!
+ * ============================================================================
+ */
+
+/**
+ *
+ * ----------------------------------------------------------------------------
+ *   Original AST                     |   Transformed AST
+ * ----------------------------------------------------------------------------
+ *   {                                |   {
+ *     type: 'Program',               |     type: 'Program',
+ *     body: [{                       |     body: [{
+ *       type: 'CallExpression',      |       type: 'ExpressionStatement',
+ *       name: 'add',                 |       expression: {
+ *       params: [{                   |         type: 'CallExpression',
+ *         type: 'NumberLiteral',     |         callee: {
+ *         value: '2'                 |           type: 'Identifier',
+ *       }, {                         |           name: 'add'
+ *         type: 'CallExpression',    |         },
+ *         name: 'subtract',          |         arguments: [{
+ *         params: [{                 |           type: 'NumberLiteral',
+ *           type: 'NumberLiteral',   |           value: '2'
+ *           value: '4'               |         }, {
+ *         }, {                       |           type: 'CallExpression',
+ *           type: 'NumberLiteral',   |           callee: {
+ *           value: '2'               |             type: 'Identifier',
+ *         }]                         |             name: 'subtract'
+ *       }]                           |           },
+ *     }]                             |           arguments: [{
+ *   }                                |             type: 'NumberLiteral',
+ *                                    |             value: '4'
+ * ---------------------------------- |           }, {
+ *                                    |             type: 'NumberLiteral',
+ *                                    |             value: '2'
+ *                                    |           }]
+ *  (sorry the other one is longer.)  |         }
+ *                                    |       }
+ *                                    |     }]
+ *                                    |   }
+ * ----------------------------------------------------------------------------
+ */
+
+function transformer(ast) {
+  let newAst = {
+    type: 'Program',
+    body: [],
+  };
+
+  ast._context = newAst.body;
+
+  traverser(ast, {
+    NumberLiteral: {
+      enter(node, parent) {
+        parent._context.push({
+          type: 'NumberLiteral',
+          value: node.value,
+        });
+      },
+    },
+
+    StringLiteral: {
+      enter(node, parent) {
+        parent._context.push({
+          type: 'StringLiteral',
+          value: node.value,
+        });
+      },
+    },
+
+    CallExpression: {
+      enter(node, parent) {
+        let expression = {
+          type: 'CallExpression',
+          callee: {
+            type: 'Identifier',
+            name: node.name,
+          },
+          arguments: [],
+        };
+
+        node._context = expression.arguments;
+
+        if (parent.type !== 'CallExpression') {
+          expression = {
+            type: 'ExpressionStatement',
+            expression: expression,
+          };
+        }
+
+        parent._context.push(expression);
+      },
+    },
+  });
+
+  return newAst;
+}
+
+```
+
+### 5.5 代码生成
+
+```js
+/**
+ * ============================================================================
+ *                               ヾ（〃＾∇＾）ﾉ♪
+ *                            代码生成!!!!
+ * ============================================================================
+ */
+
+function codeGenerator(node) {
+  switch (node.type) {
+    case 'Program':
+      return node.body.map(codeGenerator).join('\n');
+
+    case 'ExpressionStatement':
+      return (
+        codeGenerator(node.expression) + ';' // << (...because we like to code the *correct* way)
+      );
+
+    case 'CallExpression':
+      return codeGenerator(node.callee) + '(' + node.arguments.map(codeGenerator).join(', ') + ')';
+
+    case 'Identifier':
+      return node.name;
+
+    case 'NumberLiteral':
+      return node.value;
+
+    case 'StringLiteral':
+      return '"' + node.value + '"';
+
+    default:
+      throw new TypeError(node.type);
+  }
+}
+```
+
+### 5.6 完整流程
+
+```js
+/**
+ * ============================================================================
+ *                                  (۶* ‘ヮ’)۶”
+ *                         !!!!!!!!完整流程!!!!!!!!
+ * ============================================================================
+ */
+
+/**
+ *
+ *   1. input  => tokenizer   => tokens
+ *   2. tokens => parser      => ast
+ *   3. ast    => transformer => newAst
+ *   4. newAst => generator   => output
+ */
+
+function compiler(input) {
+  let tokens = tokenizer(input);
+  let ast = parser(tokens);
+  let newAst = transformer(ast);
+  let output = codeGenerator(newAst);
+
+  return output;
+}
+```
+
+## 6. 附录
+
+- [the super tiny compiler](https://github.com/jamiebuilds/the-super-tiny-compiler)；
+- [JavaScript compiler](https://github.com/jacksplwxy/JavaScript-compiler)；
+
+## 7. 课后作业
+
+1. 照着代码，手写一遍compiler的过程；
+
+2. 参考xianzao-cli，自己实现一个自身业务上的cli；
+
+# React学习路径
+
+https://www.yuque.com/lpldplws/web/bgn3sl?singleDoc# 《react学习路径》 密码：ei05
+
+## 1. react生态
+
+1. 创建项目
+
+1. 1. CRA(create react app) ：https://github.com/facebook/create-react-app
+   2. Vite（2022大热）：https://github.com/vitejs/vite
+   3. SSR应用：Next.js：https://github.com/vercel/next.js
+   4. 静态站点：Gatsby.js：https://github.com/gatsbyjs/gatsby
+   5. 新web 框架：remix：https://github.com/remix-run/remix
+
+1. 状态管理
+
+1. 1. react hooks
+   2. redux：https://redux.js.org/
+   3. Zusand（本地状态管理）：https://github.com/pmndrs/zustand
+
+1. 远程状态管理
+
+1. 1. React Query（REST API、GraphQL API 都有）：https://github.com/tannerlinsley/react-query
+   2. Apollo Client（只有 GraphQL API）：https://www.apollographql.com/docs/react/
+   3. RTK Query（结合Redux管理远程数据请求）：https://redux-toolkit.js.org/rtk-query/overview
+
+1. 路由
+
+1. 1. https://reactrouter.com/
+
+1. 样式
+
+1. 1. CSS Modules（CSS in CSS）：https://github.com/css-modules/css-modules
+   2. Styled Components（CSS in JS，目前最受欢迎）:https://www.robinwieruch.de/react-styled-components/
+   3. Tailwind CSS（Utility-First-CSS）：https://tailwindcss.com/
+   4. clsx（条件渲染）：https://github.com/lukeed/clsx
+
+1. 组件库
+
+1. 1. material UI（最流行）：https://mui.com/zh/
+   2. Ant Design（国内最流行）：https://ant.design/
+
+1. 动画库
+
+1. 1. React Transition Group
+   2. Framer Motion：https://www.framer.com/motion/
+   3. react-motion：https://github.com/chenglou/react-motion
+
+1. 可视化图表
+
+1. 1. D3：https://d3js.org/
+   2. Recharts：https://recharts.org/zh-CN/
+   3. react-chartjs：https://github.com/reactchartjs/react-chartjs-2
+
+1. 表单
+
+1. 1. react hook form：https://react-hook-form.com/
+
+1. 类型检查
+
+1. 1. PropTypes
+   2. TS：https://www.typescriptlang.org/
+
+1. 代码风格
+
+1. 1. eslint：https://eslint.org/
+   2. prettier：https://github.com/prettier/prettier
+   3. Airbnb 代码风格指南：https://keqingrong.cn/blog/2020-05-04-code-style-guide-for-react/
+   4. React 代码风格指南：https://www.robinwieruch.de/react-libraries/
+
+1. 身份校验
+
+1. 1. firebase：https://www.robinwieruch.de/complete-firebase-authentication-react-tutorial/
+   2. auth0：https://auth0.com/
+
+1. 测试
+
+1. 1. Jest：https://jestjs.io/zh-Hans/
+
+1. 数据处理
+
+1. 1. immutable.js：https://immutable-js.com/
+   2. immer：https://github.com/immerjs/immer
+
+1. i18n
+
+1. 1. formatjs：https://github.com/formatjs/formatjs
+   2. react-i18next：https://github.com/i18next/react-i18next
+
+1. 富文本编辑
+
+1. 1. draft：https://draftjs.org/
+   2. react-quill：https://github.com/zenoamaro/react-quill
+
+1. 时间处理
+
+1. 1. date-fns：https://github.com/date-fns/date-fns
+   2. Day.js：https://github.com/iamkun/dayjs
+
+1. 客户端
+
+1. 1. Electron：https://www.electronjs.org/
+   2. tauri：https://github.com/tauri-apps/tauri
+   3. nwjs：https://nwjs.io/
+
+1. 移动端
+
+1. 1. RN：https://reactnative.dev/
+
+1. 原型设计
+
+1. 1. sketch：https://www.sketch.com/
+   2. figma：https://www.figma.com/
+   3. zeplin：https://zeplin.io/
+
+1. 文档类
+
+1. 1. storybook：https://storybook.js.org/
+
+1. 其他工具
+
+1. 1. webpack
+   2. babel
+
+## 2. 工具类
+
+1. shadowsocks
+2. search
+
+1. 1. http://google.com/
+   2. https://stackoverflow.com/
+
+1. awesome 系列
+
+1. 1. https://github.com/enaqx/awesome-react
+
+1. github star多的
+
+## 3. 实践类
+
+1. 前后端自己搭建：阿里云 ECS + OSS + mysql
+2. blog：GATSBY、GitHub page
+
+## 4. 前沿技术学习
+
+1. 早早聊：https://www.zaozao.run/
+2. D2：https://github.com/d2forum
+3. Qcon：https://qcon.infoq.cn/2022/beijing
+4. JSConf：https://jsconf.com/
+
+# React基础
+
+tauri
+
+https://www.yuque.com/lpldplws/web/lg3g1s?singleDoc# 《React基础》 密码：tv0g
+
+React是一个声明式，高效灵活的构建用户界面的js库,更快响应用户操作的UI库组件
 
 UI=render(data) 单向数据流
 
+- mvc
+
+model view c
+
+- 
+
+## 1.课程目标
+
+1. 入门React，了解常规用法；
+2. 掌握面试中React的基础问题；
+3. 掌握React学习路线；
+
+## 2. 课程大纲
+
+- React简介
+- JSX模板语法
+- props & state
+- 生命周期
+- 事件处理
+- 条件渲染
+- 列表
+- create-react-app
+- immutable 及immer
+
+## 3.主要内容
+
+官网地址：https://zh-hans.reactjs.org/
+
+### 3.1 React简介
+
+React 是一个声明式，高效且灵活的用于构建用户界面的 JavaScript 库。使用 React 可以将一些简短、独立的代码片段组合成复杂的 UI 界面，这些代码片段被称作“组件”。
+
+ui = render (data) -> 单向数据流
+
+- MVC
+
+![image.png](https://cdn.nlark.com/yuque/0/2022/png/2340337/1647071835190-02b721bb-406d-452f-adb9-3a1af1daf22e.png)
+
+```js
+// model
+var myapp = {}; // 创建这个应用对象
+
+myapp.Model = function() {
+  var val = 0;
+
+  this.add = function(v) {
+    if (val < 100) val += v;
+  };
+
+  this.sub = function(v) {
+    if (val > 0) val -= v;
+  };
+
+  this.getVal = function() {
+    return val;
+  };
+
+  ／* 观察者模式 *／
+  var self = this, 
+      views = [];
+
+  this.register = function(view) {
+    views.push(view);
+  };
+
+  this.notify = function() {
+    for(var i = 0; i < views.length; i++) {
+        views[i].render(self);
+    }
+  };
+};
+
+// view
+myapp.View = function(controller) {
+  var $num = $('#num'),
+      $incBtn = $('#increase'),
+      $decBtn = $('#decrease');
+
+  this.render = function(model) {
+      $num.text(model.getVal() + 'rmb');
+  };
+
+  /*  绑定事件  */
+  $incBtn.click(controller.increase);
+  $decBtn.click(controller.decrease);
+};
+
+// controller
+myapp.Controller = function() {
+  var model = null,
+      view = null;
+
+  this.init = function() {
+    /* 初始化Model和View */
+    model = new myapp.Model();
+    view = new myapp.View(this);
+
+    /* View向Model注册，当Model更新就会去通知View啦 */
+    model.register(view);
+    model.notify();
+  };
+
+  /* 让Model更新数值并通知View更新视图 */
+  this.increase = function() {
+    model.add(1);
+    model.notify();
+  };
+
+  this.decrease = function() {
+    model.sub(1);
+    model.notify();
+  };
+};
+
+// init
+(function() {
+  var controller = new myapp.Controller();
+  controller.init();
+})();
+```
+
+- mvvm
+
+![img](https://cdn.nlark.com/yuque/0/2022/png/2340337/1647072104508-55c6d7e4-d8c5-4f39-afab-def587496cae.png)
+
+### 3.2 JSX模版语法
+
+JSX称为JS的语法扩展，将UI与逻辑层耦合在组件里，用{}标识
+
+因为 JSX 语法上更接近 JS 而不是 HTML，所以使用 camelCase（小驼峰命名）来定义属性的名称；
+
+JSX 里的 class 变成了 [className](https://developer.mozilla.org/en-US/docs/Web/API/Element/className)，而 tabindex 则变为 [tabIndex](https://developer.mozilla.org/en-US/docs/Web/API/HTMLElement/tabIndex)。
+
+#### 3.2.1 jsx支持表达式
+
+支持JS表达式，变量，方法名
+
+```jsx
+// 变量
+const name = 'Josh Perez';
+const element = <h1>Hello, {name}</h1>;
+
+function formatName(user) {
+  return user.firstName + ' ' + user.lastName;
+}
+
+// 方法
+const user = {
+  firstName: 'Harper',
+  lastName: 'Perez'
+};
+
+const element = (
+  <h1>
+    Hello, {formatName(user)}!
+  </h1>
+);
+
+function getGreeting(user) {
+  if (user) {
+    return <h1>Hello, {formatName(user)}!</h1>;
+  }
+  return <h1>Hello, Stranger.</h1>;
+}
+```
+
+#### 3.2.2 jsx指定属性
+
+```jsx
+const element = <img src={user.avatarUrl}></img>;
+
+注意：JSX支持防注入(防止XSS攻击)
+const title = response.potentiallyMaliciousInput;  // 此时只是字符串
+// 直接使用是安全的： const element = <h1>{title}</h1>;
+
+React 如何预防XSS
+
+// 反射型 XSS
+
+https://xxx.com/search?query=userInput
+
+// 服务器在对此 URL 的响应中回显提供的搜索词：query=123
+<p>您搜索的是: 123</p>
+
+// https://xxx.com/search?query=<img src="empty.png" onerror ="alert('xss')">
+<p>您搜索的是: <img src="empty.png" onerror ="alert('xss')"></p>
+// 如果有用户请求攻击者的 URL ，则攻击者提供的脚本将在用户的浏览器中执行。
+
+  
+// 存储型 XSS，存储到目标数据库
+// 评论输入，所有访问用户都能看到了
+<textarea>
+  <img src="empty.png" onerror ="alert('xss')">
+</textarea>
+  
+// 部分源码
+for (index = match.index; index < str.length; index++) {
+  switch (str.charCodeAt(index)) {
+    case 34: // "
+      escape = '&quot;';
+      break;
+    case 38: // &
+      escape = '&amp;';
+      break;
+    case 39: // '
+      escape = '&#x27;';
+      break;
+    case 60: // <
+      escape = '&lt;';
+      break;
+    case 62: // >
+      escape = '&gt;';
+      break;
+    default:
+      continue;
+  }
+}
+
+// 一段恶意代码
+<img src="empty.png" onerror ="alert('xss')"> 
+//  React 在渲染到浏览器前进行的转义，可以看到对浏览器有特殊含义的字符都被转义了，恶意代码在渲染到 HTML 前都被转成了字符串
+&lt;img src=&quot;empty.png&quot; onerror =&quot;alert(&#x27;xss&#x27;)&quot;&gt; 
+  
+// JSX
+const element = (
+  <h1 className="greeting">
+      Hello, world!
+  </h1>
+);
+  
+// 通过 babel 编译后的代码
+const element = React.createElement(
+  'h1',
+  {className: 'greeting'},
+  'Hello, world!'
+);
+  
+// React.createElement() 方法返回的 ReactElement
+const element = {
+  $$typeof: Symbol('react.element'),
+  type: 'h1',
+  key: null,
+  props: {
+    children: 'Hello, world!',
+        className: 'greeting'   
+  }
+  ...
+}
+ 
+// 如何模拟一个Children会如何？
+const storedData = `{
+    "ref":null,
+    "type":"body",
+    "props":{
+        "dangerouslySetInnerHTML":{
+            "__html":"<img src=\"empty.png\" onerror =\"alert('xss')\"/>"
+        }
+    }
+}`;
+// 转成 JSON
+const parsedData = JSON.parse(storedData);
+// 将数据渲染到页面
+render () {
+    return <span> {parsedData} </span>; 
+}
+  
+// $$typeof 是用来标记一个ReactElement的，JSON化后Symbol会丢失，React会报错
+```
+
+#### 3.2.3 jsx表示对象
+
+```jsx
+const element = (
+  <h1 className="greeting">
+    Hello, world!
+  </h1>
+);
+
+// 等同于React.createElement
+const element = React.createElement(
+  'h1',
+  {className: 'greeting'},
+  'Hello, world!'
+);
+
+const element = {
+  type: 'h1',
+  props: {
+    className: 'greeting',
+    children: 'Hello, world!'
+  }
+};
+```
+
+#### 3.2.4 将JSX渲染为DOM
+
+```jsx
+// 使用ReactDOM.render
+const element = <h1>Hello, world</h1>;
+ReactDOM.render(element, document.getElementById('root'));
+
+// render只能代表当前时刻的状态
+// 更新元素 只能再次 ReactDOM.render
+function tick() {
+  const element = (
+    <div>
+      <h1>Hello, world!</h1>
+      <h2>It is {new Date().toLocaleTimeString()}.</h2>
+    </div>
+  );
+  ReactDOM.render(element, document.getElementById('root')); 
+}
+
+setInterval(tick, 1000); // 不建议多次render
+```
+
+#### 3.2.5. JSX转JS
+
+JSX可以当做语法糖，可以在babel官网中尝试，https://babeljs.io/repl
+
+可以使用官网提供的create-react-app npm run eject 来看babelrc中的配置，主要使用
+
+https://www.babeljs.cn/docs/babel-preset-react
+
+```js
+// 安装babel 及react 的依赖
+npm install core-js @babel/core @babel/preset-env @babel/preset-react @babel/register babel-loader @babel/plugin-transform-runtime --save-dev
+
+.babelrc
+{
+    "presets" : [ 
+        "@babel/preset-env" ,
+        "@babel/preset-es2015",
+        "@babel/preset-react"
+    ],
+    "plugins" : [
+        "@babel/plugin-transform-runtime"
+    ]
+}
+```
+
+### 3.3 props及state
+
+组件，从概念上类似于 JavaScript 函数。它接受任意的入参（即 “props”），并返回用于描述页面展示内容的 React 元素。
+
+### 3.3.1 组件
+
+- 函数式组件
+- Class类组件
+
+
+
+# React高级用法
+
+## 1. 课程目标
+
+P6：
+
+1. 1. 会用React写项目，较熟练使用React配套技术栈，有一定实际开发经验；
+   2. 能够针对复杂的业务场景制定出较为规范的逻辑架构；
+
+P6+~P7：
+
+1. 1. 基于实际开发场景，搭建配套脚手架，能够基于当前实际开发场景优化架构设计，制定团队规范；
+   2. 对前沿技术有足够的敏感度，保证项目的可扩展性与健壮性；
+   3. 精通一个框架的底层设计，熟悉多个框架的实际设计及对比；
+
+其他目标：
+
+1. 1. 深入了解React技术栈相关的知识点，知道React生态中发展现状，能够对面试所提的问题举一反三；
+
+## 2.课程大纲
+
+1. 高阶组件的用法及封装
+2. Hooks详解
+3. 异步组件
+4. React 18 新特性
+
+## 3.主要内容
+
+### 3.1. 高阶组件用法及封装
+
+高阶组件（HOC）是 React 中用于复用组件逻辑的一种高级技巧。HOC 自身不是 React API 的一部分，它是一种基于 React 的组合特性而形成的设计模式。
+
+简单点说，就是组件作为参数，返回值也是组件的函数，它是纯函数，不会修改传入的组件，也不会使用继承来复制其行为。相反，HOC 通过将组件包装在容器组件中来组成新组件。HOC 是纯函数，没有副作用。
+
+#### 3.1.1 使用HOC的原因
+
+1. 抽取重复代码，实现组件复用：相同功能组件复用
+2. 条件渲染，控制组件的渲染逻辑（渲染劫持）：权限控制。
+3. 捕获/劫持被处理组件的生命周期，常见场景：组件渲染性能追踪、日志打点。
+
+#### 3.1.2 HOC实现方式
+
+##### 3.1.2.1 属性代理
+
+使用组合的方式，将组件包装在容器上，依赖父子组件的生命周期关系来；
+
+1. 返回stateless的函数组件
+2. 返回class组件
+
+- 操作props
+
+```js
+// 可以通过属性代理，拦截父组件传递过来的porps并进行处理。
+
+// 返回一个无状态的函数组件
+function HOC(WrappedComponent) {
+  const newProps = { type: 'HOC' };
+  return props => <WrappedComponent {...props} {...newProps}/>;
+}
+
+// 返回一个有状态的 class 组件
+function HOC(WrappedComponent) {
+  return class extends React.Component {
+    render() {
+      const newProps = { type: 'HOC' };
+      return <WrappedComponent {...this.props} {...newProps}/>;
+    }
+  };
+}
+```
+
+- 抽象state
+
+```js
+// 通过属性代理无法直接操作原组件的state，可以通过props和cb抽象state
+function HOC(WrappedComponent) {
+  return class extends React.Component {
+    constructor(props) {
+      super(props);
+      this.state = {
+        name: '',
+      };
+      this.onChange = this.onChange.bind(this);
+    }
+    
+    onChange = (event) => {
+      this.setState({
+        name: event.target.value,
+      })
+    }
+    
+    render() {
+      const newProps = {
+        name: {
+          value: this.state.name,
+          onChange: this.onChange,
+        },
+      };
+      return <WrappedComponent {...this.props} {...newProps} />;
+    }
+  };
+}
+
+// 使用
+@HOC
+class Example extends Component {
+  render() {
+    return <input name="name" {...this.props.name} />;
+  }
+}
+```
+
+- 通过props实现条件渲染
+
+```js
+// 通过props来控制是否渲染及传入数据
+import * as React from 'react';
+
+function HOC (WrappedComponent) {
+  return (props) => (
+  <div>
+    {
+      props.isShow ? (
+        <WrappedComponent
+          {...props}
+        />
+      ) : <div>暂无数据</div>
+    }
+  </div>
+  );
+}
+
+export default HOC;
+```
+
+- 其他元素wrapper传入的组件
+
+```js
+function withBackgroundColor(WrappedComponent) {
+  return class extends React.Component {
+    render() {
+      return (
+        <div style={{ backgroundColor: '#ccc' }}>
+            <WrappedComponent {...this.props} {...newProps} />
+        </div>
+      );
+    }
+  };
+}
+```
+
+##### 3.1.2.2 反向继承
+
+使用一个函数接受一个组件作为参数传入，并返回一个继承了该传入组件的类组件，且在返回组件的 render() 方法中返回 super.render() 方法
+
+```js
+const HOC = (WrappedComponent) => {
+  return class extends WrappedComponent {
+    render() {
+      return super.render();
+    }
+  }
+}
+```
+
+1. 允许HOC通过this访问到原组件，可以直接读取和操作原组件的state/ref等；
+2. 可以通过super.render()获取传入组件的render，可以有选择的渲染劫持；
+3. 劫持原组件生命周期方法
+
+```js
+function HOC(WrappedComponent){
+  const didMount = WrappedComponent.prototype.componentDidMount;
+  
+  // 继承了传入组件
+  return class HOC extends WrappedComponent {
+    async componentDidMount(){
+      // 劫持 WrappedComponent 组件的生命周期
+      if (didMount) {
+        await didMount.apply(this);
+      }
+      ...
+    }
+
+    render(){
+      //使用 super 调用传入组件的 render 方法
+      return super.render();
+    }
+  }
+}
+```
+
+- 读取/操作原组件的state
+
+```js
+function HOC(WrappedComponent){
+  const didMount = WrappedComponent.prototype.componentDidMount;
+  // 继承了传入组件
+  return class HOC extends WrappedComponent {
+    async componentDidMount(){
+      if (didMount) {
+        await didMount.apply(this);
+      }
+      // 将 state 中的 number 值修改成 2
+      this.setState({ number: 2 });
+    }
+
+    render(){
+      //使用 super 调用传入组件的 render 方法
+      return super.render();
+    }
+  }
+}
+```
+
+- 条件渲染
+
+```js
+const HOC = (WrappedComponent) =>
+  class extends WrappedComponent {
+    render() {
+      if (this.props.isRender) {
+        return super.render();
+      } else {
+        return <div>暂无数据</div>;
+      }
+    }
+  }
+```
+
+- 修改react树
+
+```js
+// 修改返回render结果
+function HigherOrderComponent(WrappedComponent) {
+  return class extends WrappedComponent {
+    render() {
+      const tree = super.render();
+      const newProps = {};
+      if (tree && tree.type === 'input') {
+        newProps.value = 'something here';
+      }
+      const props = {
+        ...tree.props,
+        ...newProps,
+      };
+      const newTree = React.cloneElement(tree, props, tree.props.children);
+      return newTree;
+    }
+  };
+}
+```
+
+#### 3.1.3 属性代理和反向继承对比
+
+1. 属性代理：从“组合”角度出发，有利于从外部操作wrappedComp，可以操作props，或者在wrappedComp 外加一些拦截器（如条件渲染等）；
+2. 反向继承：从“继承”角度出发，从内部操作wrappedComp，可以操作组件内部的state，生命周期和render等，功能能加强大；
+
+#### 3.1.4 举个例子
+
+- 页面复用（属性代理）
+
+```jsx
+// views/PageA.js
+import React from 'react';
+import fetchMovieListByType from '../lib/utils';
+import MovieList from '../components/MovieList';
+
+class PageA extends React.Component {
+  state = {
+    movieList: [],
+  }
+  /* ... */
+  async componentDidMount() {
+    const movieList = await fetchMovieListByType('comedy');
+    this.setState({
+      movieList,
+    });
+  }
+  
+  render() {
+    return <MovieList data={this.state.movieList} emptyTips="暂无喜剧"/>
+  }
+}
+export default PageA;
+
+
+// views/PageB.js
+import React from 'react';
+import fetchMovieListByType from '../lib/utils';
+import MovieList from '../components/MovieList';
+
+class PageB extends React.Component {
+  state = {
+    movieList: [],
+  }
+  // ...
+  async componentDidMount() {
+    const movieList = await fetchMovieListByType('action');
+    this.setState({
+      movieList,
+    });
+  }
+  render() {
+    return <MovieList data={this.state.movieList} emptyTips="暂无动作片"/>
+  }
+}
+export default PageB;
+
+
+// 冗余代码过多
+// HOC
+import React from 'react';
+
+const withFetchingHOC = (WrappedComponent, fetchingMethod, defaultProps) => {
+  return class extends React.Component {
+    async componentDidMount() {
+      const data = await fetchingMethod();
+      this.setState({
+        data,
+      });
+    }
+    
+    render() {
+      return (
+        <WrappedComponent 
+          data={this.state.data} 
+          {...defaultProps} 
+          {...this.props} 
+        />
+      );
+    }
+  }
+}
+
+// 使用：
+// views/PageA.js
+import React from 'react';
+import withFetchingHOC from '../hoc/withFetchingHOC';
+import fetchMovieListByType from '../lib/utils';
+import MovieList from '../components/MovieList';
+
+const defaultProps = {emptyTips: '暂无喜剧'}
+
+export default withFetchingHOC(MovieList, fetchMovieListByType('comedy'), defaultProps);
+
+// views/PageB.js
+import React from 'react';
+import withFetchingHOC from '../hoc/withFetchingHOC';
+import fetchMovieListByType from '../lib/utils';
+import MovieList from '../components/MovieList';
+
+const defaultProps = {emptyTips: '暂无动作片'}
+
+export default withFetchingHOC(MovieList, fetchMovieListByType('action'), defaultProps);;
+
+// views/PageOthers.js
+import React from 'react';
+import withFetchingHOC from '../hoc/withFetchingHOC';
+import fetchMovieListByType from '../lib/utils';
+import MovieList from '../components/MovieList';
+const defaultProps = {...}
+export default withFetchingHOC(MovieList, fetchMovieListByType('some-other-type'), defaultProps);
+```
+
+更符合 里氏代换原则(Liskov Substitution Principle LSP)，任何基类可以出现的地方，子类一定可以出现。LSP是继承复用的基石，只有当衍生类可以替换掉基类，软件单位的功能不受到影响时，基类才能真正被复用，而衍生类也能够在基类的基础上增加新的行为
+
+- 权限控制（属性代理）
+
+```jsx
+import React from 'react';
+import { whiteListAuth } from '../lib/utils'; // 鉴权方法
+
+function AuthWrapper(WrappedComponent) {
+  return class AuthWrappedComponent extends React.Component {
+    constructor(props) {
+      super(props);
+      this.state = {
+        permissionDenied: -1,
+      };
+    }
+    
+    async componentDidMount() {
+      try {
+        await whiteListAuth(); // 请求鉴权接口
+        this.setState({
+          permissionDenied: 0,
+        });
+      } catch (err) {
+        this.setState({
+          permissionDenied: 1,
+        });
+      }
+    }
+    
+    render() {
+      if (this.state.permissionDenied === -1) {
+        return null; // 鉴权接口请求未完成
+      }
+      if (this.state.permissionDenied) {
+        return <div>功能即将上线，敬请期待~</div>;
+      }
+      return <WrappedComponent {...this.props} />;
+    }
+  }
+}
+
+export default AuthWrapper;
+```
+
+- 组件渲染性能(反向继承)
+
+如何计算一个组件render期间的渲染耗时？
+
+```jsx
+import React from 'react';
+// Home 组件
+class Home extends React.Component {
+  render () {
+    return (<h1>Hello World.</h1>);
+  }
+}
+
+// HOC
+function withTiming (WrappedComponent) {
+  let start, end;
+
+  return class extends WrappedComponent {
+    constructor (props) {
+      super(props);
+      start = 0;
+      end = 0;
+    }
+    componentWillMount () {
+      if (super.componentWillMount) {
+        super.componentWillMount();
+      }
+      start = +Date.now();
+    }
+    componentDidMount () {
+      if (super.componentDidMount) {
+        super.componentDidMount();
+      }
+      end = +Date.now();
+      console.error(`${WrappedComponent.name} 组件渲染时间为 ${end - start} ms`);
+    }
+    render () {
+      return super.render();
+    }
+  };
+}
+
+export default withTiming(Home);
+```
+
+#### 3.1.5 HOC缺点
+
+- 黑盒问题，增加理解成本
+- 属性冲突
+- HOC 可以劫持 props，存在相同名称的 props，则存在覆盖问题在不遵守约定的情况下也可能造成冲突，而且 react 并不会报错。
+
+```jsx
+function Login (props){
+    return <div>{props.user}</div>
+}
+
+function HOCAddUserName(WrappedComponent){
+    return class extends Component{
+        render(){
+            return <WrappedComponent user='写死的user名称'/>
+        }
+    }
+}
+
+function HOCAddAnotherUserName(WrappedComponent){
+       return class extends Component{
+        render(){
+            return <WrappedComponent user='写死另一个的user名称'/>
+        }
+    }
+}
+
+const TwoHoc=HOCAddAnotherUserName(HOCAddUserName(Login)) //生效的是HOCAddUserName
+```
+
+#### Function 里面用error boundary
+
+```jsx
+function Catch (Wrapcomponent,errorHandler){
+    return class extends Component {
+         state={
+             error:undefined
+         }
+    }
+    static getDerivedStateFromError(error){
+        return {error}
+    }
+    
+    componentDidCatch(error){
+        errorHandler&&errorHandler(error)
+    }
+    render(){
+        return WrapComponent(this.props,this.state.error)
+    }
+}
+```
+
+### 3.2 hooks详解
+
+Hooks是react16.8以后新增的钩子API；
+
+目的：增加代码的可复用性，逻辑性，弥补无状态组件没有生命周期，没有数据管理状态state的缺陷。
+
+为什么要使用Hooks？
+
+1. 开发友好，可扩展性强，抽离公共的方法或组件，Hook 使你在无需修改组件结构的情况下复用状态逻辑；
+2. 函数式编程，将组件中相互关联的部分根据业务逻辑拆分成更小的函数；
+3. class更多作为语法糖，没有稳定的提案，且在开发过程中会出现不必要的优化点，Hooks无需学习复杂的函数式或响应式编程技术；
+
+官网react hooks介绍：https://zh-hans.reactjs.org/docs/hooks-intro.html
+
+#### 3.2.1 常见Hooks
+
+##### 3.2.1.1 useState
+
+```js
+const [number, setNumber] = useState(0);
+```
+
+1. setState支持stateless组件有自己的state；
+2. 入参：具体值或一个函数；
+3. 返回值：数组，第一项是state值，第二项负责派发数据更新，组件渲染；
+
+注意：setState会让组件重新执行，所以一般需要配合useMemo或useCallback；
+
+```js
+const DemoState = (props) => {
+   /* number为此时state读取值 ，setNumber为派发更新的函数 */
+   const [number, setNumber] = useState(0) /* 0为初始值 */
+   return (
+     <div>
+       <span>{ number }</span>
+       <button onClick={ ()=> {
+         setNumber(number + 1)
+         console.log(number) /* 这里的number是不能够即使改变的，返回0  */
+         }}
+        />
+     </div>
+    )
+}
+// 当更新函数之后，state的值是不能即时改变的，只有当下一次上下文执行的时候，state值才随之改变
+
+——————————————————————————————————————————
+
+const a =1 
+const DemoState = (props) => {
+   /*  useState 第一个参数如果是函数 则处理复杂的逻辑，返回值为初始值 */
+   let [number, setNumber] = useState(()=>{
+      // number
+      return a === 1 ? 1 : 2
+   }) /* 1为初始值 */
+   return (<div>
+       <span>{ number }</span>
+       <button onClick={ ()=>setNumber(number+1) } ></button>
+   </div>)
+}
+```
+
+##### 3.1.1.2 useEffect
+
+1. 使用条件：当组件init、dom render完成、操纵dom、请求数据（如componentDidMount）等；
+2. 不限制条件，组件每次更新都会触发useEffect --> componentDidUpdate 与 componentwillreceiveprops；
+3. useEffect 第一个参数为处理事件，第二个参数接收数组，为限定条件，当数组变化时触发事件，为[]只在组件初始化时触发；
+4. useEffect第一个参数有返回时，一般用来消除副作用（如去除定时器、事件绑定等）；
+
+```js
+* 模拟数据交互 */
+function getUserInfo(a)
+  return new Promise((resolve)=>{
+    setTimeout(()=>{ 
+       resolve({
+           name:a,
+           age:16,
+       }) 
+    },500)
+  })
+}
+
+const Demo = ({ a }) => {
+  const [ userMessage , setUserMessage ] = useState({})
+  const [number, setNumber] = useState(0)
+  
+  const div= useRef()
+  
+  const handleResize =()=>{}
+
+  useEffect(()=>{
+     getUserInfo(a).then(res=>{
+         setUserMessage(res)
+     })
+     console.log(div.current) /* div */
+      window.addEventListener('resize', handleResize)
+  /* 
+     只有当props->a和state->number改变的时候 ,useEffect副作用函数重新执行 ，
+     如果此时数组为空[]，证明函数只有在初始化的时候执行一次相当于componentDidMount
+  */
+  },[ a ,number ])
+
+  return (<div ref={div} >
+      <span>{ userMessage.name }</span>
+      <span>{ userMessage.age }</span>
+      <div onClick={ ()=> setNumber(1) } >{ number }</div>
+  </div>)
+}
+
+
+————————————————————————————————————————————————
+const Demo = ({ a }) => {
+    const handleResize =()=>{}
+    useEffect(()=>{
+       const timer = setInterval(()=>console.log(666),1000)
+       window.addEventListener('resize', handleResize)
+      
+       /* 此函数用于清除副作用 */
+       return function(){
+           clearInterval(timer) 
+           window.removeEventListener('resize', handleResize)
+       }
+    },[ a ])
+    return (<div></div>)
+}
+```
+
+注意：useEffect无法直接使用async await，
+
+```js
+// Bad
+useEffect(async ()=>{
+  /* 请求数据 */
+  const res = await getUserInfo(payload)
+},[ a ,number ])
+————————————————————————————————————————————————
+
+useEffect(() => {
+  // declare the async data fetching function
+  const fetchData = async () => {
+    const data = await fetch('https://xxx.com');
+    const json = await data.json();
+    return json;
+  }
+
+  // call the function
+  const result = fetchData()
+    .catch(console.error);
+
+  // ❌ 无效
+  setData(result);
+}, [])
+
+// 改进版
+useEffect(() => {
+  const fetchData = async () => {
+    const data = await fetch('https://xxx.com');
+    const json = await response.json();
+
+    setData(json);
+  }
+
+  // call the function
+  fetchData()
+    // make sure to catch any error
+    .catch(console.error);;
+}, [])
+```
+
+##### 3.2.1.3. useLayoutEffect
+
+ 
+
+渲染更新之前的 useEffect
+
+useEffect： 组件更新挂载完成 -> 浏览器dom 绘制完成 -> 执行useEffect回调 ；
+
+useLayoutEffect ： 组件更新挂载完成 -> 执行useLayoutEffect回调-> 浏览器dom 绘制完成；
+
+渲染组件
+
+1. useEffect：闪动；
+
+2. useLayoutEffect：卡顿；
+
+```js
+const DemoUseLayoutEffect = () => {
+  const target = useRef()
+  useLayoutEffect(() => {
+      /*我们需要在dom绘制之前，移动dom到制定位置*/
+      const { x ,y } = getPositon() /* 获取要移动的 x,y坐标 */
+      animate(target.current,{ x,y })
+  }, []);
+  return (
+    <div >
+      <span ref={ target } className="animate"></span>
+    </div>
+  )
+}
+```
+
+##### 3.2.1.4 useRef
+
+用来获取元素、缓存数据；
+
+入参可以作为初始值
+
+```js
+// 获取元素
+const DemoUseRef = ()=>{
+  const dom= useRef(null)
+  const handerSubmit = ()=>{
+    /*  <div >表单组件</div>  dom 节点 */
+    console.log(dom.current)
+  }
+  return <div>
+    <div ref={dom} >表单组件</div>
+    <button onClick={()=>handerSubmit()} >提交</button> 
+  </div>
+}
+
+// 缓存数据，小技巧
+// 不同于useState，useRef改变值不会使comp re-render
+const currenRef = useRef(InitialData)
+currenRef.current = newValue
+```
+
+##### 3.2.1.5 useConext
+
+用来获取父级组件传递过来的context值，这个当前值就是最近的父级组件 Provider 的value；
+
+从parent comp获取ctx方式；
+
+1. useContext(Context)；
+2. Context.Consumer；
+
+```js
+/* 用useContext方式 */
+const DemoContext = ()=> {
+  const value = useContext(Context);
+  /* my name is aaa */
+  return <div> my name is { value.name }</div>
+}
+
+/* 用Context.Consumer 方式 */
+const DemoContext1 = ()=>{
+  return <Context.Consumer>
+    {/*  my name is aaa  */}
+    { (value)=> <div> my name is { value.name }</div> }
+  </Context.Consumer>
+}
+
+export default ()=>{
+  return <div>
+    <Context.Provider value={{ name:'aaa' }} >
+      <DemoContext />
+      <DemoContext1 />
+    </Context.Provider>
+  </div>
+}
+```
+
+##### 3.2.1.6. useReducer
+
+入参：
+
+1. 第一个为函数，可以视为reducer，包括state 和 action，返回值为根据action的不同而改变后的state；
+2. 第二个为state的初始值；
+
+出参：
+
+1. 第一个更新后的state值；
+2. 第二个是派发更新的dispatch函数；执行dispatch会导致组件re-render；（另一个是useState）
+
+```js
+const DemoUseReducer = ()=>{
+  /* number为更新后的state值,  dispatchNumbner 为当前的派发函数 */
+  const [ number , dispatchNumbner ] = useReducer((state, action) => {
+    const { payload , name  } = action
+    /* return的值为新的state */
+    switch(name) {
+     case 'a':
+         return state + 1
+     case 'b':
+         return state - 1 
+     case 'c':
+       return payload       
+    }
+    return state
+   }, 0)
+   return <div>
+      当前值：{ number }
+      { /* 派发更新 */ }
+      <button onClick={()=>dispatchNumbner({ name: 'a' })} >增加</button>
+      <button onClick={()=>dispatchNumbner({ name: 'b' })} >减少</button>
+      <button onClick={()=>dispatchNumbner({ name: 'c' , payload:666 })} >赋值</button>
+      { /* 把dispatch 和 state 传递给子组件  */ }
+      <MyChildren  dispatch={ dispatchNumbner } State={{ number }} />
+   </div>
+}
+```
+
+业务中经常将 useReducer+useContext 代替Redux
+
+##### 3.2.1.7 useMemo
+
+用来根据useMemo的第二个参数deps（数组）判定是否满足当前的限定条件来决定是否执行第一个cb；
+
+```js
+// selectList 不更新时，不会重新渲染，减少不必要的循环渲染
+useMemo(() => (
+  <div>{
+    selectList.map((i, v) => (
+      <span
+        className={style.listSpan}
+        key={v} >
+        {i.patentName} 
+      </span>
+    ))}
+  </div>
+), [selectList])
+
+————————————————————————————————————————————————————
+// listshow, cacheSelectList 不更新时，不会重新渲染子组件
+useMemo(() => (
+  <Modal
+    width={'70%'}
+    visible={listshow}
+    footer={[
+      <Button key="back" >取消</Button>,
+      <Button
+          key="submit"
+          type="primary"
+       >
+          确定
+      </Button>
+    ]}
+  > 
+    { /* 减少了PatentTable组件的渲染 */ }
+    <PatentTable
+      getList={getList}
+      selectList={selectList}
+      cacheSelectList={cacheSelectList}
+      setCacheSelectList={setCacheSelectList}
+    />
+  </Modal>
+ ), [listshow, cacheSelectList])
+ ————————————————————————————————————————————————————
+ 
+ // 减少组件更新导致函数重新声明
+ const DemoUseMemo = () => {
+  /* 用useMemo 包裹之后的log函数可以避免了每次组件更新再重新声明 ，可以限制上下文的执行 */
+  const newLog = useMemo(() => {
+    const log = () => {
+      console.log(123)
+    }
+    return log
+  }, [])
+  return <div onClick={()=> newLog() } ></div>
+}
+
+————————————————————————————————————————————————————
+// 如果没有加相关的更新条件，是获取不到更新之后的state的值的
+const DemoUseMemo = () => {
+  const [ number ,setNumber ] = useState(0)
+  const newLog = useMemo(() => {
+    const log = () => {
+      /* 点击span之后 打印出来的number 不是实时更新的number值 */
+      console.log(number)
+    }
+    return log
+    /* [] 没有 number */  
+  }, [])
+  return <div>
+    <div onClick={() => newLog()} >打印</div>
+    <span onClick={ () => setNumber( number + 1 )  } >增加</span>
+  </div>
+}
+```
+
+##### 3.2.1.8 useCallback
+
+useMemo返回cb的运行结果；
+
+useCallback返回cb的函数；
+
+```js
+import React, { useState, useCallback } from 'react'
+
+function Button(props) {
+  const { handleClick, children } = props;
+  console.log('Button -> render');
+  return (
+      <button onClick={handleClick}>{children}</button>
+  )
+}
+
+const MemoizedButton = React.memo(Button);
+
+export default function Index() {
+  const [clickCount, increaseCount] = useState(0);
+
+  const handleClick = () => {
+      console.log('handleClick');
+      increaseCount(clickCount + 1);
+  }
+  return (
+      <div>
+          <p>{clickCount}</p>
+          <MemoizedButton handleClick={handleClick}>Click</MemoizedButton>
+      </div>
+  )
+}
+
+// MemoizedButton还是重新渲染了
+// Index组件state发生变化，导致组件重新渲染；
+// 每次渲染导致重新创建内部函数handleClick ，
+// 进而导致子组件Button也重新渲染。
+
+import React, { useState, useCallback } from 'react'
+
+function Button(props) {
+  const { handleClick, children } = props;
+  console.log('Button -> render');
+  return (
+      <button onClick={handleClick}>{children}</button>
+  )
+}
+
+const MemoizedButton = React.memo(Button);
+
+export default function Index() {
+  const [clickCount, increaseCount] = useState(0);
+  // 这里使用了`useCallback`
+  const handleClick = useCallback(() => {
+      console.log('handleClick');
+      increaseCount(clickCount + 1);
+  }, [])
+
+  return (
+      <div>
+          <p>{clickCount}</p>
+          <MemoizedButton handleClick={handleClick}>Click</MemoizedButton>
+      </div>
+  )
+}
+```
+
+#### 3.2.2 Hooks实战
+
+##### 3.2.2.1 所有依赖都必须放在依赖数组中么？
+
+useEffect 中，默认有个共识： useEffect 中使用到外部变量，都应该放到第二个数组参数中。
+
+```js
+// 当props.count 和 count 变化时，上报数据
+function Demo(props) {
+  const [count, setCount] = useState(0);
+  const [text, setText] = useState('');
+  const [a, setA] = useState('');
+  
+  useEffect(() => {
+    monitor(props.count, count, text, a);
+  }, [props.count, count]);
+  
+  return (
+    <div>
+      <button
+        onClick={() => setCount(count => count + 1)}
+      >
+        click
+      </button>
+      <input value={text} onChange={e => setText(e.target.value)} />
+      <input value={a} onChange={e => setA(e.target.value)} />
+    </div>
+  )
+}
+```
+
+此时，text 和 a 变量没有放在dps 数组中
+
+![img](https://cdn.nlark.com/yuque/0/2022/png/2340337/1644976346957-7870c08c-7450-4e5f-80f7-dd9a46a02ed2.png)
+
+如果把text 和 a 也引入deps中，当text 和 a改变时，也触发了函数执行
+
+Solution：
+
+1. 不要使用 eslint-plugin-react-hooks 插件，或者可以选择性忽略该插件的警告；
+2. 只有一种情况，需要把变量放到 deps 数组中，那就是当该变量变化时，需要触发 useEffect 函数执行。而不是因为 useEffect 中用到了这个变量！
+
+##### 3.2.2.2 尽量不要用useCallback
+
+1. useCallback 大部分场景没有提升性能
+2.  useCallback让代码可读性变差
+
+```js
+Example 1
+const someFunc = useCallback(()=> {
+   doSomething();
+}, []);
+return <ExpensiveComponent func={someFunc} />
+
+const ExpensiveComponent = ({ func }) => {
+  return (
+    <div onClick={func}>
+     hello
+    </div>
+  )
+}
+
+// 必须用React.memo wrapper 住子组件，才能避免在参数不变的情况下，不重复渲染
+// 所以一般项目中不建议使用useCallback
+const ExpensiveComponent = React.memo(({ func }) => {
+  return (
+    <div onClick={func}>
+     hello
+    </div>
+  )
+}
+
+// Example 2
+const someFuncA = useCallback((d, g, x, y)=> {
+   doSomething(a, b, c, d, g, x, y);
+}, [a, b, c]);
+
+const someFuncB = useCallback(()=> {
+   someFuncA(d, g, x, y);
+}, [someFuncA, d, g, x, y]);
+
+useEffect(()=>{
+  someFuncB();
+}, [someFuncB]);
+
+// 依赖层层传递，最终要找到哪些出发了useEffect执行，所以直接引用就好
+const someFuncA = (d, g, x, y)=> {
+   doSomething(a, b, c, d, g, x, y);
+};
+
+const someFuncB = ()=> {
+   someFuncA(d, g, x, y);
+};
+
+useEffect(()=>{
+  someFuncB();
+}, [...]);
+```
+
+##### 3.2.2.3. useMemo建议适当使用
+
+在deps不变，且非简单的基础类型运算的情况下建议使用
+
+```js
+// 没有使用 useMemo
+const memoizedValue = computeExpensiveValue(a, b);
+// 使用 useMemo
+const memoizedValue = useMemo(() => computeExpensiveValue(a, b), [a, b]);
+
+// 如果没有使用 useMemo，computeExpensiveValue 会在每一次渲染的时候执行;
+// 如果使用了 useMemo，只有在 a 和 b 变化时，才会执行一次 computeExpensiveValue。
+
+const a = 1;
+const b = 2;
+const c = useMemo(()=> a + b, [a, b]);
+const c = a + b; // 内存消耗少
+```
+
+##### 3.2.2.4 updateState的正确使用姿势
+
+1. 能用其他状态计算出来就不用单独声明状态。一个 state 必须不能通过其它 state/props 直接计算出来，否则就不用定义 state
+
+2. 保证数据源唯一，在项目中同一个数据，保证只存储在一个地方
+
+3. useState 适当合并
+
+```js
+// Example 1
+const SomeComponent = (props) => {
+  const [source, setSource] = useState([
+      {type: 'done', value: 1},
+      {type: 'doing', value: 2},
+  ])
+  const [doneSource, setDoneSource] = useState([])
+  const [doingSource, setDoingSource] = useState([])
+  useEffect(() => {
+    setDoingSource(source.filter(item => item.type === 'doing'))
+    setDoneSource(source.filter(item => item.type === 'done'))
+  }, [source])
+  return (
+    <div>
+       .....
+    </div>
+  )
+}
+
+const SomeComponent = (props) => {
+  const [source, setSource] = useState([
+      {type: 'done', value: 1},
+      {type: 'doing', value: 2},
+    ])
+  const doneSource = useMemo(()=> source.filter(item => item.type === 'done'), [source]);
+  const doingSource = useMemo(()=> source.filter(item => item.type === 'doing'), [source]);
+  return (
+    <div>
+       .....
+    </div>
+  )
+}
+
+// 避免props层层传递，在CR中很难看清楚
+
+// Example 2
+function SearchBox({ data }) {
+  const [searchKey, setSearchKey] = useState(getQuery('key'));
+  
+  const handleSearchChange = e => {
+    const key = e.target.value;
+    setSearchKey(key);
+    history.push(`/movie-list?key=${key}`);
+  }
+  
+  return (
+    <input
+      value={searchKey}
+      placeholder="Search..."
+      onChange={handleSearchChange}
+    />
+  );
+}
+
+function SearchBox({ data }) {
+  const searchKey = parse(localtion.search)?.key;
+  
+  const handleSearchChange = e => {
+    const key = e.target.value;
+    history.push(`/movie-list?key=${key}`);
+  }
+  
+  return (
+    <input
+      value={searchKey}
+      placeholder="Search..."
+      onChange={handleSearchChange}
+    />
+  );
+}
+
+// url params 和 state重复了
+
+// Example 3
+const [firstName, setFirstName] = useState();
+const [lastName, setLastName] = useState();
+const [school, setSchool] = useState();
+const [age, setAge] = useState();
+const [address, setAddress] = useState();
+const [weather, setWeather] = useState();
+const [room, setRoom] = useState();
+
+const [userInfo, setUserInfo] = useState({
+  firstName,
+  lastName,
+  school,
+  age,
+  address
+});
+const [weather, setWeather] = useState();
+const [room, setRoom] = useState();
+
+// 更新一个时
+setUserInfo(s=> ({
+  ...s,
+  fristName,
+}))
+```
+
+#### 3.2.3. 自定义Hooks
+
+注意：自定义Hooks本质上还是实现一个函数，关键在于实现逻辑
+一般实现效果如：
+
+```js
+const [ a[, b, c...] ] = useXXX(arg1[, arg2, ...])
+```
+
+##### 3.2.3.1 setTitle hook
+
+```js
+import { useEffect } from 'react'
+
+const useTitle = (title) => {
+  useEffect(() => {
+    document.title = title
+  }, [])
+
+  return
+}
+
+export default useTitle
+
+const App = () => {
+  useTitle('new title')
+  return <div>home</div>
+}
+```
+
+##### 3.2.3.2 update hook
+
+```js
+import { useState } from 'react'
+
+const useUpdate = () => {
+  const [, setFlag] = useState()
+  const update = () => {
+    setFlag(Date.now())
+  }
+  return update
+}
+
+export default useUpdate
+
+// 实际使用
+const App = (props) => {
+  // ...
+  const update = useUpdate()
+  return <div>
+    {Date.now()}
+    <div><button onClick={update}>update</button></div>
+  </div>
+}
+```
+
+##### 3.2.3.3 useScroll hooks
+
+```js
+import { useState, useEffect } from 'react'
+
+const useScroll = (scrollRef) => {
+  const [pos, setPos] = useState([0,0])
+
+  useEffect(() => {
+    function handleScroll(e){
+      setPos([scrollRef.current.scrollLeft, scrollRef.current.scrollTop])
+    }
+    scrollRef.current.addEventListener('scroll', handleScroll)
+    return () => {
+      scrollRef.current.removeEventListener('scroll', handleScroll)
+    }
+  }, [])
+  
+  return pos
+}
+
+export default useScroll
+
+// 用法
+import React, { useRef } from 'react'
+import { useScroll } from 'hooks'
+
+const Home = (props) => {
+  const scrollRef = useRef(null)
+  const [x, y] = useScroll(scrollRef)
+
+  return <div>
+      <div ref={scrollRef}>
+        <div className="innerBox"></div>
+      </div>
+      <div>{ x }, { y }</div>
+    </div>
+}
+```
+
+#### 3.2.4 Hooks vs HOC
+
+1. Hook最典型的就是取代掉生命周期中大多数的功能，可以把更相关的逻辑放在一起，而非零散在各个生命周期方法中；
+2.  高阶组件可以将外部的属性功能到一个基础 Component 中，更多作为扩展能力的插件（如 react-swipeable-views中的 autoPlay 高阶组件，通过注入状态化的 props 的方式对组件进行功能扩展，而不是直接将代码写在主库中）；
+3. Hook 的写法可以让代码更加紧凑，更适合做 Controller 或者需要内聚的相关逻辑，一般与目标组件内强依赖，HOC更强调对原先组件能力的扩展；
+4. 目前 Hook 还处于相对早期阶段（React 16.8.0 才正式发布Hook 稳定版本），一些第三方的库可能还暂时无法兼容 Hook；
+
+### 3.3 异步组件
+
+随着项目的增长，代码包也会随之增长，尤其是在引入第三方的库的情况下，要避免因体积过大导致加载时间过长。
+
+React16.6中，引入了 React.lazy 和 React.Suspense 两个API，再配合动态 import() 语法就可以实现组件代码打包分割和异步加载。
+
+传统模式：渲染组件-> 请求数据 -> 再渲染组件
+
+异步模式：请求数据-> 渲染组件；
+
+```js
+// demo
+import React, { lazy, Suspense } from 'react';
+// lazy 和 Suspense 配套使用，react原生支持代码分割
+const About = lazy(() => import(/* webpackChunkName: "about" */'./About'));
+class App extends React.Component {
+  render() {
+    return (
+      <div className="App">
+        <h1>App</h1>
+        <Suspense fallback={<div>loading</div>}>
+          <About />
+        </Suspense>
+      </div>
+    );
+  }
+}
+export default App;
+```
+
+#### 3.3.1 前置基础
+
+1. 动态import
+
+相对于静态import的 `import XX from XXX`，动态import指在运行时加载
+
+```js
+import('./test.js').then(test => {
+    // ...
+});
+// 可见，是实现了Promsie规范的，回调函数为返回的模块
+```
+
+1. 错误边界
+
+React V 16中引入，部分UI的JS错误不会导致整个应用崩溃；
+
+错误边界是一种 React 组件，错误边界在 渲染期间、生命周期方法和整个组件树的构造函数 中捕获错误，且会渲染出备用UI而不是崩溃的组件。
+
+```jsx
+// comp ErrorBoundary 
+import React from 'react'
+
+class ErrorBoundary extends React.Component {
+  constructor(props) {
+    super(props);
+    this.state = { hasError: false };
+  }
+  static getDerivedStateFromError(error) {
+    // 更新 state 使下一次渲染能够显示降级后的 UI
+    return { hasError: true };
+  }
+  componentDidCatch(error, errorInfo) {
+    // 你同样可以将错误日志上报给服务器
+    console.log(error, errorInfo)
+  }
+  render() {
+    if (this.state.hasError) {
+        // 你可以自定义降级后的 UI 并渲染
+        return <h1>Something went wrong.</h1>;
+    }
+    return this.props.children;
+  }
+}
+export default ErrorBoundary
+
+// comp App
+import React, from 'react';
+import ErrorBoundary from './ErrorBoundary'
+class App extends React.Component {
+  state = {
+      count: 1
+  }
+  render() {
+    const { count } = this.state
+    if (count === 3) {
+        throw new Error('I crashed!');
+    }
+    return (
+      <ErrorBoundary>
+        <h1>App</h1>
+        <p>{count}</p>
+        <button onClick={() => this.setState({ count: count + 1 })}>add</button>
+      </ErrorBoundary>
+    )
+  }
+}
+export default App;
+```
+
+#### 3.3.2 手写异步组件
+
+
+
+
+
+JavaScript
+
+
+
 Mvc
 
-tauri
+
 
 jsx能防止xss攻击
 
@@ -17917,6 +22328,32 @@ this.setState((state,props)=>{
 HOC,入参是一个组件，返回是一个组件
 
 
+
+反向代理是返回一个新的组件，操作生命周期
+
+
+
+Hooks
+
+16.8版本后出现
+
+Stateless 的组件，是没有state可用
+
+1.抽离
+
+
+
+
+
+useEffect：组件vdom->真实的DOM->执行useEffect
+
+useLayoutEffect:组件VDOM->执行uselayoutEffect cb->渲染DOM
+
+
+
+useMemo：返回cb的结果
+
+useCallback: 返回cb这个函数，不要乱用
 
 https://www.yuque.com/lpldplws/atomml/tmbe7ykqmslqszhe?singleDoc# 《JavaScript高级用法(1/2)》 密码：bwxh
 https://www.yuque.com/lpldplws/atomml/os260aysmxgeyhhm?singleDoc# 《JavaScript高级用法(2/2)》 密码：ih4c
@@ -17947,4 +22384,12 @@ https://www.yuque.com/lpldplws/web/xhqomd?singleDoc# 《前端模块化》 密�
 
 https://www.yuque.com/lpldplws/web/xpzv1mgsqh7s7b0a?singleDoc# 《函数式编程》 密码：hcu6
 
+https://www.yuque.com/lpldplws/web/lg3g1s?singleDoc# 《React基础》 密码：tv0g
+https://www.yuque.com/lpldplws/web/ai228r?singleDoc# 《配套习题》 密码：xnvm
+https://www.yuque.com/lpldplws/web/bcocaq?singleDoc# 《React高级用法》 密码：acr1
+https://www.yuque.com/lpldplws/web/agvv1m?singleDoc# 《配套习题》 密码：ex5l
+
 https://www.yuque.com/lpldplws/web/bgn3sl?singleDoc# 《react学习路径》 密码：ei05
+
+https://www.yuque.com/lpldplws/web/bcocaq?singleDoc# 《React高级用法》 密码：acr1
+
