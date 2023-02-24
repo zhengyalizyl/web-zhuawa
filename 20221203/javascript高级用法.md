@@ -20903,9 +20903,1546 @@ npm install core-js @babel/core @babel/preset-env @babel/preset-react @babel/reg
 - 函数式组件
 - Class类组件
 
+```jsx
+function Welcome(props) {
+  return <h1>Hello, {props.name}</h1>;
+}
 
+class Welcome extends React.Component {
+  render() {
+    return <h1>Hello, {this.props.name}</h1>;
+  }
+}
+```
+
+##### 3.3.1.1 渲染组件
+
+```jsx
+function Welcome(props) {
+  return <h1>Hello, {props.name}</h1>;
+}
+
+const element = <Welcome name="Sara" />;
+ReactDOM.render(
+  element,
+  document.getElementById('root')
+);
+
+// 自定义组件使用大写字母开头
+import React from 'react';
+
+// 正确！组件需要以大写字母开头：
+function Hello(props) {
+  // 正确！ 这种 <div> 的使用是合法的，因为 div 是一个有效的 HTML 标签：
+  return <div>Hello {props.toWhat}</div>;
+}
+
+function HelloWorld() {
+  // 正确！React 知道 <Hello /> 是一个组件，因为它是大写字母开头的：
+  return <Hello toWhat="World" />;
+}
+```
+
+##### 3.3.1.2 组件的组合与拆分
+
+```jsx
+// 页面内多次引用
+<div>
+  <Welcome name="Sara" />
+  <Welcome name="Cahal" />
+  <Welcome name="Edite" />
+</div>
+
+function Comment(props) {
+  return (
+    <div className="Comment">
+      <div className="UserInfo">
+        <img className="Avatar"
+          src={props.author.avatarUrl}
+          alt={props.author.name}
+        />
+        <div className="UserInfo-name">
+          {props.author.name}
+        </div>
+      </div>
+      <div className="Comment-text">
+        {props.text}
+      </div>
+      <div className="Comment-date">
+        {formatDate(props.date)}
+      </div>
+    </div>
+  );
+}
+
+// 拆分后为
+function Comment(props) {
+  return (
+    <div className="Comment">
+      <UserInfo user={props.author} />
+      <div className="Comment-text">
+        {props.text}
+      </div>
+      <div className="Comment-date">
+        {formatDate(props.date)}
+      </div>
+    </div>
+  );
+}
+```
+
+##### 3.3.1.3. 受控组件 与 非受控组件
+
+- 受控组件：对某个组件状态的掌控，它的值是否只能由用户设置，而不能通过代码控制；
+
+在HTML的表单元素中，它们通常自己维护一套state，并随着用户的输入自己进行UI上的更新，这种行为是不被我们程序所管控的。而如果将React里的state属性和表单元素的值建立依赖关系，再通过onChange事件与setState()结合更新state属性，就能达到控制用户输入过程中表单发生的操作。被React以这种方式控制取值的表单输入元素就叫做受控组件。
+
+```jsx
+// input自身维护的状态，外界无法获取数据
+class TestComponent extends React.Component {
+  render () {
+    return <input name="username" />
+  }
+}
+
+// 可以设置初始值
+class TestComponent extends React.Component {
+  constructor (props) {
+    super(props);
+    this.state = { username: 'test' };
+  }
+  render () {
+    return <input name="username" value={this.state.username} />
+  }
+}
+
+// 可以读取并设置初始值
+class TestComponent extends React.Component {
+  constructor (props) {
+    super(props);
+    this.state = {
+      username: "test"
+    }
+  }
+  onChange (e) {
+    console.log(e.target.value);
+    this.setState({
+      username: e.target.value
+    })
+  }
+  render () {
+    return <input name="username" value={this.state.username} onChange={(e) => this.onChange(e)} />
+  }
+
+```
+
+- 非受控组件：对应的，组件内的状态不由用户控制
+
+```jsx
+// 如果不想关心表单元素的值是如何变化的，只想取值，可以使用ref
+import React, { Component } from 'react';
+
+export class UnControll extends Component {
+  constructor (props) {
+    super(props);
+    this.inputRef = React.createRef();
+  }
+  handleSubmit = (e) => {
+    console.log('我们可以获得input内的值为', this.inputRef.current.value);
+    e.preventDefault();
+  }
+  render () {
+    return (
+      <form onSubmit={e => this.handleSubmit(e)}>
+        <input defaultValue="lindaidai" ref={this.inputRef} />
+        <input type="submit" value="提交" />
+      </form>
+    )
+  }
+}
+```
+
+#### 3.3.2 props
+
+```jsx
+所有 React 组件都必须像纯函数一样保护它们的 props 不被更改。
+
+// 错误，要像纯函数一样幂等
+function withdraw(account, amount) {
+  account.total -= amount;
+}
+```
+
+#### 3.3.3 state
+
+```jsx
+// 使用props形式
+function Clock(props) {
+  return (
+    <div>
+      <h1>Hello, world!</h1>
+      <h2>It is {props.date.toLocaleTimeString()}.</h2>
+    </div>
+  );
+}
+
+function tick() {
+  ReactDOM.render(
+    <Clock date={new Date()} />,
+    document.getElementById('root')
+  );
+}
+
+setInterval(tick, 1000);
+
+// 如何避免多次React.DOM render？
+
+// 引用生命周期，根组件保留一个
+class Clock extends React.Component {
+  constructor(props) {
+    super(props);
+    this.state = {date: new Date()};
+  }
+
+  componentDidMount() {
+    this.timerID = setInterval(
+      () => this.tick(),
+      1000
+    );
+  }
+
+  componentWillUnmount() {
+    clearInterval(this.timerID);
+  }
+
+  tick() {
+    this.setState({
+      date: new Date()
+    });
+  }
+
+  render() {
+    return (
+      <div>
+        <h1>Hello, world!</h1>
+        <h2>It is {this.state.date.toLocaleTimeString()}.</h2>
+      </div>
+    );
+  }
+}
+
+ReactDOM.render(
+  <Clock />,
+  document.getElementById('root')
+);
+```
+
+```jsx
+1. setState 
+构造函数是唯一可以给state赋值的地方
+this.setState({comment: 'Hello'});
+
+2. state更新可能是异步的
+// Wrong
+this.setState({
+  counter: this.state.counter + this.props.increment,
+});
+// Correct
+this.setState(function(state, props) {
+  return {
+    counter: state.counter + props.increment
+  };
+});
+
+3. state更新会合并
+constructor(props) {
+  super(props);
+  this.state = {
+    posts: [],
+    comments: []
+  };
+}
+
+componentDidMount() {
+  fetchPosts().then(response => {
+    // 相当于{post: response.posts, ...otherState}
+    this.setState({
+      posts: response.posts
+    });
+  });
+
+  fetchComments().then(response => {
+    this.setState({
+      comments: response.comments
+    });
+  });
+}
+
+4. 单向数据流
+state 只在当前的组件里生效，属于组件内的属性，重复实例化相同的组件，内部的内存地址也是不一样的；
+例如Clock中计时器都是独立的
+```
+
+```jsx
+// setState 异步
+// 异步目的：batch 处理，性能优化
+//1. 合成事件
+class App extends Component {
+	
+	state = { val: 0 }
+	
+	increment = () => {
+		this.setState({ val: this.state.val + 1 })
+		console.log(this.state.val) // 输出的是更新前的val --> 0
+	}
+	
+	render() {
+		return (
+			<div onClick={this.increment}>
+				{`Counter is: ${this.state.val}`}
+			</div>
+		)
+	}
+}
+
+//2. 生命周期
+class App extends Component {
+	
+	state = { val: 0 }
+	
+	componentDidMount() {
+		this.setState({ val: this.state.val + 1 })
+		console.log(this.state.val) // 输出的还是更新前的值 --> 0
+	}
+	render() {
+		return (
+			<div>
+				{`Counter is: ${this.state.val}`}
+			</div>
+		)
+	}
+}
+
+//3. 原生事件
+class App extends Component {
+	
+	state = { val: 0 }
+	
+	changeValue = () => {
+		this.setState({ val: this.state.val + 1 })
+		console.log(this.state.val) // 输出的是更新后的值 --> 1
+	}
+	
+	componentDidMount() {
+		document.body.addEventListener('click', this.changeValue, false)
+	}
+	
+	render() {
+		return (
+			<div>
+				{`Counter is: ${this.state.val}`}
+			</div>
+		)
+	}
+}
+
+//4. setTimeout
+class App extends Component {
+	
+	state = { val: 0 }
+	
+	componentDidMount() {
+		setTimeout(_ => {
+			this.setState({ val: this.state.val + 1 })
+			console.log(this.state.val) // 输出更新后的值 --> 1
+		}, 0)
+	}
+	
+	render() {
+		return (
+			<div>
+				{`Counter is: ${this.state.val}`}
+			</div>
+		)
+	}
+}
+
+//5. 批处理
+class App extends Component {
+	
+	state = { val: 0 }
+	
+	batchUpdates = () => {
+		this.setState({ val: this.state.val + 1 })
+		this.setState({ val: this.state.val + 1 })
+		this.setState({ val: this.state.val + 1 })
+	}
+	
+	render() {
+		return (
+			<div onClick={this.batchUpdates}>
+				{`Counter is ${this.state.val}`} // 1
+			</div>
+		)
+	}
+}
+
+// 6. 综合
+  componentDidMount() {
+    // 生命周期中调用
+    this.setState({ val: this.state.val + 1 });
+    console.log("lifecycle: " + this.state.val);//lifecycle:0
+
+    setTimeout(() => {
+      // setTimeout中调用
+      this.setState({ val: this.state.val + 1 });
+      console.log("setTimeout: " + this.state.val);//setTimeout:2
+    }, 0);
+
+    document.getElementById("div2").addEventListener("click", this.increment2);
+  }
+
+  increment = () => {
+    // 合成事件中调用
+    this.setState({ val: this.state.val + 1 });
+    console.log("react event: " + this.state.val);//react event:2
+  };
+
+  increment2 = () => {
+    // 原生事件中调用
+    this.setState({ val: this.state.val + 1 });
+    console.log("dom event: " + this.state.val);//dom event:4
+  };
+
+  render() {
+    return (
+      <div className="App">
+        <h2>Count: {this.state.val}</h2>
+        <div id="div1" onClick={this.increment}> // 点击第一次
+          click me and val + 1
+        </div>
+        <div id="div2">click me and val + 1</div> // 点击第二次
+      </div>
+    );
+  }
+}
+
+export default App;
+```
+
+1. setState 只在合成事件和生命周期中是“异步”的，在原生事件和 setTimeout 中都是同步的;
+
+2. setState的“异步”并不是说内部由异步代码实现，其实本身执行的过程和代码都是同步的， 只是合成事件和钩子函数的调用顺序在更新之前，导致在合成事件和钩子函数中没法立马拿到更新后的值，形式了所谓的“异步”， 当然可以通过第二个参数 setState(partialState, callback) 中的callback拿到更新后的结果。
+
+3. setState 的批量更新优化也是建立在“异步”（合成事件、钩子函数）之上的，在原生事件和setTimeout 中不会批量更新，在“异步”中如果对同一个值进行多次 setState ， setState 的批量更新策略会对其进行覆盖，取最后一次的执行，如果是同时 setState 多个不同的值，在更新时会对其进行合并批量更新。
+
+### 3.4 生命周期
+
+![img](https://cdn.nlark.com/yuque/0/2022/png/2340337/1646656380983-233bbd92-6d70-4131-b4e3-5517eaf93b76.png)
+
+#### 3.4.1. render
+
+是class组件必需的方法
+
+获取最新的 props 和 state
+
+在不修改组件 state 的情况下，每次调用时都返回相同的结果
+
+#### 3.4.2 constructor
+
+如果不初始化 state 或不进行方法绑定，则不需要为 React 组件实现构造函数。
+
+- 通过给 this.state 赋值对象来初始化内部 state。
+- 为事件处理函数绑定实例
+
+```jsx
+constructor(props) {
+  super(props);
+  // 不要在这里调用 this.setState()
+  this.state = { counter: 0 };
+  this.handleClick = this.handleClick.bind(this);
+}
+
+1. 不要调用 setState()
+2. 避免将 props 的值复制给 state
+this.state = { color: props.color }; // wrong
+```
+
+#### 3.4.3. componentDidMount
+
+会在组件挂载后（插入 DOM 树中）立即调用
+
+依赖于 DOM 节点的初始化应该放在这里，如需通过网络请求获取数据；
+
+可以在此生命周期里加 setState，但发生在浏览器更新屏幕之前，会导致性能问题；
+
+有更新在render阶段的 constructor 中 init State，但有更新可以在此方法时 setState
+
+#### 3.4.4 componentDidUpdate
+
+```jsx
+componentDidUpdate(prevProps, prevState, snapshot)
+```
+
+会在更新后会被立即调用。首次渲染不会执行此方法。
+
+```jsx
+componentDidUpdate(prevProps) {
+  // 典型用法（不要忘记比较 props）：加条件判断，不然死循环
+  if (this.props.userID !== prevProps.userID) {
+    this.fetchData(this.props.userID);
+  }
+}
+如果组件实现了 getSnapshotBeforeUpdate() 生命周期，
+则它的返回值将作为 componentDidUpdate() 的第三个参数 “snapshot” 参数传递。否则此参数将为 undefined。
+```
+
+如果 shouldComponentUpdate() 返回值为 false，则不会调用 componentDidUpdate()。
+
+#### 3.4.5 componentWillUnmount
+
+componentWillUnmount() 会在组件卸载及销毁之前直接调用。例如，清除 timer，取消网络请求；
+
+componentWillUnmount() 中不应调用 setState()，因为该组件将永远不会重新渲染；
+
+#### 3.4.6 shouldComponentUpdate
+
+```jsx
+shouldComponentUpdate(nextProps, nextState)
+```
+
+根据 shouldComponentUpdate() 的返回值，判断 React 组件的输出是否受当前 state 或 props 更改的影响。默认行为是 state 每次发生变化组件都会重新渲染。
+
+作为性能优化使用，返回false可以跳过re-render
+
+shouldComponentUpdate() 返回 false，不会调用 UNSAFE_componentWillUpdate()，render() 和 componentDidUpdate()。
+
+#### 3.4.7 getDerivedStateFromProps
+
+（不常用）
+
+是为了取代componentWillReceiveProps 和 componentWillUpdate设置的
+
+根据props的变化改变state，它应返回一个对象来更新 state，如果返回 null 则不更新任何内容。
+
+- 在使用此生命周期时，要注意把传入的 prop 值和之前传入的 prop 进行比较；
+- 因为这个生命周期是静态方法，同时要保持它是纯函数，不要产生副作用；
+
+```jsx
+static getDerivedStateFromProps(nextProps, prevState) {
+    const {type} = nextProps;
+    // 当传入的type发生变化的时候，更新state
+    if (type !== prevState.type) {
+        return {
+            type,
+        };
+    }
+    // 否则，对于state不进行任何操作
+    return null;
+}
+
+Class ColorPicker extends React.Component {
+    state = {
+        color: '#000000'
+    }
+    static getDerivedStateFromProps (props, state) {
+        if (props.color !== state.color) {
+            return {
+                color: props.color
+            }
+        }
+        return null
+    }
+    ... // 选择颜色方法
+    render () {
+        .... // 显示颜色和选择颜色操作，setState({color: XXX})
+    }
+}
+
+Class ColorPicker extends React.Component {
+    state = {
+        color: '#000000',
+        prevPropColor: '' // setState 和 forceUpdate也会触发此生命周期，会覆盖
+    }
+    static getDerivedStateFromProps (props, state) {
+        if (props.color !== state.prevPropColor) {
+            return {
+                color: props.color,
+                prevPropColor: props.color
+            }
+        }
+        return null
+    }
+    ... // 选择颜色方法
+    render () {
+        .... // 显示颜色和选择颜色操作
+    }
+}
+```
+
+首先看一下概念，这个生命周期是从props中获取state，实际上就是将传入的props映射到state上面。
+
+shouldComponentUpdate(nextProps, nextState)
+
+`getDerivedStateFromProps`是一个静态函数，也就是这个函数不能通过this访问到class的属性，也并不推荐直接访问属性。而是应该通过参数提供的nextProps以及prevState来进行判断，根据新传入的props来映射到state
+
+getDerivedStateFromProps exists for only one purpose. It enables a component to update its internal state as the result of changes in props.
+
+根据React官网的描述，它的目的仅仅在于让props能更新到内部的state，所以场景包含两个：
+
+1. 无条件地根据props更新state，只要有传入props，就更新state；
+2. 只有props和state不一样才更新state；
+
+##### 3.4.7.1 无条件地根据props更新state，只要有传入props，就更新state
+
+```jsx
+class Table extends React.Component {
+    state = {
+        list: []
+    }
+    static getDerivedStateFromProps (props, state) {
+        return {
+            list: props.list
+        }
+    }
+    render () {
+        .... // 展示 list
+    }
+}
+```
+
+可以发现如果无条件从props更新state，完全没有必要使用这个声明周期，直接使用props就行
+
+##### 3.4.7.2 只有props和state不一样才更新state
+
+```jsx
+Class ColorPicker extends React.Component {
+    state = {
+        color: '#000000'
+    }
+    static getDerivedStateFromProps (props, state) {
+        if (props.color !== state.color) {
+            return {
+                color: props.color
+            }
+        }
+        return null
+    }
+    ... // 选择颜色方法
+    render () {
+        .... // 显示颜色和选择颜色操作
+    }
+}
+```
+
+但如果有`setState `color的操作，会发现改变不了颜色，因为在 React 16.4^ 的版本中 `setState `和 `forceUpdate` 也会触发这个生命周期，所以内部 state 变化后，又会走 `getDerivedStateFromProps `方法，并把 state 值更新为传入的 prop；
+
+```jsx
+Class ColorPicker extends React.Component {
+    state = {
+        color: '#000000',
+        prevPropColor: ''
+    }
+    static getDerivedStateFromProps (props, state) {
+        if (props.color !== state.prevPropColor) {
+            return {
+                color: props.color
+                prevPropColor: props.color
+            }
+        }
+        return null
+    }
+    ... // 选择颜色方法
+    render () {
+        .... // 显示颜色和选择颜色操作
+    }
+}
+```
+
+可以通过保存一个之前 prop 值，我们就可以在只有 prop 变化时才去修改 state；
+
+#### 3.4.8 getSnapshotBeforeUpdate
+
+```jsx
+getSnapshotBeforeUpdate(prevProps, prevState)
+```
+
+getSnapshotBeforeUpdate() 在最近一次渲染输出（提交到 DOM 节点）之前调用；
+
+此生命周期方法的任何返回值将作为参数传递给 componentDidUpdate()。
+
+```jsx
+class ScrollingList extends React.Component {
+  constructor(props) {
+    super(props);
+    this.listRef = React.createRef();
+  }
+
+  getSnapshotBeforeUpdate(prevProps, prevState) {
+    // 我们是否在 list 中添加新的 items ？
+    // 捕获滚动​​位置以便我们稍后调整滚动位置。
+    if (prevProps.list.length < this.props.list.length) {
+      const list = this.listRef.current;
+      return list.scrollHeight - list.scrollTop;
+    }
+    return null;
+  }
+
+  componentDidUpdate(prevProps, prevState, snapshot) {
+    // 如果我们 snapshot 有值，说明我们刚刚添加了新的 items，
+    // 调整滚动位置使得这些新 items 不会将旧的 items 推出视图。
+    //（这里的 snapshot 是 getSnapshotBeforeUpdate 的返回值）
+    if (snapshot !== null) {
+      const list = this.listRef.current;
+      list.scrollTop = list.scrollHeight - snapshot;
+    }
+  }
+
+  render() {
+    return (
+      <div ref={this.listRef}>{/* ...contents... */}</div>
+    );
+  }
+}
+```
+
+#### 3.4.9. static getDerivedStateFromError
+
+（不常用）
+
+配合Error boundaries使用
+
+此生命周期会在后代组件抛出错误后被调用。 它将抛出的错误作为参数，并返回一个值以更新 state；
+
+#### 3.4.10. componentDidCatch
+
+（不常用）
+
+componentDidCatch() 会在“提交”阶段被调用，因此允许执行副作用。 它应该用于记录错误之类的情况；
+
+```jsx
+componentDidCatch(error, info)
+
+class ErrorBoundary extends React.Component {
+  constructor(props) {
+    super(props);
+    this.state = { hasError: false };
+  }
+
+  static getDerivedStateFromError(error) {
+    // 更新 state 使下一次渲染可以显示降级 UI
+    return { hasError: true };
+  }
+
+  componentDidCatch(error, info) {
+    // "组件堆栈" 例子:
+    //   in ComponentThatThrows (created by App)
+    //   in ErrorBoundary (created by App)
+    //   in div (created by App)
+    //   in App
+    logComponentStackToMyService(info.componentStack);
+  }
+
+  render() {
+    if (this.state.hasError) {
+      // 你可以渲染任何自定义的降级 UI
+      return <h1>Something went wrong.</h1>;
+    }
+
+    return this.props.children;
+  }
+}
+```
+
+#### 3.4.11. UNSAFE_componentWillMount
+
+ （不建议使用）
+
+UNSAFE_componentWillMount() 在挂载之前被调用；
+
+它在 render() 之前调用，因此在此方法中同步调用 setState() 不会生效；
+
+需要的话用componentDidMount替代。
+
+#### 3.4.12. UNSAFE_componentWillReceiveProps
+
+（不建议使用）
+UNSAFE_componentWillReceiveProps() 会在已挂载的组件接收新的 props 之前被调用；
+
+如果你需要更新状态以响应 prop 更改（例如，重置它），你可以比较 this.props 和 nextProps 并在此方法中使用 this.setState() 执行 state 转换。
+
+#### 3.4.13. UNSAFE_componentWillUpdate
+
+（不建议使用）
+
+- 当组件收到新的 props 或 state 时，会在渲染之前调用 UNSAFE_componentWillUpdate()；
+- 使用此作为在更新发生之前执行准备更新的机会；
+- 初始渲染不会调用此方法；
+
+如果 shouldComponentUpdate() 返回 false，则不会调用 UNSAFE_componentWillUpdate()；
+
+### 3.5. 事件处理
+
+#### 3.5.1. 语法格式
+
+1. 在JSX元素上添加事件,通过on*EventType这种内联方式添加,命名采用小驼峰式(camelCase)的形式,而不是纯小写(原生HTML中对DOM元素绑定事件,事件类型是小写的)；
+2. 无需调用addEventListener进行事件监听，也无需考虑兼容性，React已经封装好了一些的事件类型属性；
+3. 使用 JSX 语法时你需要传入一个函数作为事件处理函数，而不是一个字符串；
+4. 不能通过返回 false 的方式阻止默认行为。你必须显式的使用 preventDefault；
+
+```jsx
+// DOM
+<button onclick="activateLasers()">
+  Activate Lasers
+</button>
+
+// React
+<button onClick={activateLasers}>
+  Activate Lasers
+</button>
+
+// JS
+<form onsubmit="console.log('You clicked submit.'); return false">
+  <button type="submit">Submit</button>
+</form>
+
+// React
+一般不需要使用 addEventListener 为已创建的 DOM 元素添加监听器；
+function Form() {
+  function handleSubmit(e) {
+    e.preventDefault();
+    console.log('You clicked submit.');
+  }
+
+  return (
+    <form onSubmit={handleSubmit}>
+      <button type="submit">Submit</button>
+    </form>
+  );
+}
+```
+
+```jsx
+class Toggle extends React.Component {
+  constructor(props) {
+    super(props);
+    this.state = {isToggleOn: true};
+
+    // 为了在回调中使用 `this`，这个绑定是必不可少的
+    this.handleClick = this.handleClick.bind(this);
+  }
+
+  handleClick() {
+    this.setState(prevState => ({
+      isToggleOn: !prevState.isToggleOn
+    }));
+  }
+
+  render() {
+    return (
+      // class 的方法默认不会绑定 this。如果没有绑定 this.handleClick 并把它传入了 onClick，
+      // this 的值为 undefined。
+      <button onClick={this.handleClick}>
+        {this.state.isToggleOn ? 'ON' : 'OFF'}
+      </button>
+    );
+  }
+}
+
+ReactDOM.render(
+  <Toggle />,
+  document.getElementById('root')
+);
+
+// 为什么要绑定this
+function createElement(dom, params) {
+  var domObj = document.createElement(dom);
+  domObj.onclick = params.onclick;
+  domObj.innerHTML = params.conent;
+  return domObj
+}
+// createElement 的onClick函数是绑定到domObj上的，如果this不显式绑定，不会绑定到Toggle上
+
+// 不显式使用bind
+1.  public class fields 语法
+class LoggingButton extends React.Component {
+  // 此语法确保 `handleClick` 内的 `this` 已被绑定。
+  // 注意: 这是 *实验性* 语法。
+  handleClick = () => {
+    console.log('this is:', this);
+  }
+
+  render() {
+    return (
+      <button onClick={this.handleClick}>
+        Click me
+      </button>
+    );
+  }
+}
+
+2. 箭头函数，问题： 每次render都会创建不同的回调函数，如果该回调函数作为props传入子组件，每次子组件都要re-render
+class LoggingButton extends React.Component {
+  handleClick() {
+    console.log('this is:', this);
+  }
+
+  render() {
+    // 此语法确保 `handleClick` 内的 `this` 已被绑定。
+    return (
+      <button onClick={() => this.handleClick()}>
+			//  <button onClick={this.handleClick().bind(this)}>
+        Click me
+      </button>
+    );
+  }
+}
+
+3. createReactClass代替
+```
+
+#### 3.5.2. 接收参数
+
+1. 事件对象 e 会被作为第二个参数传递；
+2. 通过箭头函数的方式，事件对象必须显式的进行传递；
+3. 通过 Function.prototype.bind 的方式，事件对象以及更多的参数将会被隐式的进行传递；
+
+```jsx
+<button onClick={(e) => this.deleteRow(id, e)}>Delete Row</button>
+<button onClick={this.deleteRow.bind(this, id)}>Delete Row</button>
+```
+
+### 3.6 条件渲染
+
+#### 3.6.1 if esle渲染
+
+```jsx
+class LoginControl extends React.Component {
+  constructor(props) {
+    super(props);
+    this.handleLoginClick = this.handleLoginClick.bind(this);
+    this.handleLogoutClick = this.handleLogoutClick.bind(this);
+    this.state = {isLoggedIn: false};
+  }
+
+  handleLoginClick() {
+    this.setState({isLoggedIn: true});
+  }
+
+  handleLogoutClick() {
+    this.setState({isLoggedIn: false});
+  }
+
+  render() {
+    const isLoggedIn = this.state.isLoggedIn;
+    let button;
+    if (isLoggedIn) {
+      button = <LogoutButton onClick={this.handleLogoutClick} />;
+    } else {
+      button = <LoginButton onClick={this.handleLoginClick} />;
+    }
+
+    return (
+      <div>
+        <Greeting isLoggedIn={isLoggedIn} />
+        {button}
+      </div>
+    );
+  }
+}
+
+ReactDOM.render(
+  <LoginControl />,
+  document.getElementById('root')
+);
+```
+
+#### 3.6.2 与运算符 &&
+
+```jsx
+function Mailbox(props) {
+  const unreadMessages = props.unreadMessages;
+  return (
+    <div>
+      <h1>Hello!</h1>
+      {unreadMessages.length > 0 &&
+        <h2>
+          You have {unreadMessages.length} unread messages.
+        </h2>
+      }
+    </div>
+  );
+}
+
+const messages = ['React', 'Re: React', 'Re:Re: React'];
+ReactDOM.render(
+  <Mailbox unreadMessages={messages} />,
+  document.getElementById('root')
+);
+
+// 返回false的表达式，会跳过元素，但会返回该表达式
+render() {
+  const count = 0;
+  return (
+    <div>
+      { count && <h1>Messages: {count}</h1>}
+    </div>
+  );
+}
+```
+
+#### 3.6.3 三元运算符
+
+```jsx
+render() {
+  const isLoggedIn = this.state.isLoggedIn;
+  return (
+    <div>
+      {isLoggedIn
+        ? <LogoutButton onClick={this.handleLogoutClick} />
+        : <LoginButton onClick={this.handleLoginClick} />
+      }
+    </div>
+  );
+}
+```
+
+#### 3.6.4 如何阻止组件渲染
+
+```jsx
+function WarningBanner(props) {
+  if (!props.warn) {
+    return null;
+  }
+
+  return (
+    <div className="warning">
+      Warning!
+    </div>
+  );
+}
+
+class Page extends React.Component {
+  constructor(props) {
+    super(props);
+    this.state = {showWarning: true};
+    this.handleToggleClick = this.handleToggleClick.bind(this);
+  }
+
+  handleToggleClick() {
+    this.setState(state => ({
+      showWarning: !state.showWarning
+    }));
+  }
+
+  render() {
+    return (
+      <div>
+        <WarningBanner warn={this.state.showWarning} />
+        <button onClick={this.handleToggleClick}>
+          {this.state.showWarning ? 'Hide' : 'Show'}
+        </button>
+      </div>
+    );
+  }
+}
+
+ReactDOM.render(
+  <Page />,
+  document.getElementById('root')
+);
+```
+
+### 3.7 列表
+
+```jsx
+function NumberList(props) {
+  const numbers = props.numbers;
+  const listItems = numbers.map((number) =>
+    <li key={number.toString()}>
+      {number}
+    </li>
+  );
+  
+  return (
+    <ul>{listItems}</ul>
+  );
+}
+
+const numbers = [1, 2, 3, 4, 5];
+ReactDOM.render(
+  <NumberList numbers={numbers} />,
+  document.getElementById('root')
+);
+// 若没有key，会warning a key should be provided for list items
+// key可以帮助react diff，最好不用index作为key，会导致性能变差；
+// 如果不指定显式的 key 值，默认使用索引用作为列表项目的 key 值；
+```
+
+#### 3.7.1 key注意点
+
+```jsx
+key要保留在map的遍历元素上
+
+// demo1
+function ListItem(props) {
+  // 正确！这里不需要指定 key：
+  return <li>{props.value}</li>;
+}
+
+function NumberList(props) {
+  const numbers = props.numbers;
+  const listItems = numbers.map((number) =>
+    // 正确！key 应该在数组的上下文中被指定
+    <ListItem key={number.toString()} value={number} />
+  );
+  return (
+    <ul>
+      {listItems}
+    </ul>
+  );
+}
+
+const numbers = [1, 2, 3, 4, 5];
+ReactDOM.render(
+  <NumberList numbers={numbers} />,
+  document.getElementById('root')
+);
+
+// demo2
+function Blog(props) {
+  const sidebar = (
+    <ul>
+      {props.posts.map((post) =>
+        <li key={post.id}>
+          {post.title}
+        </li>
+      )}
+    </ul>
+  );
+  const content = props.posts.map((post) =>
+    <div key={post.id}>
+      <h3>{post.title}</h3>
+      <p>{post.content}</p>
+    </div>
+  );
+  return (
+    <div>
+      {sidebar}
+      <hr />
+      {content}
+    </div>
+  );
+}
+
+const posts = [
+  {id: 1, title: 'Hello World', content: 'Welcome to learning React!'},
+  {id: 2, title: 'Installation', content: 'You can install React from npm.'}
+];
+ReactDOM.render(
+  <Blog posts={posts} />,
+  document.getElementById('root')
+);
+
+// demo3
+function NumberList(props) {
+  const numbers = props.numbers;
+  return (
+    <ul>
+      {numbers.map((number) =>
+        <ListItem key={number.toString()}
+                  value={number} />
+      )}
+    </ul>
+  );
+}
+```
+
+### 3.8. create-react-app
+
+官方地址：https://create-react-app.dev/
+
+github：https://github.com/facebook/create-react-app
+
+create-react-app是一个官方支持的创建React单页应用程序的脚手架。它提供了一个零配置的现代化配置设置。
+
+![img](https://cdn.nlark.com/yuque/0/2022/webp/2340337/1653717365380-a9a3f644-3583-4bda-8d2b-e8589c70c4d5.webp)
+
+### 3.9. immutable 及immer
+
+#### 3.9.1. immutable
+
+官方地址：https://immutable-js.com/
+
+解决的问题：
+
+JavaScript 中的对象一般是可变的（Mutable），因为使用了引用赋值，新的对象简单的引用了原始对象，改变新的对象将影响到原始对象。如 `foo={a: 1}; bar=foo; bar.a=2` 你会发现此时 foo.a 也被改成了 2。虽然这样做可以节约内存，但当应用复杂后，这就造成了非常大的隐患，Mutable 带来的优点变得得不偿失。为了解决这个问题，一般的做法是使用 shallowCopy（浅拷贝）或 deepCopy（深拷贝）来避免被修改，但这样做造成了 CPU 和内存的浪费。
+
+##### 3.9.1.1 什么事immutable data
+
+- Immutable Data 就是一旦创建，就不能再被更改的数据；
+- 对 Immutable 对象的任何修改或添加删除操作都会返回一个新的 Immutable 对象；
+- Immutable 实现的原理是 Persistent Data Structure（持久化数据结构）：也就是使用旧数据创建新数据时，要保证旧数据同时可用且不变。同时为了避免 deepCopy 把所有节点都复制一遍带来的性能损耗，Immutable 使用了 Structural Sharing（结构共享），即如果对象树中一个节点发生变化，只修改这个节点和受它影响的父节点，其它节点则进行共享
+
+![img](https://camo.githubusercontent.com/0b8366dbd9e9298f8f2521d59b6602f65e857aa5256cd7114ea0de3cf169c4ca/687474703a2f2f696d672e616c6963646e2e636f6d2f7470732f69322f5442317a7a695f4b5858585858637458465858627262384f5658582d3631332d3537352e676966)
+
+#### 3.9.1.2. immutable.js
+
+Facebook 工程师 Lee Byron 花费 3 年时间打造，与 React 同期出现，但没有被默认放到 React 工具集里（React 提供了简化的 Helper）。它内部实现了一套完整的 Persistent Data Structure，还有很多易用的数据类型。像 Collection、List、Map、Set、Record、Seq。有非常全面的map、filter、groupBy、reduce``find函数式操作方法。同时 API 也尽量与 Object 或 Array 类似。
+
+```jsx
+// 原来的写法
+let foo = {a: {b: 1}};
+let bar = foo;
+bar.a.b = 2;
+console.log(foo.a.b);  // 打印 2
+console.log(foo === bar);  //  打印 true
+
+// 使用 immutable.js 后
+import Immutable from 'immutable';
+foo = Immutable.fromJS({a: {b: 1}});
+bar = foo.setIn(['a', 'b'], 2);   // 使用 setIn 赋值
+console.log(foo.getIn(['a', 'b']));  // 使用 getIn 取值，打印 1
+console.log(foo === bar);  //  打印 false
+```
+
+##### 3.9.1.3. immmutable.js 优点
+
+1. 降低了mutable带来的复杂性
+
+   ```jsx
+   function touchAndLog(touchFn) {
+     let data = { key: 'value' };
+     touchFn(data);
+     console.log(data.key);
+     // 因为不知道touchFn进行了什么操作，所以无法预料，但使用immutable，肯定是value
+   }
+   ```
+
+2. 节省开支
+
+会尽量复用内存，甚至以前使用的对象也可以再次被复用。没有被引用的对象会被垃圾回收。
+
+```jsx
+import { Map} from 'immutable';
+let a = Map({
+  select: 'users',
+  filter: Map({ name: 'Cam' })
+})
+let b = a.set('select', 'people');
+
+a === b; // false
+a.get('filter') === b.get('filter'); // true
+```
+
+1. Undo/Redo，Copy/Paste
+
+因为每次数据都是不一样的，所有可以存储在数组里，想回退到哪里就拿出对应数据即可
+
+##### 3.9.1.4. immutable.js缺点
+
+1. 需要学习新的API
+2. 容易与原生对象混淆
+
+虽然 Immutable.js 尽量尝试把 API 设计的原生对象类似，有的时候还是很难区别到底是 Immutable 对象还是原生对象，容易混淆操作。
+
+1. Immutable 中的 Map 和 List 虽对应原生 Object 和 Array，但操作非常不同，比如你要用 map.get('key') 而不是 map.key，array.get(0) 而不是 array[0]。另外 Immutable 每次修改都会返回新对象，也很容易忘记赋值；
+2. 当使用外部库的时候，一般需要使用原生对象，也很容易忘记转换。
+
+下面给出一些办法来避免类似问题发生：
+
+1. 使用TypeScript 这类有静态类型检查的工具；
+2. 约定变量命名规则：如所有 Immutable 类型对象以 $$ 开头；
+3. 使用 Immutable.fromJS 而不是 Immutable.Map 或 Immutable.List 来创建对象，这样可以避免 Immutable 和原生对象间的混用；
+
+##### 3.9.1.5 immutable.is & cursor
+
+- immutable.is
+
+  ```jsx
+  // 两个 immutable 对象可以使用 === 来比较，这样是直接比较内存地址，性能最好。
+  // 但即使两个对象的值是一样的，也会返回 false：
+  
+  let map1 = Immutable.Map({a:1, b:1, c:1});
+  let map2 = Immutable.Map({a:1, b:1, c:1});
+  map1 === map2;             // false
+  
+  // 为了直接比较对象的值，immutable.js 提供了 Immutable.is 来做『值比较』，结果如下：
+  
+  Immutable.is(map1, map2);  // true
+  Immutable.is 
+  // 比较的是两个对象的 hashCode 或 valueOf（对于 JavaScript 对象）。
+  // 由于 immutable 内部使用了 Trie 数据结构来存储，只要两个对象的 hashCode 相等，值就是一样的。
+  // 这样的算法避免了深度遍历比较，性能非常好。
+  ```
+
+- cursor
+
+由于 Immutable 数据一般嵌套非常深，为了便于访问深层数据，Cursor 提供了可以直接访问这个深层数据的引用。
+
+ ```jsx
+ import Immutable from 'immutable';
+ import Cursor from 'immutable/contrib/cursor';
+ 
+ let data = Immutable.fromJS({ a: { b: { c: 1 } } });
+ // 让 cursor 指向 { c: 1 }
+ let cursor = Cursor.from(data, ['a', 'b'], newData => {
+   // 当 cursor 或其子 cursor 执行 update 时调用
+   console.log(newData);
+ });
+ 
+ cursor.get('c'); // 1
+ cursor = cursor.update('c', x => x + 1);
+ cursor.get('c'); // 2
+ ```
+
+##### 3.9.1.6. 使用immutable.js优化react
+
+1. React可以使用 shouldComponentUpdate()进行性能优化，但它默认返回 true，即始终会执行 render() 方法，然后做 Virtual DOM 比较，并得出是否需要做真实 DOM 更新；
+2. 可以在shouldComponentUpdate 周期里执行deepCopy 和 deepCompare 避免无意义的render，但deepFn也很耗时；
+
+```jsx
+import { is } from 'immutable';
+
+shouldComponentUpdate: (nextProps = {}, nextState = {}) => {
+  const thisProps = this.props || {}, thisState = this.state || {};
+
+  if (Object.keys(thisProps).length !== Object.keys(nextProps).length ||
+      Object.keys(thisState).length !== Object.keys(nextState).length) {
+    return true;
+  }
+
+  for (const key in nextProps) {
+    if (!is(thisProps[key], nextProps[key])) {
+      return true;
+    }
+  }
+
+  for (const key in nextState) {
+    if (thisState[key] !== nextState[key] && !is(thisState[key], nextState[key])) {
+      return true;
+    }
+  }
+  return false;
+}
+```
+
+#### 3.9.2 immer
+
+官方地址：https://immerjs.github.io/immer/zh-CN/
+
+先来看一个问题
+
+```jsx
+let currentState = {
+  p: {
+    x: [2],
+  },
+}
+
+// 下列哪些currentState被修改了
+// Q1
+let o1 = currentState;
+o1.p = 1;
+o1.p.x = 1;
+
+// Q2
+fn(currentState);
+function fn(o) {
+  o.p1 = 1;
+  return o;
+};
+
+// Q3
+let o3 = {
+  ...currentState
+};
+o3.p.x = 1;
+
+// Q4
+let o4 = currentState;
+o4.p.x.push(1);
+
+// 结果：都被修改了
+```
+
+如何解决引用类型对象被修改？
+
+1. 深度拷贝，但是深拷贝的成本较高，会影响性能；
+2. [ImmutableJS](https://github.com/facebook/immutable-js)，非常棒的一个不可变数据结构的库，可以解决上面的问题，但跟 Immer 比起来，ImmutableJS 有两个较大的不足：
+   a. 需要使用者学习它的数据结构操作方式，没有 Immer 提供的使用原生对象的操作方式简单、易用；
+   b. 它的操作结果需要通过toJS方法才能得到原生对象，这使得在操作一个对象的时候，时刻要主要操作的是原生对象还是 ImmutableJS 的返回结果，稍不注意，就会产生问题；
+
+```jsx
+// 如何使用immer解决上述问题
+
+// Q1 Q3
+import produce from 'immer';
+let o1 = produce(currentState, draft => {
+  draft.p.x = 1;
+})
+
+// Q2
+import produce from 'immer';
+fn(currentState);
+function fn(o) {
+  return produce(o, draft => {
+    draft.p1 = 1;
+  })
+};
+
+// Q4
+import produce from 'immer';
+let o4 = produce(currentState, draft => {
+  draft.p.x.push(1);
+})
+```
+
+##### 3.9.2.2 概念说明
+
+- currentState：被操作对象的最初状态
+- draftState：根据 currentState 生成的草稿状态，它是 currentState 的代理，对 draftState 所做的任何修改都将被记录并用于生成 nextState 。在此过程中，currentState 将不受影响
+- nextState：根据 draftState 生成的最终状态
+- produce：用来生成 nextState 或 producer 的函数
+- producer：通过 produce 生成，用来生产 nextState ，每次执行相同的操作
+- recipe：用来操作 draftState 的函数
+
+##### 3.9.2.3 produce的使用
+
+1. produce(currentState, recipe: (draftState) => void | draftState, ?PatchListener): nextState
+
+```jsx
+// Q1
+let nextState = produce(currentState, (draft) => {
+
+})
+
+currentState === nextState; // true
+
+// Q2
+let currentState = {
+  a: [],
+  p: {
+    x: 1
+  }
+}
+
+let nextState = produce(currentState, (draft) => {
+  draft.a.push(2);
+})
+
+currentState.a === nextState.a; // false
+currentState.p === nextState.p; // true
+```
+
+1. a. 对 draftState 的修改都会反应到 nextState;
+
+2. b. Immer 使用的结构是共享的，nextState 在结构上又与 currentState 共享未修改的部分；
+
+immer支持自动冻结：通过produce生产的nextState是被Object.freeze的
+
+```jsx
+const currentState = {
+  p: {
+    x: [2],
+  },
+};
+const nextState = produce(currentState, draftState => {
+    draftState.p.x.push(3);
+});
+console.log(nextState.p.x); // [2, 3]
+nextState.p.x = 4;
+console.log(nextState.p.x); // [2, 3]
+nextState.p.x.push(5); // 报错
+```
+
+2. produce(recipe: (draftState) => void | draftState, ?PatchListener)(currentState): nextState
+
+利用高阶函数的特点，提前生成一个producer
+
+```jsx
+let producer = produce((draft) => {
+  draft.x = 2
+});
+let nextState = producer(currentState);
+```
+
+##### 3.9.2.4 使用immer优化react
+
+```jsx
+// 定义state
+state = {
+  members: [
+    {
+      name: 'ronffy',
+      age: 30
+    }
+  ]
+}
+
+// 如何给member中第一个元素的age+1
+
+// error
+this.state.members[0].age++;
+
+// setState
+const { members } = this.state;
+this.setState({
+  members: [
+    {
+      ...members[0],
+      age: members[0].age + 1,
+    },
+    ...members.slice(1),
+  ]
+})
+
+// 使用reducer
+const reducer = (state, action) => {
+  switch (action.type) {
+    case 'ADD_AGE':
+      const { members } = state;
+      return {
+        ...state,
+        members: [
+          {
+            ...members[0],
+            age: members[0].age + 1,
+          },
+          ...members.slice(1),
+        ]
+      }
+    default:
+      return state
+  }
+}
+
+
+// 使用immer
+this.setState(produce(draft => {
+  draft.members[0].age++;
+}))
+
+// 使用immer结合reduce
+// 注意： produce 内的 recipe 回调函数的第2个参数与obj对象是指向同一块内存
+let obj = {};
+
+let producer = produce((draft, arg) => {
+  obj === arg; // true
+});
+let nextState = producer(currentState, obj);
+
+const reducer = (state, action) => produce(state, draft => {
+  switch (action.type) {
+    case 'ADD_AGE':
+      draft.members[0].age++;
+  }
+})
+```
 
 # React高级用法
+
+https://www.yuque.com/lpldplws/web/bcocaq?singleDoc# 《React高级用法》 密码：acr1
 
 ## 1. 课程目标
 
@@ -22289,71 +23826,802 @@ export default App;
 
 #### 3.3.2 手写异步组件
 
+Suspense组件需要等待异步组件加载完成再渲染异步组件的内容。
 
-
-
-
-JavaScript
-
-
-
-Mvc
-
-
-
-jsx能防止xss攻击
-
-https://react.iamkasong.com/
-
-由react控制的值是受控组件，无法控制的值是非受控组件，
-
-受控组件是能set value和get value
-
-比如
-
-<input value={value2}>是受控组件
-
-<input defaultValue={value2}>是非受控组件
-
-flushSync ???
+1. lazy wrapper住异步组件，React第一次加载组件的时候，异步组件会发起请求，并且抛出异常，终止渲染；
+2. Suspense里有componentDidCatch生命周期函数，异步组件抛出异常会触发这个函数，然后改变状态使其渲染fallback参数传入的组件；
+3. 异步组件的请求成功返回之后，Suspense组件再次改变状态使其渲染正常子组件（即异步组件）；
 
 ```jsx
-this.setState((state,props)=>{
-    return {
-        counter:state.counter+props.increment
+// comp About
+const About = lazy(() => new Promise(resolve => {
+  setTimeout(() => {
+    resolve({
+      default: <div>component content</div>
+    })
+  }, 1000)
+}))
+
+// comp Suspense
+import React from 'react'
+class Suspense extends React.PureComponent {
+  /**
+   * isRender 异步组件是否就绪，可以渲染
+   */
+  state = {
+    isRender: true
+  }
+  componentDidCatch(e) {
+    this.setState({ isRender: false })
+    e.promise.then(() => {
+      /* 数据请求后，渲染真实组件 */
+      this.setState({ isRender: true })
+    })
+  }
+  render() {
+    const { fallback, children } = this.props
+    const { isRender } = this.state
+    return isRender ? children : fallback
+  }
+}
+
+export default Suspense
+
+// comp lazy
+import React, { useEffect } from 'react'
+export function lazy(fn) {
+  const fetcher = {
+    status: 'pending',
+    result: null,
+    promise: null,
+  }
+  return function MyComponent() {
+    const getDataPromise = fn()
+    fetcher.promise = getDataPromise
+    getDataPromise.then(res => {
+      fetcher.status = 'resolved'
+      fetcher.result = res.default
+    })
+    useEffect(() => {
+      if (fetcher.status === 'pending') {
+          throw fetcher
+      }
+    }, [])
+    if (fetcher.status === 'resolved') {
+      return fetcher.result
     }
-})
+    return null
+  }
+}
+
+// 实现的效果与React支持内容保持一致
+import React, {Suspese, lazy} from 'react'
+
+const About= lazy(() => { import('../About') });
+
+class App extends React.Component {
+  render() {
+    /**
+     * 1. 使用 React.Lazy 和 import() 来引入组件
+     * 2. 使用<React.Suspense></React.Suspense>来做异步组件的父组件，并使用 fallback 来实现组件未加载完成时展示信息
+     * 3. fallback 可以传入html，也可以自行封装一个统一的提示组件
+     */
+    return (
+      <div>
+        <Suspense
+          fallback={
+            <Loading />
+          }
+        >
+          <About />
+        </Suspense>
+      </div>
+    )
+  }
+}
+export default ReactComp;
 ```
 
-HOC,入参是一个组件，返回是一个组件
+### 3.4 React18新特性
+
+2021.11.15 React 18 升级到了beat版本，当前 17.0.2
+
+发布节奏：
+
+- 库的 Alpha 版本：当天可用
+- 公开的 Beta 版：至少几个月
+- RC 版本：至少在 Beta 版发布后的几周
+- 正式版：至少在 RC 版本发布之后的几周
+
+主要改动包括：
+
+1. Automatic batching（自动批量更新）
+2. startTransition
+3. 支持 React.lazy 的SSR架构
+4. Concurrent Mode （并发渲染、可选）
+
+#### 3.4.1 Automatic batching
+
+将多个状态更新合并成一个重新渲染以取得更好的性能的一种优化方式；
+
+1. V18前
+
+默认不batching的scene:
+
+1. promise；
+2. setTimeout；
+3. 原生事件处理（native event handlers）；
+
+```jsx
+function App() {
+  const [count, setCount] = useState(0);
+  const [flag, setFlag] = useState(false);
+
+  function handleClick() {
+    setCount(c => c + 1); // Does not re-render yet
+    setFlag(f => !f); // Does not re-render yet
+    // React will only re-render once at the end (that's batching!)
+  }
+
+  return (
+    <div>
+      <button onClick={handleClick}>Next</button>
+      <h1 style={{ color: flag ? "blue" : "black" }}>{count}</h1>
+    </div>
+  );
+}
+
+————————————————————————————————————————————————
+
+function App() {
+  const [count, setCount] = useState(0);
+  const [flag, setFlag] = useState(false);
+
+  function handleClick() {
+    fetchSomething().then(() => {
+      // React 17 and earlier does NOT batch these because
+      // they run *after* the event in a callback, not *during* it
+      setCount(c => c + 1); // Causes a re-render
+      setFlag(f => !f); // Causes a re-render
+    });
+  }
+
+  return (
+    <div>
+      <button onClick={handleClick}>Next</button>
+      <h1 style={{ color: flag ? "blue" : "black" }}>{count}</h1>
+    </div>
+  );
+}
+```
+
+2. v18
+
+​	所有更新自动batching
+
+```jsx
+function App() {
+  const [count, setCount] = useState(0);
+  const [flag, setFlag] = useState(false);
+
+  function handleClick() {
+    fetchSomething().then(() => {
+      // React 18 and later DOES batch these:
+      setCount(c => c + 1);
+      setFlag(f => !f);
+      // React will only re-render once at the end (that's batching!)
+    });
+  }
+
+  return (
+    <div>
+      <button onClick={handleClick}>Next</button>
+      <h1 style={{ color: flag ? "blue" : "black" }}>{count}</h1>
+    </div>
+  );
+}
+```
+
+若不想batching?
+
+```jsx
+import { flushSync } from 'react-dom'; // Note: react-dom, not react
+
+function handleClick() {
+  flushSync(() => {
+    setCounter(c => c + 1);
+  });
+  // React has updated the DOM by now
+  flushSync(() => {
+    setFlag(f => !f);
+  });
+  // React has updated the DOM by now
+}
+```
+
+batching 对hooks及class的影响
+
+```jsx
+handleClick = () => {
+  setTimeout(() => {
+    this.setState(({ count }) => ({ count: count + 1 }));
+ 		// V18前 { count: 1, flag: false }
+    // V18中 { count: 0, flag: false }，除非使用flushSync
+    console.log(this.state);
+
+    this.setState(({ flag }) => ({ flag: !flag }));
+  });
+};
 
 
+// 在一些react库中，如react-dom， unstable_batchedUpdates 实现类似功能
+import { unstable_batchedUpdates } from 'react-dom';
 
-反向代理是返回一个新的组件，操作生命周期
+unstable_batchedUpdates(() => {
+  setCount(c => c + 1);
+  setFlag(f => !f);
+});
+```
 
+#### 3.4.2 startTransition
 
+可以让我们的页面在多数据更新里保持响应。这个API通过标记某些更新为"transitions"，来提高用户交互；
 
-Hooks
+实际：可以让我们的页面在展示时时刻保持re-render；
 
-16.8版本后出现
+Example：我们更新input的value的同时用这个value去更新了一个有30000个item的list。然而这种多数据更新让页面无法及时响应，也让用户输入或者其他用户交互感觉很慢。
 
-Stateless 的组件，是没有state可用
+Solution：
 
-1.抽离
+```jsx
+// 紧急的更新：展示用户的输入 
+setInputValue(e.target.value); 
+ 
+// 非紧急的更新： 展示结果 
+setContent(e.target.value); 
+```
 
+V18前：update的优先级一样；
 
+V18：支持优先级手动设置；
 
+```jsx
+import { startTransition } from 'react';
 
+// Urgent: Show what was typed
+setInputValue(input);
 
-useEffect：组件vdom->真实的DOM->执行useEffect
+// Mark any state updates inside as transitions
+startTransition(() => {
+  // Transition: Show the results
+  setSearchQuery(input);
+});
 
-useLayoutEffect:组件VDOM->执行uselayoutEffect cb->渲染DOM
+// 等同于
+先setInputValue(e.target.value) 后执行 setContent(e.target.value); 
+```
 
+react中的upate：
 
+- Urgent updates：reflect direct interaction, like typing, clicking, pressing, and so on；
+- Transition updates：transition the UI from one view to another；
 
-useMemo：返回cb的结果
+* 误区
 
-useCallback: 返回cb这个函数，不要乱用
+1. 与setTimeout的区别
+   	直接看起来结果类似：
+
+```jsx
+// debounce 和 throttle 经常使用
+// Show what you typed
+setInputValue(input);
+
+// Show the results
+setTimeout(() => {
+  setSearchQuery(input);
+}, 0);
+```
+
+区别：
+
+1. 1. startTransition不会被放到下一次event loop，是同步立即执行的，这也就意味着，比timeout update更早，低端机体验明显;
+
+使用场景
+
+1. slow rendering：re-render需要耗费大量的工作量；
+2. slow network：需要较长时间等待response的情况；
+
+#### 3.4.3 支持React.lazy的ssr架构
+
+SSR场景
+
+react的SSR（server side render）
+
+1. server：获取数据；
+2. server：组装返回带有HTML的接口；
+3. client：加载 JavaScript；
+4. client：hydration，将客户端的JS与服务端的HTML结合；
+
+- V18前：按序执行；
+- V18：支持拆解应用为独立单元，不影响其他模块；
+
+正常加载界面
+
+<img src="https://cdn.nlark.com/yuque/0/2022/png/2340337/1644976346932-bc6e620f-1333-44e4-a3e5-1e1dbd3830fa.png" alt="img" style="zoom:50%;" />
+
+不使用SSR界面，带个loading
+
+<img src="https://cdn.nlark.com/yuque/0/2022/png/2340337/1644976346915-60354f9a-d390-4219-b185-7c28550cd369.png" alt="img" style="zoom:50%;" />
+
+使用SSR
+
+<img src="https://cdn.nlark.com/yuque/0/2022/png/2340337/1644976346944-179c0ca0-f780-4963-ae3c-fe444e727f28.png" alt="img" style="zoom:50%;" />
+
+hydration后
+
+<img src="https://cdn.nlark.com/yuque/0/2022/png/2340337/1644976346935-3eb17305-da08-4c21-b91a-c3c123ec3c8e.png" alt="img" style="zoom:50%;" />
+
+SSR问题
+
+1. server：获取数据； --> 按序执行，必须在服务端返回所有HTML；
+2. client：加载 JavaScript； --> 必须JS加载完成；
+3. client：hydration，将客户端的JS与服务端的HTML结合； --> hydrate后才能交互；
+
+流式 HTML&选择性hydrate
+
+1. 流式HTML
+2. client进行选择性的 hydration：<Suspense>
+
+```jsx
+<Layout>
+  <NavBar />
+  <Sidebar />
+  <RightPane>
+    <Post />
+    <Suspense fallback={<Spinner />}> // 假设HTML加载很慢，分批
+      <Comments />
+    </Suspense>
+  </RightPane>
+</Layout>
+————————————————————————————————————————————————
+// HTML返回过来在加载
+<div hidden id="comments">
+  <!-- Comments -->
+  <p>First comment</p>
+  <p>Second comment</p>
+</div>
+<script>
+  // This implementation is slightly simplified
+  document.getElementById('sections-spinner').replaceChildren(
+    document.getElementById('comments')
+  );
+</script>
+```
+
+<img src="https://cdn.nlark.com/yuque/0/2022/png/2340337/1644976347792-c772a553-0e84-4723-a094-1c06be64839d.png" alt="img" style="zoom:50%;" /><img src="https://cdn.nlark.com/yuque/0/2022/png/2340337/1644976349091-d6ef0cfb-717b-4c39-9bbe-83351f51daf9.png" alt="img" style="zoom:50%;" />
+
+1. JS选择性加载
+
+```jsx
+import { lazy } from 'react';
+
+const Comments = lazy(() => import('./Comments.js'));
+
+// ...
+
+<Suspense fallback={<Spinner />}>
+  <Comments />
+</Suspense>
+```
+
+![img](https://cdn.nlark.com/yuque/0/2022/png/2340337/1644976350368-04b7fc43-104d-401b-a2da-904deba5283f.png)<img src="https://cdn.nlark.com/yuque/0/2022/png/2340337/1644976351265-705ce1db-1c4c-4ad8-9c89-a152f7c28002.png" alt="img" style="zoom:50%;" />
+
+2. hydration 之前要求交互
+
+<img src="https://cdn.nlark.com/yuque/0/2022/png/2340337/1644976351427-4cbf4d55-4720-4566-853a-6a2041d23e84.png" alt="img" style="zoom:50%;" />
+
+记录操作行为，并优先执行Urgent comp的hydration；
+
+#### 3.4.4. Concurrent Mode（并发模式）
+
+ 
+
+Concurrent Mode（以下简称CM）
+
+什么是 CM 和 suspense？
+
+在2019年 react conf提出了实验性的版本来支持CM 和 Suspense（可以理解为等待代码加载，且指定加载界面）
+
+- CM：
+
+​	可帮助应用保持响应，并根据用户的设备性能和网速进行适当的调整。
+
+​	阻塞渲染：如UI update，需要先执行对应视图操作，如更新DOM；
+
+solution：
+
+adebounce：输入完成后响应，输入时不会更新；
+
+bthrottle：功率低场景卡顿；
+
+可中断渲染（CM）：
+
+aCPU-bound update： (例如创建新的 DOM 节点和运行组件中的代码)：中断当前渲染，切换更高优先级；
+
+bIO-bound update： (例如从网络加载代码或数据)：response前先在内存进行渲染；
+
+-  suspense
+
+​	以声明的方式来“等待”任何内容，包括数据
+
+```jsx
+const resource = fetchProfileData();
+
+function ProfilePage() {
+  return (
+    <Suspense fallback={<h1>Loading profile...</h1>}>
+      <ProfileDetails />
+      <Suspense fallback={<h1>Loading posts...</h1>}>
+        <ProfileTimeline />
+      </Suspense>
+    </Suspense>
+  );
+}
+
+function ProfileDetails() {
+  // 尝试读取用户信息，尽管该数据可能尚未加载
+  const user = resource.user.read();
+  return <h1>{user.name}</h1>;
+}
+
+function ProfileTimeline() {
+  // 尝试读取博文信息，尽管该部分数据可能尚未加载
+  const posts = resource.posts.read();
+  return (
+    <ul>
+      {posts.map(post => (
+        <li key={post.id}>{post.text}</li>
+      ))}
+    </ul>
+  );
+}
+```
+
+*误区：Suspense 不是一个数据请求的库，而是一个机制。这个机制是用来给数据请求库向 React 通信说明某个组件正在读取的数据当前仍不可用
+
+- 什么不是suspense
+
+1. 1. 不是数据获取方式；
+   2. 不是一个可以直接用于数据获取的客户端；
+   3. 它不使数据获取与视图层代码耦合；
+
+- Suspense 可以做什么
+
+1. 1. 能让数据获取库与 React 紧密整合；
+   2. 能让你有针对性地安排加载状态的展示；
+   3. 能够消除 race conditions
+
+DEMO：
+
+目前fetch data方式：
+
+● Fetch-on-render（渲染之后获取数据，如：在 useEffect 中 fetch）
+
+```jsx
+// 在函数组件中：
+useEffect(() => {
+  fetchSomething();
+}, []);
+
+// 或者，在 class 组件里：
+componentDidMount() {
+  fetchSomething();
+}
+————————————————————————————————————————————————
+
+function ProfilePage() {
+  const [user, setUser] = useState(null);
+
+  useEffect(() => {
+    fetchUser().then(u => setUser(u));
+  }, []);
+
+  if (user === null) {
+    return <p>Loading profile...</p>;
+  }
+  return (
+    <>
+      <h1>{user.name}</h1>
+      <ProfileTimeline />
+    </>
+  );
+}
+
+function ProfileTimeline() {
+  const [posts, setPosts] = useState(null);
+
+  useEffect(() => {
+    fetchPosts().then(p => setPosts(p));
+  }, []);
+
+  if (posts === null) {
+    return <h2>Loading posts...</h2>;
+  }
+  return (
+    <ul>
+      {posts.map(post => (
+        <li key={post.id}>{post.text}</li>
+      ))}
+    </ul>
+  );
+}
+
+// 结果：只有在fetch user 后才会fetch post，请求被串行发出
+```
+
+- Fetch-then-render（接收到全部数据之后渲染，如：不使用 Suspense 的 Relay）
+
+```jsx
+function fetchProfileData() {
+  return Promise.all([
+    fetchUser(),
+    fetchPosts()
+  ]).then(([user, posts]) => {
+    return {user, posts};
+  })
+}
+————————————————————————————————————————————————
+
+// 尽早开始获取数据
+const promise = fetchProfileData();
+
+function ProfilePage() {
+  const [user, setUser] = useState(null);
+  const [posts, setPosts] = useState(null);
+
+  useEffect(() => {
+    promise.then(data => {
+      setUser(data.user);
+      setPosts(data.posts);
+    });
+  }, []);
+
+  if (user === null) {
+    return <p>Loading profile...</p>;
+  }
+  return (
+    <>
+      <h1>{user.name}</h1>
+      <ProfileTimeline posts={posts} />
+    </>
+  );
+}
+
+// 子组件不再触发数据请求
+function ProfileTimeline({ posts }) {
+  if (posts === null) {
+    return <h2>Loading posts...</h2>;
+  }
+  return (
+    <ul>
+      {posts.map(post => (
+        <li key={post.id}>{post.text}</li>
+      ))}
+    </ul>
+  );
+}
+
+// fetch 完 user 和 post 后再render
+```
+
+- Render-as-you-fetch（获取数据之后渲染，如：使用了 Suspense 的 Relay）
+
+```jsx
+同 Fetch-then-render 区别：
+fetch-then-render：  开始获取数据 -> 结束获取数据 -> 开始渲染
+render-as-you-fetch：开始获取数据 -> 开始渲染 -> 结束获取数据
+
+————————————————————————————————————————————————
+
+// 这不是一个 Promise。这是一个支持 Suspense 的特殊对象。
+const resource = fetchProfileData();
+
+function ProfilePage() {
+  return (
+    <Suspense fallback={<h1>Loading profile...</h1>}>
+      <ProfileDetails />
+      <Suspense fallback={<h1>Loading posts...</h1>}>
+        <ProfileTimeline />
+      </Suspense>
+    </Suspense>
+  );
+}
+
+function ProfileDetails() {
+  // 尝试读取用户信息，尽管信息可能未加载完毕
+  const user = resource.user.read();
+  return <h1>{user.name}</h1>;
+}
+
+function ProfileTimeline() {
+  // 尝试读取博文数据，尽管数据可能未加载完毕
+  const posts = resource.posts.read();
+  return (
+    <ul>
+      {posts.map(post => (
+        <li key={post.id}>{post.text}</li>
+      ))}
+    </ul>
+  );
+}
+
+// 一开始fetch data, 渲染 ProfileDetails 和 ProfileTimeline
+// 依次渲染可渲染comp，没有可渲染comp，此时fallback，渲染h1
+
+```
+
+注意点：
+
+- suspense要求尽早获取数据
+
+```jsx
+// 一早就开始数据获取，在渲染之前！
+const resource = fetchProfileData();
+
+// ...
+
+function ProfileDetails() {
+  // 尝试读取用户信息
+  const user = resource.user.read();
+  return <h1>{user.name}</h1>;
+}
+
+// 若无法保证在init时fetch data，而不是组件render后fetch data，可以根据props获取数据
+// 开始获取数据，越快越好
+const initialResource = fetchProfileData(0);
+
+function App() {
+  const [resource, setResource] = useState(initialResource);
+  return (
+    <>
+      <button onClick={() => {
+        const nextUserId = getNextId(resource.userId);
+        // 再次获取数据：用户点击时
+        setResource(fetchProfileData(nextUserId));
+      }}>
+        Next
+      </button>
+      <ProfilePage resource={resource} />
+    </>
+  );
+}
+```
+
+- 如何解决race condition
+
+```jsx
+// useEffect race condition
+function ProfilePage({ id }) {
+  const [user, setUser] = useState(null);
+
+  useEffect(() => {
+    fetchUser(id).then(u => setUser(u));
+  }, [id]);
+
+  if (user === null) {
+    return <p>Loading profile...</p>;
+  }
+  return (
+    <>
+      <h1>{user.name}</h1>
+      <ProfileTimeline id={id} />
+    </>
+  );
+}
+
+function ProfileTimeline({ id }) {
+  const [posts, setPosts] = useState(null);
+
+  useEffect(() => {
+    fetchPosts(id).then(p => setPosts(p));
+  }, [id]);
+
+  if (posts === null) {
+    return <h2>Loading posts...</h2>;
+  }
+  return (
+    <ul>
+      {posts.map(post => (
+        <li key={post.id}>{post.text}</li>
+      ))}
+    </ul>
+  );
+}
+
+// race condition: 快速切换时，某个ProfileTimeline fetch 请求延时过高后，旧的response会覆盖新的state
+
+————————————————————————————————————————————————
+// suspense，开始获取数据 -> 开始渲染 -> 结束获取数据，获取完数据，立马setState
+
+const initialResource = fetchProfileData(0);
+
+function App() {
+  const [resource, setResource] = useState(initialResource);
+  return (
+    <>
+      <button onClick={() => {
+        const nextUserId = getNextId(resource.userId);
+        setResource(fetchProfileData(nextUserId));
+      }}>
+        Next
+      </button>
+      <ProfilePage resource={resource} />
+    </>
+  );
+}
+
+function ProfilePage({ resource }) {
+  return (
+    <Suspense fallback={<h1>Loading profile...</h1>}>
+      <ProfileDetails resource={resource} />
+      <Suspense fallback={<h1>Loading posts...</h1>}>
+        <ProfileTimeline resource={resource} />
+      </Suspense>
+    </Suspense>
+  );
+}
+
+function ProfileDetails({ resource }) {
+  const user = resource.user.read();
+  return <h1>{user.name}</h1>;
+}
+
+function ProfileTimeline({ resource }) {
+  const posts = resource.posts.read();
+  return (
+    <ul>
+      {posts.map(post => (
+        <li key={post.id}>{post.text}</li>
+      ))}
+    </ul>
+  );
+}
+
+// 原因：
+// hooks里，setState需要在合理的时间设置；
+// suspense里，获取完数据，立马setState
+```
+
+为什么没有在V18中加上 CM 和 suspense ？
+
+1. 虽然React 18没有将Concurrent Mode（以下简称CM）列为版本18升级的核心特性，但也将其作为可选项集成在18版本中，为什么不作为必选项？
+
+A：
+
+1. 1. CM和suspense更适合针对库作者，日常应用的开发者更多的可以作为借鉴；
+   2. react当前核心会放在迁移和解决兼容性的问题；
+
+- - Fragments、Context、Hook开箱即用
+  - concurrent得引入新的语义
+
+```jsx
+// legacy 模式：最常见的版本
+ReactDOM.render(<App />, rootNode)
+// blocking 模式：作为从legacy迁移到cm的版本
+ReactDOM.createBlockingRoot(rootNode).render(<App />)
+// concurrent 模式：后续CM上stable版本后作为默认方式 
+ReactDOM.createRoot(rootNode).render(<App />)
+```
+
+1. 
+
+1. 为什么能够在半天内完成V18的升级
+
+1. a. React团队对于opt-in（可选）做了足够的兼容，如果不用CM的特性，是不会触发CM的，相当于React团队为你做了兜底；「concurrent rendering will only be enabled for updates triggered by one of the new features.」；
+
+2. b.18引入了新的Root API ReactDOM.createRoot 来与旧的 ReactDOM.render区分，使用旧的API会继续在legacy mode （可以理解为传统模式）下运行，用新 API，就会跑在 "Concurrency opt-in" roots 下；
+
+https://react.iamkasong.com/
 
 https://www.yuque.com/lpldplws/atomml/tmbe7ykqmslqszhe?singleDoc# 《JavaScript高级用法(1/2)》 密码：bwxh
 https://www.yuque.com/lpldplws/atomml/os260aysmxgeyhhm?singleDoc# 《JavaScript高级用法(2/2)》 密码：ih4c
