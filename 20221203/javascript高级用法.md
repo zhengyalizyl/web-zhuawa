@@ -2,7 +2,61 @@
 
 https://vgbixa7nr9.feishu.cn/drive/folder/fldcnuszmspfoSJwl5QFtPrsCGg
 
-## 原型&原型链
+https://www.yuque.com/lpldplws/atomml/tmbe7ykqmslqszhe?singleDoc# 《JavaScript高级用法(1/2)》 密码：bwxh
+
+## 1.原型&原型链
+
+### 1.1 构造函数创建对象
+
+我们先使用构造函数创建一个对象：
+
+```js
+function Person() {
+
+}
+var person = new Person();
+person.name = 'xianzao';
+console.log(person.name) // xianzao
+```
+
+在这个例子中，Person 就是一个构造函数，我们使用 new 创建了一个实例对象 person。
+
+### 1.2 prototype
+
+每个函数都有一个 `prototype` 属性，比如：
+
+```js
+function Person() {
+
+}
+// 虽然写在注释里，但是你要注意：
+// prototype是函数才会有的属性
+Person.prototype.name = 'xianzao';
+
+var person1 = new Person();
+var person2 = new Person();
+
+console.log(person1.name) // xianzao
+console.log(person2.name) // xianzao
+```
+
+那这个函数的 `prototype` 属性到底指向的是什么呢？是这个函数的原型吗？
+
+其实，函数的 `prototype` 属性指向了一个对象，这个对象正是调用该构造函数而创建的实例的原型，也就是这个例子中的 `person1` 和 `person2` 的原型。
+
+那什么是原型呢？你可以这样理解：每一个JavaScript对象(null除外)在创建的时候就会与之关联另一个对象，这个对象就是我们所说的原型，每一个对象都会从原型"继承"属性。
+
+用一张图表示构造函数和实例原型之间的关系：
+
+![构造函数和实例关系](/Volumes/F/zyl-study/web-zhuawa/20221203/构造函数和实例关系.png)
+
+这里用 Object.prototype 表示实例原型。
+
+那么该怎么表示实例与实例原型，也就是 `person` 和 Person.`prototype` 之间的关系呢？
+
+### 1.3  __proto__
+
+
 
 函数 prototype指向的是一个对象，这个对象是调用该构造函数创建的实例的原型
 
@@ -24615,11 +24669,15 @@ ReactDOM.createRoot(rootNode).render(<App />)
 
 1. 
 
-1. 为什么能够在半天内完成V18的升级
+1.为什么能够在半天内完成V18的升级
 
 1. a. React团队对于opt-in（可选）做了足够的兼容，如果不用CM的特性，是不会触发CM的，相当于React团队为你做了兜底；「concurrent rendering will only be enabled for updates triggered by one of the new features.」；
 
 2. b.18引入了新的Root API ReactDOM.createRoot 来与旧的 ReactDOM.render区分，使用旧的API会继续在legacy mode （可以理解为传统模式）下运行，用新 API，就会跑在 "Concurrency opt-in" roots 下；
+
+# redux &mobx
+
+
 
 https://react.iamkasong.com/
 

@@ -2,6 +2,7 @@ function  withTiming (WrappedComponent){
     let start,end;
     return class extends WrappedComponent{
          constructor(props){
+            super(props)
             start=0;
             end=0;
          }
@@ -24,4 +25,4 @@ function  withTiming (WrappedComponent){
     }
 }
 
-export default  withTiming
+export default  withTiming(Home)
