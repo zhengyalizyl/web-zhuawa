@@ -20607,12 +20607,6 @@ React是一个声明式，高效灵活的构建用户界面的js库,更快响应
 
 UI=render(data) 单向数据流
 
-- mvc
-
-model view c
-
-- 
-
 ## 1.课程目标
 
 1. 入门React，了解常规用法；
@@ -24675,7 +24669,4245 @@ ReactDOM.createRoot(rootNode).render(<App />)
 
 2. b.18引入了新的Root API ReactDOM.createRoot 来与旧的 ReactDOM.render区分，使用旧的API会继续在legacy mode （可以理解为传统模式）下运行，用新 API，就会跑在 "Concurrency opt-in" roots 下；
 
-# redux &mobx
+# react路由
+
+https://www.yuque.com/lpldplws/web/bcagsz?singleDoc# 《React路由详解》 密码：hmp3
+
+## 1. 课程目标
+
+1. 学习业界内RouterV6的实现原理，达到手写Router的水平；
+2. 学习React Router V6原理与源码，知其然且知其所以然，达到源码的水平；
+
+## 2. 课程大纲
+
+- React Router 使用用法
+- 手写一个简单的react-router
+- React Router 原理解析
+- React Router 源码解析
+
+## 3. 主要内容
+
+### 3.1. React Router使用用法
+
+React Router官网地址：https://reactrouter.com/
+
+React Router中文Gitbook：https://react-guide.github.io/react-router-cn/
+
+#### 3.1.1. React Router 功能介绍
+
+React Router 是React生态库之一，是可以在CSR和SSR环境下，为了React而设计的路由库
+
+- 客户端：React环境
+- 服务端：node、RN
+
+以最新版V6为例：
+
+##### 3.1.1.1. 安装介绍
+
+1. 基本安装
+
+npm：npm install react-router-dom@6
+
+yarn：yarn add react-router-dom@6
+
+2. create react app 安装 
+
+```js
+// src/index.js
+import * as React from "react";
+import ReactDOM from "react-dom/client";
+import { BrowserRouter } from "react-router-dom";
+import "./index.css";
+import App from "./App";
+import reportWebVitals from "./reportWebVitals";
+
+const root = ReactDOM.createRoot(
+  document.getElementById("root")
+);
+root.render(
+  <React.StrictMode>
+    <BrowserRouter>
+      <App />
+    </BrowserRouter>
+  </React.StrictMode>
+);
+
+// src/App.js
+import * as React from "react";
+import { Routes, Route, Link } from "react-router-dom";
+import "./App.css";
+
+function App() {
+  return (
+    <div className="App">
+      <h1>Welcome to React Router!</h1>
+      <Routes>
+        <Route path="/" element={<Home />} />
+        <Route path="about" element={<About />} />
+      </Routes>
+    </div>
+  );
+}
+
+// App.js
+function Home() {
+  return (
+    <>
+      <main>
+        <h2>Welcome to the homepage!</h2>
+        <p>You can do this, I believe in you.</p>
+      </main>
+      <nav>
+        <Link to="/about">About</Link>
+      </nav>
+    </>
+  );
+}
+
+function About() {
+  return (
+    <>
+      <main>
+        <h2>Who are we?</h2>
+        <p>
+          That feels like an existential question, don't you
+          think?
+        </p>
+      </main>
+      <nav>
+        <Link to="/">Home</Link>
+      </nav>
+    </>
+  );
+}
+```
+
+3. webpack安装
+
+   ```js
+   import {
+     BrowserRouter,
+     Routes,
+     Route,
+   } from "react-router-dom";
+   
+   function App() {
+     return (
+       <BrowserRouter>
+         <div>
+           <h1>Hello, React Router!</h1>
+           <Routes>
+             <Route path="/" element={<Home />} />
+           </Routes>
+         </div>
+       </BrowserRouter>
+     );
+   }
+   ```
+
+4. html script 安装
+
+   不建议使用：以上在业务代码中都建议使用，但使用<script>不建议，因为会加载所有的组件集合，没法使用如webpack的按需加载
+
+```js
+  <!-- Other HTML for your app goes here -->
+
+  <!-- The node we will use to put our app in the document -->
+  <div id="root"></div>
+
+  <!-- Note: When deploying to production, replace "development.js"
+       with "production.min.js" in each of the following tags -->
+
+  <!-- Load React and React DOM -->
+  <!-- See https://reactjs.org/docs/add-react-to-a-website.html to learn more -->
+  <script src="https://unpkg.com/react@>=16.8/umd/react.development.js" crossorigin></script>
+  <script src="https://unpkg.com/react-dom@>=16.8/umd/react-dom.development.js" crossorigin></script>
+
+  <!-- Load history -->
+  <script src="https://unpkg.com/history@5/umd/history.development.js" crossorigin></script>
+
+  <!-- Load React Router and React Router DOM -->
+  <script src="https://unpkg.com/react-router@6/umd/react-router.development.js" crossorigin></script>
+  <script src="https://unpkg.com/react-router-dom@6/umd/react-router-dom.development.js" crossorigin></script>
+
+  <!-- A simple example app -->
+  <script>
+  var e = React.createElement;
+  var Router = ReactRouterDOM.BrowserRouter;
+  var Routes = ReactRouterDOM.Routes;
+  var Route = ReactRouterDOM.Route;
+
+  ReactDOM.render(
+    (
+      e(Router, null, (
+        e(Routes, null, (
+          e(Route, {
+            element: e('div', null, 'Hello, React Router!')
+          })
+        ))
+      ))
+    ),
+    document.getElementById('root')
+  );
+  </script>
+
+</body>
+```
+
+##### 3.1.1.2 基本用法
+
+- 配置路由
+
+```js
+import ReactDOM from "react-dom/client";
+import {
+  BrowserRouter,
+  Routes,
+  Route,
+} from "react-router-dom";
+// import your route components too
+
+const root = ReactDOM.createRoot(
+  document.getElementById("root")
+);
+root.render(
+  <BrowserRouter>
+    <Routes>
+      <Route path="/" element={<App />}>
+        <Route index element={<Home />} />
+        <Route path="teams" element={<Teams />}>
+          <Route path=":teamId" element={<Team />} />
+          <Route path="new" element={<NewTeamForm />} />
+          <Route index element={<LeagueStandings />} />
+        </Route>
+      </Route>
+    </Routes>
+  </BrowserRouter>
+);
+```
+
+在先前版本的React Router中，针对多个匹配到的router，我们需要声明出具体的匹配逻辑，但V6相对更“智能”
+
+- teams/111：匹配<Team />
+- teams.new：匹配下面的<NewTeamForm />
+
+```js
+<Route path="teams/:teamId" element={<Team />} />
+<Route path="teams/new" element={<NewTeamForm />} />
+```
+
+- Navigation/Link
+
+我们可以使用以上两种方式修改url
+
+```js
+// Link
+import { Link } from "react-router-dom";
+
+function Home() {
+  return (
+    <div>
+      <h1>Home</h1>
+      <nav>
+        <Link to="/">Home</Link> |{" "}
+        <Link to="about">About</Link>
+      </nav>
+    </div>
+  );
+}
+
+// useNavigate，更多用于JS操作后跳转使用
+import { useNavigate } from "react-router-dom";
+
+function Invoices() {
+  let navigate = useNavigate();
+  return (
+    <div>
+      <NewInvoiceForm
+        onSubmit={async (event) => {
+          let newInvoice = await createInvoice(
+            event.target
+          );
+          navigate(`/invoices/${newInvoice.id}`);
+        }}
+      />
+    </div>
+  );
+}
+```
+
+- 使用url的路径参数，常用于匹配path 参数后fetch数据
+
+```js
+import { Routes, Route, useParams } from "react-router-dom";
+
+function App() {
+  return (
+    <Routes>
+      <Route
+        path="invoices/:invoiceId"
+        element={<Invoice />}
+      />
+    </Routes>
+  );
+}
+
+function Invoice() {
+  let params = useParams();
+  return <h1>Invoice {params.invoiceId}</h1>;
+}
+
+// example
+function Invoice() {
+  let { invoiceId } = useParams();
+  let invoice = useFakeFetch(`/api/invoices/${invoiceId}`);
+  return invoice ? (
+    <div>
+      <h1>{invoice.customerName}</h1>
+    </div>
+  ) : (
+    <Loading />
+  );
+}
+```
+
+- 嵌套路由
+
+路由路径 匹配 url路径
+
+```js
+function App() {
+  return (
+    <Routes>
+      <Route path="invoices" element={<Invoices />}>
+        <Route path=":invoiceId" element={<Invoice />} />
+        <Route path="sent" element={<SentInvoices />} />
+      </Route>
+    </Routes>
+  );
+}
+```
+
+以上提供三种路由
+
+- "/invoices"
+
+- "/invoices/sent"
+- "/invoices/:invoiceId"
+
+```js
+// /invoices/sent
+<App>
+  <Invoices>
+    <SentInvoices />
+  </Invoices>
+</App>
+
+// /invoices/123
+<App>
+  <Invoices>
+    <Invoice />
+  </Invoices>
+</App>
+
+// 父router中子router可以用<Outlet>表示
+import { Routes, Route, Outlet } from "react-router-dom";
+
+function App() {
+  return (
+    <Routes>
+      <Route path="invoices" element={<Invoices />}>
+        <Route path=":invoiceId" element={<Invoice />} />
+        <Route path="sent" element={<SentInvoices />} />
+      </Route>
+    </Routes>
+  );
+}
+
+function Invoices() {
+  return (
+    <div>
+      <h1>Invoices</h1>
+      <Outlet /> // 匹配对应的<Invoice /> 或者 <SentInvoices />
+    </div>
+  );
+}
+
+function Invoice() {
+  let { invoiceId } = useParams();
+  return <h1>Invoice {invoiceId}</h1>;
+}
+
+function SentInvoices() {
+  return <h1>Sent Invoices</h1>;
+}
+
+// 在跟router中添加Link 跳转
+import {
+  Routes,
+  Route,
+  Link,
+  Outlet,
+} from "react-router-dom";
+
+function App() {
+  return (
+    <Routes>
+      <Route path="/" element={<Layout />}>
+        <Route path="invoices" element={<Invoices />} />
+        <Route path="dashboard" element={<Dashboard />} />
+      </Route>
+    </Routes>
+  );
+}
+
+function Layout() {
+  return (
+    <div>
+      <h1>Welcome to the app!</h1>
+      <nav>
+        <Link to="invoices">Invoices</Link> |{" "}
+        <Link to="dashboard">Dashboard</Link>
+      </nav>
+      <div className="content">
+        <Outlet />
+      </div>
+    </div>
+  );
+}
+
+function Invoices() {
+  return <h1>Invoices</h1>;
+}
+
+function Dashboard() {
+  return <h1>Dashboard</h1>;
+}
+```
+
+- Index routes
+
+```js
+function App() {
+  return (
+    <Routes>
+      <Route path="/" element={<Layout />}>
+        <Route index element={<Activity />} />
+        <Route path="invoices" element={<Invoices />} />
+        <Route path="activity" element={<Activity />} />
+      </Route>
+    </Routes>
+  );
+}
+
+function Layout() {
+  return (
+    <div>
+      <GlobalNav />
+      <main>
+        <Outlet />
+      </main>
+    </div>
+  );
+}
+
+// 如果是 "/"
+<App>
+  <Layout>
+    <Activity />
+  </Layout>
+</App>
+```
+
+- relative  links
+
+link to 指向的是相同级别的路由
+
+```js
+import {
+  Routes,
+  Route,
+  Link,
+  Outlet,
+} from "react-router-dom";
+
+function Home() {
+  return <h1>Home</h1>;
+}
+
+function Dashboard() {
+  return (
+    <div>
+      <h1>Dashboard</h1>
+      <nav>
+        <Link to="invoices">Invoices</Link> // /dashboard/invoices
+        <Link to="team">Team</Link> // dashboard/team
+      </nav>
+      <hr />
+      <Outlet />
+    </div>
+  );
+}
+
+function Invoices() {
+  return <h1>Invoices</h1>;
+}
+
+function Team() {
+  return <h1>Team</h1>;
+}
+
+function App() {
+  return (
+    <Routes>
+      <Route path="/" element={<Home />} />
+      <Route path="dashboard" element={<Dashboard />}>
+        <Route path="invoices" element={<Invoices />} />
+        <Route path="team" element={<Team />} />
+      </Route>
+    </Routes>
+  );
+}
+```
+
+- 兜底routes
+
+```js
+function App() {
+  return (
+    <Routes>
+      <Route path="/" element={<Home />} />
+      <Route path="dashboard" element={<Dashboard />} />
+      <Route path="*" element={<NotFound />} />
+    </Routes>
+  );
+}
+```
+
+- 多个routes集成在一个组件
+
+```js
+function App() {
+  return (
+    <div>
+      <Sidebar>
+        <Routes>
+          <Route path="/" element={<MainNav />} />
+          <Route
+            path="dashboard"
+            element={<DashboardNav />}
+          />
+        </Routes>
+      </Sidebar>
+
+      <MainContent>
+        <Routes>
+          <Route path="/" element={<Home />}>
+            <Route path="about" element={<About />} />
+            <Route path="support" element={<Support />} />
+          </Route>
+          <Route path="dashboard" element={<Dashboard />}>
+            <Route path="invoices" element={<Invoices />} />
+            <Route path="team" element={<Team />} />
+          </Route>
+          <Route path="*" element={<NotFound />} />
+        </Routes>
+      </MainContent>
+    </div>
+  );
+}
+```
+
+- 后代中使用Routes
+
+```js
+function App() {
+  return (
+    <Routes>
+      <Route path="/" element={<Home />} />
+      <Route path="dashboard/*" element={<Dashboard />} />
+    </Routes>
+  );
+}
+
+function Dashboard() {
+  return (
+    <div>
+      <p>Look, more routes!</p>
+      <Routes>
+        <Route path="/" element={<DashboardGraphs />} /> // dashboard
+        <Route path="invoices" element={<InvoiceList />} /> // /dashboard/invoices
+      </Routes>
+    </div>
+  );
+}
+```
+
+##### 3.1.1.3 升级到v6的一些问题汇总
+
+1. 为什么withRouter没了
+
+withRouter用处
+
+将一个组件包裹进Route里面, 然后react-router的三个对象history, location, match就会被放进这个组件的props属性中，可以实现对应的功能
+
+```js
+import React from 'react'
+import './nav.css'
+import {
+    NavLink,
+    withRouter
+} from "react-router-dom"
+
+class Nav extends React.Component{
+    handleClick = () => {
+        // Route 的 三个对象将会被放进来, 对象里面的方法可以被调用
+        console.log(this.props);
+    }
+    render() {
+        return (
+            <div className={'nav'}>
+                <span className={'logo'} onClick={this.handleClick}>掘土社区</span>
+                <li><NavLink to="/" exact>首页</NavLink></li>
+                <li><NavLink to="/activities">动态</NavLink></li>
+                <li><NavLink to="/topic">话题</NavLink></li>
+                <li><NavLink to="/login">登录</NavLink></li>
+            </div>
+        );
+    }
+}
+
+// 导出的是 withRouter(Nav) 函数执行
+export default withRouter(Nav)
+```
+
+React Router的V6中，更多的使用hooks语法，而withRouter的用法更多的用在Class组件里，只要可以将类组件转为函数组件即可：
+
+```js
+import {
+  useLocation,
+  useNavigate,
+  useParams,
+} from "react-router-dom";
+
+function withRouter(Component) {
+  function ComponentWithRouterProp(props) {
+    let location = useLocation();
+    let navigate = useNavigate();
+    let params = useParams();
+    return (
+      <Component
+        {...props}
+        router={{ location, navigate, params }}
+      />
+    );
+  }
+
+  return ComponentWithRouterProp;
+}
+```
+
+2. 在V6以下的版本里，支持<Route component>和<Route render>，为什么V6中只支持<Route element>?
+
+1. a. 参考React 中Suspense的用法，<Suspense fallback={<Spinner />}>，传入的是React 元素，而非组件，可以将props更容易的传入到对应的元素内（社区推荐）
+
+2. b. 可以隐式的传递props到元素内
+
+3. c. V6以下形式的包版本体积过大
+
+```js
+// V6以下
+<Route path=":userId" component={Profile} />
+  
+<Route
+  path=":userId"
+  render={routeProps => (
+    <Profile routeProps={routeProps} animate={true} />
+  )}
+/>
+
+<Route
+  path=":userId"
+  children={({ match }) => (
+    match ? (
+      <Profile match={match} animate={true} />
+    ) : (
+      <NotFound />
+    )
+  )}
+/>
+
+// V6
+<Route path=":userId" element={<Profile />} />
+
+<Route path=":userId" element={<Profile animate={true} />} />
+
+function Profile({ animate }) {
+  // 使用hooks，在元素定义内处理逻辑
+  let params = useParams();
+  let location = useLocation();
+}
+```
+
+3. 如何在树形结构里嵌套路由
+
+```js
+// V6以下
+<Switch>
+  <Route path="/users" component={Users} />
+</Switch>;
+
+// and now deeper in the tree
+function Users() {
+  return (
+    <div>
+      <h1>Users</h1>
+      <Switch>
+        <Route path="/users/account" component={Account} />
+      </Switch>
+    </div>
+  );
+}
+
+// V6
+// somewhere up the tree
+<Routes>
+  <Route path="/users/*" element={<Users />} />
+</Routes>;
+
+// and now deeper in the tree
+function Users() {
+  return (
+    <div>
+      <h1>Users</h1>
+      <Routes>
+        <Route path="account" element={<Account />} />
+      </Routes>
+    </div>
+  );
+}
+```
+
+4. 为什么取消正则路由
+   1. a. 正则路由为V6版本的路由排序带来很多问题，比如，如果定义一个正则的优先级？
+
+   2. b. 正则路由占据了React Router近1/3的体积
+
+   3. c. 正则路由能表达的，V6版本都支持
+
+```js
+// V5
+function App() {
+  return (
+    <Switch>
+      <Route path={/(en|es|fr)/} component={Lang} />
+    </Switch>
+  );
+}
+
+function Lang({ params }) {
+  let lang = params[0];
+  let translations = I81n[lang];
+  // ...
+}
+
+// V6
+function App() {
+  return (
+    <Routes>
+      <Route path="en" element={<Lang lang="en" />} />
+      <Route path="es" element={<Lang lang="es" />} />
+      <Route path="fr" element={<Lang lang="fr" />} />
+    </Routes>
+  );
+}
+
+function Lang({ lang }) {
+  let translations = I81n[lang];
+  // ...
+}
+
+// V5
+function App() {
+  return (
+    <Switch>
+      <Route path={/users\/(\d+)/} component={User} />
+    </Switch>
+  );
+}
+
+function User({ params }) {
+  let id = params[0];
+  // ...
+}
+
+// V6
+function App() {
+  return (
+    <Routes>
+      <Route path="/users/:id" element={<ValidateUser />} />
+      <Route path="/users/*" element={<NotFound />} />
+    </Routes>
+  );
+}
+
+function ValidateUser() {
+  let params = useParams();
+  let userId = params.id.match(/\d+/);
+  if (!userId) {
+    return <NotFound />;
+  }
+  return <User id={params.userId} />;
+}
+
+function User(props) {
+  let id = props.id;
+  // ...
+}
+```
+
+#### 3.1.2 React Router Api
+
+API详情请参考：https://reactrouter.com/docs/en/v6/routers/browser-router
+
+1. routers
+
+1. 1. browserRouter：浏览器router，web开发首选；
+   2. hashRouter：在不能使用browserRouter时使用，常见SPA的B端项目
+   3. HistoryRouter：使用history库作为入参，这允许您在非 React context中使用history实例作为全局变量，标记为unstable_HistoryRouter，后续可能会被修改，不建议直接引用，可以从react-router中引入不建议使用；
+   4. MemoryRouter：不依赖于外界（如 browserRouter的 history 堆栈），常用于测试用例；
+   5. NativeRouter：RN环境下使用的router，不作过多介绍；
+   6. Router：可以视为所有其他router的基类；
+   7. StaticRouter：node环境下使用的router，不作过多介绍；
+
+2. components
+
+1. 1. Link：在react-router-dom中，Link被渲染为有真实href的<a />，同时，Link to 支持相对路径路由；
+   2. Link（RN）：不作过多介绍；
+   3. NavLink：有“active”标的Link，尝被用于导航栏等场景；
+   4. Navigate：可以理解为被useNavigate包裹的组件，作用通Link类似；
+   5. Outlet：类似slot，向下传递route；
+   6. Routes & Route：URL变化时，Routes匹配出最符合要求的Routes渲染；
+
+3. Hooks
+
+1. 1. useHref：被用作返回Link to 指定的URL；
+   2. useInRouterContext ：返回是否在<Router>的context中；
+   3. useLinkClickHandler：在使用自定义<Link>后返回点击事件；
+   4. useLinkPressHandler：类似useLinkClickHandler，用于RN；
+   5. useLocation：返回当前的location对象；
+   6. useMatch：返回当前path匹配到的route；
+   7. useNavigate：类似于Navigate，显示声明使用；
+   8. useNavigationType：pop、push、replace；
+   9. useOutlet；获取此route层级的子router元素；
+   10. useOutletContext：用于向子route传递context；
+   11. useParams：匹配当前路由path；
+   12. useResolvedPath：返回当前路径的完整路径名，主要用于相对子route中；
+   13. useRoutes：等同于<Routes>，但要接收object形式；
+   14. useSearchParams：用于查询和修改location 中query字段；
+   15. useSearchParams（RN）：RN中使用；
+
+4. utilities：
+
+1. 1. createRoutesFromChildren ：将<Route>转为route object形式；
+   2. createSearchParams：类似useSearchParams；
+   3. generatePath：将通配符和动态路由和参数转为真实path；
+   4. Location：用于hostory router，声明Location的interface；
+   5. matchPath：类似useMatch，返回匹配到的route path；
+   6. matchRoutes：返回匹配到的route 对象；
+   7. renderMatches：返回matchRoutes的react元素；
+   8. resolvePath：将Link to的值转为带有绝对路径的真实的path对象；
+
+最后，看一下实际运行的代码案例：
+
+1. 基础：https://stackblitz.com/edit/github-agqlf5?file=src%2FApp.jsx
+
+### 3.2 手写一个简单的react-router
+
+1. SPA（单页应用）
+
+单页面应用的特点是:只会在首次加载的时候，向服务器请求资源以加载页面，后续跳转页面是不会再向服务器请求资源，并且不会重新加载页面，会以切换组件重新渲染来达到页面跳转的目的
+
+1. 页面刷新的场景
+
+1. 1. 在js中发起页面跳转，改变浏览器的url
+   2. 用户通过点击浏览器的前进或后退按钮发生页面跳转
+   3. 用户修改浏览器url导致重新加载页面
+
+2. History API（对访问页面堆栈的操作）：可以修改浏览器的url，但是不会重新加载页面
+
+1. 1. pushState: 创建一个新的url，并跳转至该url；
+   2. replaceState：修改当前url；
+   3. back：返回后一个url；
+   4. forward：返回前一个url；
+   5. go：跳转到指定页面的url；（在调用go方法时，如果没有传参则会与调用location.reload()一样，会重新加载页面）
+
+3. 监听用户点击浏览器前进和后退按钮
+
+1. 1. 通过监听popstate实现；
+   2. 调用 history.pushState() 或者 history.replaceState() 不会触发popstate事件. popstate事件只会在浏览器某些行为下触发, 比如点击后退、前进按钮(或者在JavaScript中调用history.back()、history.forward()、history.go()方法)，此外，a 标签的锚点也会触发该事件；
+
+参考：
+
+- window.history API：https://developer.mozilla.org/zh-CN/docs/Web/API/History
+- window.location API：https://developer.mozilla.org/zh-CN/docs/Web/API/Location
+
+#### 3.2.2 实现一个BrowserRouter
+
+```js
+// browserRouter
+function BrowserRouter(props) {
+  const RouterContext = createContext();
+  const HistoryContext = createContext();
+
+   const [path, setPath] = useState(() => {
+     // 首次渲染，获取到对应的路由
+     const {pathname} = window.location;
+     return pathname || '/';
+   });
+  
+    useEffect(() => {
+    // 监听用户点击浏览器的前进，后退按钮跳转页面
+    window.addEventListener('popstate', handlePopstate);
+
+    return () => {
+      window.removeEventListener('popstate', handlePopstate);
+    }
+  }, []);
+  
+  const handlePopstate = function(event) {
+    const {pathname} = window.location;
+    setPath(pathname);
+  }
+  
+  // 点击ui跳转页面
+  const push = function(path) {
+    setPath(path);
+    window.history.pushState({path}, null, path);
+  }
+
+  const goBack = function() {
+    window.history.go(-1);
+  }
+
+  return (
+   <RouterContext.Provider value={path}>
+      <HistoryContext.Provider value={{
+        push,
+        goBack
+      }}>
+        {props.children}
+      </HistoryContext.Provider>
+    </RouterContext.Provider>
+  );
+}
+
+export default BrowserRouter;
+
+// Route
+export function Route(props) {
+  const {component: Component, path: componentPath} = props;
+  
+  return (
+    <RouterContext.Consumer>
+      {(path) => {
+        return componentPath === path ? <Component /> : null;
+      }}
+    </RouterContext.Consumer>
+  );
+}
+
+
+// 为什么不使用useContext？
+// 因为每当路由变化时，我们都需要重新渲染一个对应的组件，需要监听path的变化
+```
+
+#### 3.2.3 实现一个HashRouter
+
+```js
+import {useEffect, useState} from 'react';
+import RouterContext from './routerContext';
+import HistoryContext from './historyContext';
+
+// 自定义HashRouter
+function HashRouter(props) {
+  const [path, setPath] = useState(() => {
+    const {hash} = window.location;
+    if(hash) {
+      return hash.slice(1);
+    }
+    return '/#/';
+  });
+
+  useEffect(() => {
+    // 监听用户点击浏览器的前进，后退按钮跳转页面
+    window.addEventListener('hashchange', handlePopstate);
+    
+    return () => {
+      window.removeEventListener('hashchange', handlePopstate);
+    }
+  }, []);
+
+  const handlePopstate = function(event) {
+    const {hash} = window.location;
+    setPath(hash.slice(1));
+  }
+
+  //history Api: https://developer.mozilla.org/zh-CN/docs/Web/API/History_API
+
+  // 点击ui跳转页面
+  const push = function(path) {
+    window.location.hash = path;
+  }
+
+  const goBack = function() {
+    window.history.go(-1);
+  }
+
+  return (
+    <RouterContext.Provider value={path}>
+      <HistoryContext.Provider value={{
+        push,
+        goBack
+      }}>
+        {props.children}
+      </HistoryContext.Provider>
+    </RouterContext.Provider>
+  );
+}
+
+export default HashRouter;
+
+// Route
+export function Route(props) {
+  const {component: Component, path: componentPath} = props;
+  
+  return (
+    <RouterContext.Consumer>
+      {(path) => {
+        return componentPath === path ? <Component /> : null;
+      }}
+    </RouterContext.Consumer>
+  );
+}
+```
+
+### 3.3 React Router原理解析
+
+核心功能：
+
+1. 订阅和操作history堆栈
+2. 将 URL 与router匹配
+3. 渲染与router相匹配的UI
+
+#### 3.3.1 概念定义
+
+- URL：地址栏中的URL；
+- Location：由React Router基于浏览器内置的window.location对象封装而成的特定对象，它代表“用户在哪里”，基本代表了URL；
+- Location State：不在URL中，但代表了Location的状态；
+- History Stack：随着用户操作导航，浏览器会保留location的堆栈，可以通过返回前进按钮操作；
+- Client Side Routing (CSR) ：一个纯 HTML 文档可以通过history stack来链接到其他文档，CSR使我的能够操作浏览器历史堆栈，而无需向服务器发出文档请求；
+- History：一个object，它允许 React Router 订阅 URL 中的更改，并提供 API 以编程方式操作浏览器历史堆栈；
+- History Action ：包括POP, PUSH, 或者 REPLACE
+
+- - push：将新的入口添加到history stack（点击链接或者navigation）
+  - replace：代替当前的堆栈信息，而不是新push
+  - pop：当用户点击后推或者前进按钮
+
+- Segment ：/ 字符之间的 URL 或 path pattern部分。例如，“/users/123”有两个segment；
+- Path Pattern：看起来像 URL，但可以具有用于将 URL 与路由匹配的特殊字符，例如动态段 ("/users/:userId") 或通配符 ("/docs/*")。它们不是 URL，它们是 React Router 将匹配的模式。
+- Dynamic Segment：动态的path pattern，例如，/users/:userId 将会匹配 /user/123；
+- URL Params ： 动态段匹配的 URL 的解析值；
+- Router ：使所有其他组件和hooks工作的有状态的最高层的组件；
+- Route Config：将当前路径进行匹配，通过排序和匹配创建一个树状的routes对象；
+- Route：通常具有 { path, element } 或 <Route path element> 的路由元素。path是 pattern。当路径模式与当前 URL 匹配时展示；
+- Route Element： 也就是 <Route>，<Routes> 读取该元素的 props 以创建路由；
+- Nested Routes： 因为路由可以有子路由，并且每个路由通过segment定义 URL 的一部分，所以单个 URL 可以匹配树的嵌套“分支”中的多个路由。这可以通过outlet、relative links等实现自动布局嵌套；
+- Relative links：不以 / 开头的链接，继承渲染它们的最近路径。在无需知道和构建整个路径的情况下，就可以实现更深层的url macth；
+- Match：当路由匹配 URL 时保存信息的对象，例如匹配的 url params和path name；
+- Matches：与当前位置匹配的路由数组，此结构用于nested routes；
+- Parent Route：带有子路由的父路由节点；
+- Outlet： 匹配match中的下一个匹配项的组件；
+- Index Route ：当没有path时，在父路由的outlet中匹配；
+- Layout Route： 专门用于在特定布局内对子路由进行分组；
+
+#### 3.3.2 history 和location
+
+React Router 的前提是：它必须能够订阅浏览器history stack中的更改；
+
+浏览器在用户浏览时维护自己的历史堆栈。这就是后退和前进按钮的工作方式。在传统网站（没有 JavaScript 的 HTML 文档）中，每次用户单击链接、提交表单或单击后退和前进按钮时，浏览器都会向服务器发出请求。
+
+例如，假设用户：
+
+- 点击 /dashboard的链接；
+- 点击 /accounts 的链接；
+- 点击 /customers/123 的链接；
+- 点击后退按钮；
+- 点击指向 /dashboard 的链接；
+
+history stack是如何的？
+
+- /dashboard
+- /dashboard, /accounts
+- /dashboard, /accounts, /customers/123
+
+1. /dashboard, /accounts, /customers/123
+2. /dashboard, /accounts, /dashboard
+
+##### 3.3.2.1 history object
+
+通过客户端路由(CSR)，我们可以通过代码操纵浏览器历史记录栈。
+
+例如，我们可以写一些这样的代码来改变URL，而不需要浏览器向服务器发出请求的默认行为
+
+```js
+<a
+  href="/contact"
+  onClick={(event) => {
+    // 阻止默认事件
+    event.preventDefault();
+    // push 并将 URL转想/contact
+    window.history.pushState({}, undefined, "/contact");
+  }}
+/>
+```
+
+以上代码会修改URL，但不会渲染任何UI的变化，我们需要监听变化，并通过代码修改页面UI
+
+```js
+window.addEventListener("popstate", () => {
+  // URL changed!
+});
+```
+
+但此类事件只在点击前进后退按钮才生效，对window.history.pushState 或者 window.history.replaceState无效
+
+因此，React Router使用history对象来监听事件的变化，如POP, PUSH, 或者REPLACE
+
+```js
+let history = createBrowserHistory();
+history.listen(({ location, action }) => {
+  // this is called whenever new locations come in
+  // the action is POP, PUSH, or REPLACE
+});
+```
+
+在开发环境中，我们不需要关系history object，这些在React Router底层实现了，React Router提供监听history stack的变化，最终在URL变化时更新其状态，并重新渲染。
+
+##### 3.3.2.2 Location
+
+React Router 声明了自己的location模块，大致为
+
+```js
+{
+  pathname: "/bbq/pig-pickins",
+  search: "?campaign=instagram",
+  hash: "#menu",
+  state: null,
+  key: "aefz24ie"
+}
+```
+
+pathname、search、hash大致同window.location一致，三者拼接起来等同于URL
+
+```js
+location.pathname + location.search + location.hash;
+// /bbq/pig-pickins?campaign=instagram#menu
+```
+
+注意：我们可以使用urlSearchParams来获取对应的search内容
+
+```js
+// given a location like this:
+let location = {
+  pathname: "/bbq/pig-pickins",
+  search: "?campaign=instagram&popular=true",
+  hash: "",
+  state: null,
+  key: "aefz24ie",
+};
+
+// we can turn the location.search into URLSearchParams
+let params = new URLSearchParams(location.search);
+params.get("campaign"); // "instagram"
+params.get("popular"); // "true"
+params.toString(); // "campaign=instagram&popular=true",
+```
+
+- location state
+
+You may have wondered why the window.history.pushState() API is called "push state". State? Aren't we just changing the [URL](https://reactrouter.com/docs/en/v6/getting-started/concepts#url)? Shouldn't it be history.push? Well, we weren't in the room when the API was designed, so we're not sure why "state" was the focus, but it is a cool feature of browsers nonetheless.
+
+```js
+// 通过pushState注入堆栈，goback()时，退出一层堆栈
+window.history.pushState("look ma!", undefined, "/contact");
+window.history.state; // "look ma!"
+// user clicks back
+window.history.state; // undefined
+// user clicks forward
+window.history.state; // "look ma!"
+```
+
+可以将location.state 当做跟URL变动而变动的属性，只是一般用于开发者使用
+
+在React Router中，我们可以通过Link 或者Navigate 来设置state，并使用useLocation获取state
+
+```js
+<Link to="/pins/123" state={{ fromDashboard: true }} />;
+
+let navigate = useNavigate();
+navigate("/users/123", { state: partialUser });
+
+let location = useLocation();
+location.state;
+```
+
+- location key
+
+  一般用于定位滚动距离，或者客户端数据缓存等，因为每个堆栈都有唯一的key值，可以通过Map或者localStorage来标识指定的堆栈信息。
+
+```js
+// 根据location.key缓存数据
+
+let cache = new Map();
+
+function useFakeFetch(URL) {
+  let location = useLocation();
+  let cacheKey = location.key + URL;
+  let cached = cache.get(cacheKey);
+
+  let [data, setData] = useState(() => {
+    // initialize from the cache
+    return cached || null;
+  });
+
+  let [state, setState] = useState(() => {
+    // avoid the fetch if cached
+    return cached ? "done" : "loading";
+  });
+
+  useEffect(() => {
+    if (state === "loading") {
+      let controller = new AbortController();
+      fetch(URL, { signal: controller.signal })
+        .then((res) => res.json())
+        .then((data) => {
+          if (controller.signal.aborted) return;
+          // set the cache
+          cache.set(cacheKey, data);
+          setData(data);
+        });
+      return () => controller.abort();
+    }
+  }, [state, cacheKey]);
+
+  useEffect(() => {
+    setState("loading");
+  }, [URL]);
+
+  return data;
+}
+```
+
+#### 3.3.3 匹配
+
+在初始渲染时，当历史堆栈发生变化时，React Router 会将位置与您的路由配置进行匹配，以提供一组要渲染的匹配项
+
+```js
+<Routes>
+  <Route path="/" element={<App />}>
+    <Route index element={<Home />} />
+    <Route path="teams" element={<Teams />}>
+      <Route path=":teamId" element={<Team />} />
+      <Route path=":teamId/edit" element={<EditTeam />} />
+      <Route path="new" element={<NewTeamForm />} />
+      <Route index element={<LeagueStandings />} />
+    </Route>
+  </Route>
+  <Route element={<PageLayout />}>
+    <Route path="/privacy" element={<Privacy />} />
+    <Route path="/tos" element={<Tos />} />
+  </Route>
+  <Route path="contact-us" element={<Contact />} />
+</Routes>
+
+// 对应的routes，可以使用 useRoutes(routesGoHere)获取
+let routes = [
+  {
+    element: <App />,
+    path: "/",
+    children: [
+      {
+        index: true,
+        element: <Home />,
+      },
+      {
+        path: "teams",
+        element: <Teams />,
+        children: [
+          {
+            index: true,
+            element: <LeagueStandings />,
+          },
+          {
+            path: ":teamId",
+            element: <Team />,
+          },
+          {
+            path: ":teamId/edit",
+            element: <EditTeam />,
+          },
+          {
+            path: "new",
+            element: <NewTeamForm />,
+          },
+        ],
+      },
+    ],
+  },
+  {
+    element: <PageLayout />,
+    children: [
+      {
+        element: <Privacy />,
+        path: "/privacy",
+      },
+      {
+        element: <Tos />,
+        path: "/tos",
+      },
+    ],
+  },
+  {
+    element: <Contact />,
+    path: "/contact-us",
+  },
+];
+
+```
+
+- 匹配参数 & routes 排序
+
+上述路由config为
+
+```js
+[
+  "/",
+  "/teams",
+  "/teams/:teamId",
+  "/teams/:teamId/edit",
+  "/teams/new",
+  "/privacy",
+  "/tos",
+  "/contact-us",
+];
+```
+
+/teams/:teamId 可以匹配 /teams/123 或者 /teams/aaa
+
+针对 / teams/new，有 "/teams/:teamId"、 "/teams/new", 匹配，V6支持相对智能的匹配，在匹配时，React Router 会根据所有的segment、静态segment、动态segment、通配符模式等进行排序，并选择最具体的匹配项
+
+- 路由匹配
+
+```js
+<Route path=":teamId" element={<Team/>}/>
+  
+等价于
+
+{
+  pathname: "/teams/firebirds", // 匹配出与此路由匹配的URL部分
+  params: {
+    teamId: "firebirds" // 用来存储对应关系
+  },
+  route: {
+    element: <Team />,
+    path: ":teamId"
+  }
+}
+```
+
+因为routes是树状结构，因此，一个单一的URL可以匹配所有的树中的“分支”
+
+```js
+/teams/firebirds
+
+// 针对下列路由
+<Routes>
+  <Route path="/" element={<App />}>
+    <Route index element={<Home />} />
+    <Route path="teams" element={<Teams />}>
+      <Route path=":teamId" element={<Team />} />
+      <Route path=":teamId/edit" element={<EditTeam />} />
+      <Route path="new" element={<NewTeamForm />} />
+      <Route index element={<LeagueStandings />} />
+    </Route>
+  </Route>
+  <Route element={<PageLayout />}>
+    <Route path="/privacy" element={<Privacy />} />
+    <Route path="/tos" element={<Tos />} />
+  </Route>
+  <Route path="contact-us" element={<Contact />} />
+</Routes>
+
+// 匹配出的routes为：
+[
+  {
+    pathname: "/",
+    params: null,
+    route: {
+      element: <App />,
+      path: "/",
+    },
+  },
+  {
+    pathname: "/teams",
+    params: null,
+    route: {
+      element: <Teams />,
+      path: "teams",
+    },
+  },
+  {
+    pathname: "/teams/firebirds",
+    params: {
+      teamId: "firebirds",
+    },
+    route: {
+      element: <Team />,
+      path: ":teamId",
+    },
+  },
+];
+```
+
+#### 3.3.4 渲染
+
+<Routes>将把位置与你的路由配置相匹配，得到一组匹配的内容，然后像这样呈现一个React元素树。
+
+```js
+// 假设代码为
+
+const root = ReactDOM.createRoot(
+  document.getElementById("root")
+);
+root.render(
+  <BrowserRouter>
+    <Routes>
+      <Route path="/" element={<App />}>
+        <Route index element={<Home />} />
+        <Route path="teams" element={<Teams />}>
+          <Route path=":teamId" element={<Team />} />
+          <Route path="new" element={<NewTeamForm />} />
+          <Route index element={<LeagueStandings />} />
+        </Route>
+      </Route>
+      <Route element={<PageLayout />}>
+        <Route path="/privacy" element={<Privacy />} />
+        <Route path="/tos" element={<Tos />} />
+      </Route>
+      <Route path="contact-us" element={<Contact />} />
+    </Routes>
+  </BrowserRouter>
+);
+
+// 匹配 /teams/firebirds
+
+<App>
+  <Teams>
+    <Team />
+  </Teams>
+</App>
+```
+
+- outlets
+
+很像slot,<outlet>应该在父路由元素中使用以呈现子路由元素，以此让嵌套的子路由展示，当匹配到子路由的路径后，会展示或不展示
+
+```js
+function Dashboard() {
+  return (
+    <div>
+      <h1>Dashboard</h1>
+
+      {/* This element will render either <DashboardMessages> when the URL is
+          "/messages", <DashboardTasks> at "/tasks", or null if it is "/"
+      */}
+      <Outlet />
+    </div>
+  );
+}
+
+function App() {
+  return (
+    <Routes>
+      <Route path="/" element={<Dashboard />}>
+        <Route
+          path="messages"
+          element={<DashboardMessages />}
+        />
+        <Route path="tasks" element={<DashboardTasks />} />
+      </Route>
+    </Routes>
+  );
+}
+```
+
+- index  routes
+
+```js
+// /teams/firebirds
+<Route path="teams" element={<Teams />}>
+  <Route path=":teamId" element={<Team />} />
+  <Route path="new" element={<NewTeamForm />} />
+  <Route index element={<LeagueStandings />} />
+</Route>
+
+<App>
+  <Teams>
+    <Team />
+  </Teams>
+</App>
+
+// /teams
+<App>
+  <Teams>
+    <LeagueStandings />
+  </Teams>
+</App>
+
+```
+
+index routes会将父route的outlet渲染出来，一般会在持久化导航的父路由节点上展示默认的子路由信息
+
+- layout routes
+
+```js
+<Routes>
+  <Route path="/" element={<App />}>
+    <Route index element={<Home />} />
+    <Route path="teams" element={<Teams />}>
+      <Route path=":teamId" element={<Team />} />
+      <Route path=":teamId/edit" element={<EditTeam />} />
+      <Route path="new" element={<NewTeamForm />} />
+      <Route index element={<LeagueStandings />} />
+    </Route>
+  </Route>
+  <Route element={<PageLayout />}>
+    <Route path="/privacy" element={<Privacy />} />
+    <Route path="/tos" element={<Tos />} />
+  </Route>
+  <Route path="contact-us" element={<Contact />} />
+</Routes>
+```
+
+加入要匹配/privacy，会匹配到的结果为：
+
+```js
+<App>
+  <PageLayout>
+    <Privacy />
+  </PageLayout>
+</App>
+```
+
+实际上，layout routes（布局路由），本身不参与匹配，但其子route参与，如果不这样实现，上述代码会很冗余
+
+```js
+<Routes>
+  <Route path="/" element={<App />}>
+    <Route index element={<Home />} />
+    <Route path="teams" element={<Teams />}>
+      <Route path=":teamId" element={<Team />} />
+      <Route path=":teamId/edit" element={<EditTeam />} />
+      <Route path="new" element={<NewTeamForm />} />
+      <Route index element={<LeagueStandings />} />
+    </Route>
+  </Route>
+  <Route
+    path="/privacy"
+    element={
+      <PageLayout>
+        <Privacy />
+      </PageLayout>
+    }
+  />
+  <Route
+    path="/tos"
+    element={
+      <PageLayout>
+        <Tos />
+      </PageLayout>
+    }
+  />
+  <Route path="contact-us" element={<Contact />} />
+</Routes>
+```
+
+#### 3.3.5 导航函数
+
+可以使用useNavigate方法
+
+```js
+let navigate = useNavigate();
+useEffect(() => {
+  setTimeout(() => {
+    navigate("/logout");
+  }, 30000);
+}, []);
+```
+
+要注意，不要随意使用navigate，这样会增加程序的复杂性
+
+```js
+<li onClick={() => navigate("/somewhere")} />
+// 使用 <Link to="sonewhere" />
+```
+
+#### 3.3.6 数据获取
+
+```js
+let location = useLocation();
+let urlParams = useParams();
+let [urlSearchParams] = useSearchParams();
+```
+
+### 3.4 React Router源码解析
+
+React Router github：https://github.com/remix-run/react-router
+
+React Router基于monorepo的架构（指在一个项目仓库(repo)中管理多个模块/包(package)）
+
+- react-router：React Router的核心基本功能，为react-router-dom 和 react-router-native服务；
+- react-router-dom：在web应用使用React Router的方法；
+- react-router-native：在RN中使用React Router的方法；
+- react-router-dom-v5-compat：V5迁移至V6的垫片；
+
+本次主要讲解react-router核心库
+
+#### 3.4.1 react-router
+
+与运行环境无关，几乎所有与运行平台无关的方法、组件和hooks都是在这里定义的
+
+- index.ts: 入口文件，且标识了三个不安全的api,要使用的话，不要单独从lib/context.ts引入，要从react-router的入口文件引入（虽然一般开发中用不到）
+
+```js
+/** @internal */
+export {
+  NavigationContext as UNSAFE_NavigationContext,
+  LocationContext as UNSAFE_LocationContext,
+  RouteContext as UNSAFE_RouteContext,
+};
+```
+
+##### 3.4.1.1 router
+
+Router在react-router内部主要用于提供全局的路由导航对象（一般由history库提供）以及当前的路由导航状态，在项目中使用时一般是必须并且唯一的，不过一般不会直接使用，更多会使用已经封装好路由导航对象的BrowserRouter(react-router-dom包引入)、HashRouter(react-router-dom包引入)和MemoryRouter(react-router包引入)
+
+- router context
+
+  ```js
+  import React from 'react'
+  import type {
+    History,
+    Location,
+  } from "history";
+  import {
+    Action as NavigationType,
+  } from "history";
+  
+  // 只包含，go、push、replace、createHref 四个方法的 History 对象，用于在 react-router 中进行路由跳转
+  export type Navigator = Pick<History, "go" | "push" | "replace" | "createHref">;
+  
+  interface NavigationContextObject {
+    basename: string;
+    navigator: Navigator;
+    static: boolean;
+  }
+  
+  /**
+   * 内部含有 navigator 对象的全局上下文，官方不推荐在外直接使用
+   */
+  const NavigationContext = React.createContext<NavigationContextObject>(null!);
+  
+  
+  interface LocationContextObject {
+    location: Location;
+    navigationType: NavigationType;
+  }
+  /**
+   * 内部含有当前 location 与 action 的 type，一般用于在内部获取当前 location，官方不推荐在外直接使用
+   */
+  const LocationContext = React.createContext<LocationContextObject>(null!);
+  
+  // 这是官方对于上面两个 context 的导出，可以看到都是被定义为不安全的，并且可能会有着重大更改，强烈不建议使用
+  /** @internal */
+  export {
+    NavigationContext as UNSAFE_NavigationContext,
+    LocationContext as UNSAFE_LocationContext,
+  };
+  ```
+
+- Hooks：基于LocationConext的三个hooks
+
+- - useInRouterContext
+
+- - useNavigationType
+  - useLocation
+
+- ```tsx
+  /**
+  * 断言方法
+  */
+  function invariant(cond: any, message: string): asserts cond {
+    if (!cond) throw new Error(message);
+  }
+  
+  /**
+  * 判断当前组件是否在一个 Router 中
+  */
+  export function useInRouterContext(): boolean {
+    return React.useContext(LocationContext) != null;
+  }
+  /**
+  * 获取当前的跳转的 action type
+  */
+  export function useNavigationType(): NavigationType {
+    return React.useContext(LocationContext).navigationType;
+  }
+  /**
+  * 获取当前跳转的 location
+  */
+  export function useLocation(): Location {
+    // useLocation 必须在 Router 提供的上下文中使用
+    invariant(
+      useInRouterContext(),
+      // TODO: This error is probably because they somehow have 2 versions of the
+      // router loaded. We can help them understand how to avoid that.
+      `useLocation() may be used only in the context of a <Router> component.`
+    );
+    
+    return React.useContext(LocationContext).location;
+  }
+  ```
+
+- 定义Router组件
+
+  传入context与外部传入的location
+
+```tsx
+// 接上面，这里额外还从 history 中引入了 parsePath 方法
+import {
+  parsePath
+} from "history";
+
+export interface RouterProps {
+  // 路由前缀
+  basename?: string;
+  children?: React.ReactNode;
+  // 必传，当前 location
+  /*
+      interface Location {
+            pathname: string;
+            search: string;
+            hash: string;
+            state: any;
+            key: string;
+      }
+  */
+  location: Partial<Location> | string;
+  // 当前路由跳转的类型，有 POP，PUSH 与 REPLACE 三种
+  navigationType?: NavigationType;
+  // 必传，history 中的导航对象，我们可以在这里传入统一外部的 history
+  navigator: Navigator;
+  // 是否为静态路由（ssr）
+  static?: boolean;
+}
+
+/**
+ * 提供渲染 Route 的上下文，但是一般不直接使用这个组件，会包装在 BrowserRouter 等二次封装的路由中
+ * 整个应用程序应该只有一个 Router
+ * Router 的作用就是格式化传入的原始 location 并渲染全局上下文 NavigationContext、LocationContext
+ */
+export function Router({
+  basename: basenameProp = "/",
+  children = null,
+  location: locationProp,
+  navigationType = NavigationType.Pop,
+  navigator,
+  static: staticProp = false
+}: RouterProps): React.ReactElement | null {
+  // 断言，Router 不能在其余 Router 内部，否则抛出错误
+  invariant(
+    !useInRouterContext(),
+    `You cannot render a <Router> inside another <Router>.` +
+      ` You should never have more than one in your app.`
+  );
+  // 格式化 basename，去掉 url 中多余的 /，比如 /a//b 改为 /a/b
+  let basename = normalizePathname(basenameProp);
+  // 全局的导航上下文信息，包括路由前缀，导航对象等
+  let navigationContext = React.useMemo(
+    () => ({ basename, navigator, static: staticProp }),
+    [basename, navigator, staticProp]
+  );
+
+  // 转换 location，传入 string 将转换为对象
+  if (typeof locationProp === "string") {
+    // parsePath 用于将 locationProp 转换为 Path 对象，都是 history 库引入的
+    /*
+        interface Path {
+              pathname: string;
+              search: string;
+              hash: string;
+        }
+    */
+    locationProp = parsePath(locationProp);
+  }
+
+  let {
+    pathname = "/",
+    search = "",
+    hash = "",
+    state = null,
+    key = "default"
+  } = locationProp;
+
+  // 经过抽离 base 后的真正的 location，如果抽离 base 失败返回 null
+  let location = React.useMemo(() => {
+    // stripBasename 用于去除 pathname 前面 basename 部分
+    let trailingPathname = stripBasename(pathname, basename);
+
+    if (trailingPathname == null) {
+      return null;
+    }
+
+    return {
+      pathname: trailingPathname,
+      search,
+      hash,
+      state,
+      key
+    };
+  }, [basename, pathname, search, hash, state, key]);
+
+  if (location == null) {
+    return null;
+  }
+
+  return (
+    // 唯一传入 location 的地方
+    <NavigationContext.Provider value={navigationContext}>
+      <LocationContext.Provider
+        children={children}
+        value={{ location, navigationType }}
+      />
+    </NavigationContext.Provider>
+  );
+}
+  
+// 格式化方法
+/**
+ * 格式化 pathname
+ * @param pathname
+ * @returns
+ */
+const normalizePathname = (pathname: string): string =>
+  pathname.replace(/\/+$/, "").replace(/^\/*/, "/");
+
+/**
+ *
+ * 抽离 basename，获取纯粹的 path，如果没有匹配到则返回 null
+ * @param pathname
+ * @param basename
+ * @returns
+ */
+function stripBasename(pathname: string, basename: string): string | null {
+  if (basename === "/") return pathname;
+
+  // 如果 basename 与 pathname 不匹配，返回 null
+  if (!pathname.toLowerCase().startsWith(basename.toLowerCase())) {
+    return null;
+  }
+
+  // 上面只验证了是否 pathname 包含 basename，这里还需要验证包含 basename 后第一个字母是否为 /，不为 / 证明并不是该 basename 下的路径，返回 null
+  let nextChar = pathname.charAt(basename.length);
+  if (nextChar && nextChar !== "/") {
+    return null;
+  }
+
+  // 返回去除掉 basename 的 path
+  return pathname.slice(basename.length) || "/";
+}
+```
+
+- memory router 封装
+
+其实就是将history库与我们声明的Router组件绑定起来，当history.listen监听到路由改变后重新设置当前的location与action。
+
+```tsx
+import type { InitialEntry, MemoryHistory } from 'history';
+import { createMemoryHistory } from 'history';
+
+export interface MemoryRouterProps {
+  // 路由前缀
+  basename?: string;
+  children?: React.ReactNode;
+  // 与 createMemoryHistory 返回的 history 对象参数相对应，代表的是自定义的页面栈与索引
+  initialEntries?: InitialEntry[];
+  initialIndex?: number;
+}
+
+/**
+ * react-router 里面只有 MemoryRouter，其余的 router 在 react-router-dom 里
+ */
+export function MemoryRouter({
+  basename,
+  children,
+  initialEntries,
+  initialIndex
+}: MemoryRouterProps): React.ReactElement {
+  // history 对象的引用
+  let historyRef = React.useRef<MemoryHistory>();
+  if (historyRef.current == null) {
+    // 创建 memoryHistory
+    historyRef.current = createMemoryHistory({ initialEntries, initialIndex });
+  }
+
+  let history = historyRef.current;
+  let [state, setState] = React.useState({
+    action: history.action,
+    location: history.location
+  });
+
+  // 监听 history 改变，改变后重新 setState
+  React.useLayoutEffect(() => history.listen(setState), [history]);
+
+  // 简单的初始化并将相应状态与 React 绑定
+  return (
+    <Router
+      basename={basename}
+      children={children}
+      location={state.location}
+      navigationType={state.action}
+      navigator={history}
+    />
+  );
+}
+```
+
+- 总结：
+
+  a. Router组件是react-router应用中必不可少的，一般直接写在应用最外层，它提供了一系列关于路由跳转和状态的上下文属性和方法
+
+  b. 一般不会直接使用Router组件，而是使用react-router内部提供的高阶Router组件，而这些高阶组件实际上就是将history库中提供的导航对象与Router组件连接起来，进而控制应用的导航状态
+
+##### 3.4.1.2 route
+
+列个例子
+
+```jsx
+import { render } from "react-dom";
+import {
+  BrowserRouter,
+  Routes,
+  Route
+} from "react-router-dom";
+// 这几个页面不用管它
+import App from "./App";
+import Expenses from "./routes/expenses";
+import Invoices from "./routes/invoices";
+
+const rootElement = document.getElementById("root");
+render(
+  <BrowserRouter>
+    <Routes>
+      <Route path="/" element={<App />} />
+      <Route path="/expenses" element={<Expenses />} />
+      <Route path="/invoices" element={<Invoices />} />
+    </Routes>
+  </BrowserRouter>,
+  rootElement
+);
+```
+
+- props
+
+route在react-router中只是提供命令式的路由配置方式
+
+```tsx
+// Route 有三种 props 类型，这里先了解内部参数的含义，下面会细讲
+export interface PathRouteProps {
+  caseSensitive?: boolean;
+  // children 代表子路由
+  children?: React.ReactNode;
+  element?: React.ReactNode | null;
+  index?: false;
+  path: string;
+}
+
+export interface LayoutRouteProps {
+  children?: React.ReactNode;
+  element?: React.ReactNode | null;
+}
+
+export interface IndexRouteProps {
+  element?: React.ReactNode | null;
+  index: true;
+}
+
+/**
+ * Route 组件内部没有进行任何操作，仅仅只是定义 props，而我们就是为了使用它的 props
+ */
+export function Route(
+  _props: PathRouteProps | LayoutRouteProps | IndexRouteProps
+): React.ReactElement | null {
+  // 这里可以看出 Route 不能够被渲染出来，渲染会直接抛出错误，证明 Router 拿到 Route 后也不会在内部操作
+  invariant(
+    false,
+    `A <Route> is only ever to be used as the child of <Routes> element, ` +
+      `never rendered directly. Please wrap your <Route> in a <Routes>.`
+  );
+}
+```
+
+- 总结
+
+  a. Route可以被看做一个挂载用户传入参数的对象，它不会在页面中渲染，而是会被Routes接受并解析
+
+##### 3.4.1.3 routes
+
+```tsx
+export interface RoutesProps {
+  children?: React.ReactNode;
+  // 用户传入的 location 对象，一般不传，默认用当前浏览器的 location
+  location?: Partial<Location> | string;
+}
+
+/**
+ * 所有的 Route 都需要 Routes 包裹，用于渲染 Route（拿到 Route 的 props 的值，不渲染真实的 DOM 节点）
+ */
+export function Routes({
+  children,
+  location
+}: RoutesProps): React.ReactElement | null {
+  return useRoutes(createRoutesFromChildren(children), location);
+}
+```
+
+- createRoutesFromChildren
+
+```tsx
+// 路由配置对象
+export interface RouteObject {
+  // 路由 path 是否匹配大小写
+  caseSensitive?: boolean;
+  // 子路由
+  children?: RouteObject[];
+  // 要渲染的组件
+  element?: React.ReactNode;
+  // 是否是索引路由
+  index?: boolean;
+  path?: string;
+}
+
+/**
+ * 将 Route 组件转换为 route 对象，提供给 useRoutes 使用
+ */
+export function createRoutesFromChildren(
+  children: React.ReactNode
+): RouteObject[] {
+  let routes: RouteObject[] = [];
+
+  // 内部逻辑很简单，就是递归遍历 children，获取 <Route /> props 上的所有信息，然后格式化后推入 routes 数组中
+  React.Children.forEach(children, element => {
+    if (!React.isValidElement(element)) {
+      // Ignore non-elements. This allows people to more easily inline
+      // conditionals in their route config.
+      return;
+    }
+
+    // 空节点，忽略掉继续往下遍历
+    if (element.type === React.Fragment) {
+      // Transparently support React.Fragment and its children.
+      routes.push.apply(
+        routes,
+        createRoutesFromChildren(element.props.children)
+      );
+      return;
+    }
+
+    // 不要传入其它组件，只能传 Route
+    invariant(
+      element.type === Route,
+      `[${
+        typeof element.type === "string" ? element.type : element.type.name
+      }] is not a <Route> component. All component children of <Routes> must be a <Route> or <React.Fragment>`
+    );
+
+    let route: RouteObject = {
+      caseSensitive: element.props.caseSensitive,
+      element: element.props.element,
+      index: element.props.index,
+      path: element.props.path
+    };
+
+    // 递归
+    if (element.props.children) {
+      route.children = createRoutesFromChildren(element.props.children);
+    }
+
+    routes.push(route);
+  });
+
+  return routes;
+}
+```
+
+- useRoutes:声明式配置路由，下面详细介绍
+
+- 总结
+
+  a. react-router在路由定义时包含两种方式
+
+  - 指令式：<routes><route></route></routes>，指令式内部也是声明式形式
+  - 声明式：useRoutes
+
+  b. Routes与Route强绑定，有Routes则必定要传入且只能传入Route
+
+##### 3.4.1.4 useRoutes
+
+假如我们代码里使用
+
+```jsx
+import { useRoutes } from "react-router-dom";
+
+// 此时 App 返回的就是已经渲染好的路由元素了
+function App() {
+  let element = useRoutes([
+    {
+      path: "/",
+      element: <Dashboard />,
+      children: [
+        {
+          path: "/messages",
+          element: <DashboardMessages />
+        },
+        { path: "/tasks", element: <DashboardTasks /> }
+      ]
+    },
+    { path: "/team", element: <AboutPage /> }
+  ]);
+
+  return element;
+}
+```
+
+- RouteContext
+
+```tsx
+/**
+ * 动态参数的定义
+ */
+export type Params<Key extends string = string> = {
+  readonly [key in Key]: string | undefined;
+};
+
+export interface RouteMatch<ParamKey extends string = string> {
+  // params 参数，比如 :id 等
+  params: Params<ParamKey>;
+  // 匹配到的 pathname
+  pathname: string;
+  /**
+   * 子路由匹配之前的路径 url，这里可以把它看做是只要以 /* 结尾路径（这是父路由的路径）中 /* 之前的部分
+   */
+  pathnameBase: string;
+  // 定义的路由对象
+  route: RouteObject;
+}
+
+interface RouteContextObject {
+  // 一个 ReactElement，内部包含有所有子路由组成的聚合组件，其实 Outlet 组件内部就是它
+  outlet: React.ReactElement | null;
+  // 一个成功匹配到的路由数组，索引从小到大层级依次变深
+  matches: RouteMatch[];
+}
+/**
+ * 包含全部匹配到的路由，官方不推荐在外直接使用
+ */
+const RouteContext = React.createContext<RouteContextObject>({
+  outlet: null,
+  matches: []
+});
+
+/** @internal */
+export {
+  RouteContext as UNSAFE_RouteContext
+};
+```
+
+- 拆解useRoutes
+
+```tsx
+/**
+ * 1.该 hooks 不是只调用一次，每次重新匹配到路由时就会重新调用渲染新的 element
+ * 2.当多次调用 useRoutes 时需要解决内置的 route 上下文问题，继承外层的匹配结果
+ * 3.内部通过计算所有的 routes 与当前的 location 关系，经过路径权重计算，得到 matches 数组，然后将 matches 数组重新渲染为嵌套结构的组件
+ */
+export function useRoutes(
+  routes: RouteObject[],
+  locationArg?: Partial<Location> | string
+): React.ReactElement | null {
+  // useRoutes 必须最外层有 Router 包裹，不然报错
+  invariant(
+    useInRouterContext(),
+    // TODO: This error is probably because they somehow have 2 versions of the
+    // router loaded. We can help them understand how to avoid that.
+    `useRoutes() may be used only in the context of a <Router> component.`
+  );
+
+  // 1.当此 useRoutes 为第一层级的路由定义时，matches 为空数组（默认值）
+  // 2.当该 hooks 在一个已经调用了 useRoutes 的渲染环境中渲染时，matches 含有值（也就是有 Routes 的上下文环境嵌套）
+  let { matches: parentMatches } = React.useContext(RouteContext);
+  // 最后 match 到的 route（深度最深），该 route 将作为父 route，我们后续的 routes 都是其子级
+  let routeMatch = parentMatches[parentMatches.length - 1];
+  // 下面是父级 route 的参数，我们会基于以下参数操作，如果项目中只在一个地方调用了 useRoutes，一般都会是默认值
+  let parentParams = routeMatch ? routeMatch.params : {};
+  // 父路由的完整 pathname，比如路由设置为 /foo/*，当前导航是 /foo/1，那么 parentPathname 就是 /foo/1
+  let parentPathname = routeMatch ? routeMatch.pathname : "/";
+  // 同上面的 parentPathname，不过是 /* 前的部分，也就是 /foo
+  let parentPathnameBase = routeMatch ? routeMatch.pathnameBase : "/";
+  let parentRoute = routeMatch && routeMatch.route;
+  // 获取上下文环境中的 location
+  let locationFromContext = useLocation();
+
+  // 判断是否手动传入了 location，否则用默认上下文的 location
+  let location;
+  if (locationArg) {
+    // 格式化为 Path 对象
+    let parsedLocationArg =
+      typeof locationArg === "string" ? parsePath(locationArg) : locationArg;
+    // 如果传入了 location，判断是否与父级路由匹配（作为子路由存在）
+    invariant(
+      parentPathnameBase === "/" ||
+        parsedLocationArg.pathname?.startsWith(parentPathnameBase),
+      `When overriding the location using \`<Routes location>\` or \`useRoutes(routes, location)\`, ` +
+        `the location pathname must begin with the portion of the URL pathname that was ` +
+        `matched by all parent routes. The current pathname base is "${parentPathnameBase}" ` +
+        `but pathname "${parsedLocationArg.pathname}" was given in the \`location\` prop.`
+    );
+
+    location = parsedLocationArg;
+  } else {
+    location = locationFromContext;
+  }
+
+  let pathname = location.pathname || "/";
+  // 剩余的 pathname，整体 pathname 减掉父级已经匹配的 pathname，才是本次 routes 要匹配的 pathname（适用于 parentMatches 匹配不为空的情况）
+  let remainingPathname =
+    parentPathnameBase === "/"
+      ? pathname
+      : pathname.slice(parentPathnameBase.length) || "/";
+  // 匹配当前路径，注意是移除了 parentPathname 的相关路径后的匹配
+  
+  // 通过传入的 routes 配置项与当前的路径，匹配对应渲染的路由
+  let matches = matchRoutes(routes, { pathname: remainingPathname });
+
+  // 参数为当前匹配到的 matches 路由数组和外层 useRoutes 的 matches 路由数组
+  // 返回的是 React.Element，渲染所有的 matches 对象
+  return _renderMatches(
+    // 没有 matches 会返回 null
+    matches &&
+      matches.map(match =>
+        // 合并外层调用 useRoutes 得到的参数，内部的 Route 会有外层 Route（其实这也叫父 Route） 的所有匹配属性。
+        Object.assign({}, match, {
+          params: Object.assign({}, parentParams, match.params),
+          // joinPaths 函数用于合并字符串
+          pathname: joinPaths([parentPathnameBase, match.pathname]),
+          pathnameBase:
+            match.pathnameBase === "/"
+              ? parentPathnameBase
+              : joinPaths([parentPathnameBase, match.pathnameBase])
+        })
+      ),
+    // 外层 parentMatches 部分，最后会一起加入最终 matches 参数中
+    parentMatches
+  );
+}
+
+/**
+ * 将多个 path 合并为一个
+ * @param paths path 数组
+ * @returns
+ */
+const joinPaths = (paths: string[]): string =>
+  paths.join("/").replace(/\/\/+/g, "/");
+```
+
+- 总结： 
+
+  a. 获取上下文中调用useRoutes后的信息，如果证明此次调用时作为子路由使用的，需要合并父路由的匹配信息；
+
+  b. 移除父路由已经匹配完毕的pathname前缀后，调用matchRoutes与当前传入的routes配置相匹配，返回匹配到的matches数组；
+
+  c. 调用_renderMatches方法，渲染上一步得倒的matches数组;
+
+也就对应着：路由上下文解析阶段，路由匹配阶段(matchRoutes),路由渲染阶段(_renderMatches)
+
+- matchRoutes
+
+  ```tsx
+  /**
+   * 通过 routes 与 location 得到 matches 数组
+   */
+  export function matchRoutes(
+    // 用户传入的 routes 对象
+    routes: RouteObject[],
+    // 当前匹配到的 location，注意这在 useRoutes 内部是先有过处理的
+    locationArg: Partial<Location> | string,
+    // 这个参数在 useRoutes 内部是没有用到的，但是该方法是对外暴露的，用户可以使用这个参数来添加统一的路径前缀
+    basename = "/"
+  ): RouteMatch[] | null {
+    // 先格式化为 Path 对象
+    let location =
+      typeof locationArg === "string" ? parsePath(locationArg) : locationArg;
+  
+    // 之前提到过，抽离 basename，获取纯粹的 pathname
+    let pathname = stripBasename(location.pathname || "/", basename);
+    
+    // basename 匹配失败，返回 null
+    if (pathname == null) {
+      return null;
+    }
+  
+    // 1.扁平化 routes，将树状的 routes 对象根据 path 扁平为一维数组，同时包含当前路由的权重值
+    let branches = flattenRoutes(routes);
+    // 2.传入扁平化后的数组，根据内部匹配到的权重排序
+    rankRouteBranches(branches);
+  
+    let matches = null;
+    // 3.这里就是权重比较完成后的解析顺序，权重高的在前面，先进行匹配，然后是权重低的匹配
+    // branches 中有一个匹配到了就终止循环，或者全都没有匹配到
+    for (let i = 0; matches == null && i < branches.length; ++i)   {
+      // 遍历扁平化的 routes，查看每个 branch 的路径匹配规则是否能匹配到 pathname
+      matches = matchRouteBranch(branches[i], pathname);
+    }
+  
+    return matches;
+  }
+  ```
+
+- 主要方面：
+
+  a. flattenRoutes: 扁平化
+
+  b. rankRouteBranches：排序
+
+  c. matchRouteBranch：路由匹配
+
+  - flattenRoutes:将树形结构转为一维数组
+
+    ```tsx
+    // 保存在 branch 中的路由信息，后续路由匹配时会用到
+    interface RouteMeta {
+      /**
+       * 路由的相对路径（刨除与父路由重复部分）
+       */
+      relativePath: string;
+      caseSensitive: boolean;
+      /**
+       * 用户在 routes 数组中定义的索引位置（相对其兄弟 route 而言）
+       */
+      childrenIndex: number;
+      route: RouteObject;
+    }
+    
+    // 扁平化的路由对象，包含当前路由对象对应的完整 path，权重得分与用于匹配的路由信息
+    interface RouteBranch {
+      /**
+       * 完整的 path（合并了父路由的，下面会引入相对路由的概念）
+       */
+      path: string;
+      /**
+       * 权重，用于排序
+       */
+      score: number;
+      /**
+       * 路径 meta，依次为从父级到子级的路径规则，最后一个是路由自己
+       */
+      routesMeta: RouteMeta[];
+    }
+    
+    /**
+     * 扁平化路由，会将所有路由扁平为一个数组，用于比较权重
+     * @param routes 第一次在外部调用只需要传入该值，用于转换的 routes 数组
+     * @param branches
+     * @param parentsMeta
+     * @param parentPath
+     * @returns
+     */
+    function flattenRoutes(
+      routes: RouteObject[],
+      // 除了 routes，下面三个都是递归的时候使用的
+      branches: RouteBranch[] = [],
+      parentsMeta: RouteMeta[] = [],
+      parentPath = ""
+    ): RouteBranch[] {
+      routes.forEach((route, index) => {
+        // 当前 branch 管理的 route meta
+        let meta: RouteMeta = {
+          // 只保存相对路径，这里的值下面会进行处理
+          relativePath: route.path || "",
+          caseSensitive: route.caseSensitive === true,
+          // index 是用户给出的 routes 顺序，会一定程度影响 branch 的排序（当为同一层级 route 时）
+          childrenIndex: index,
+          // 当前 route 对象
+          route
+        };
+    
+        // 如果 route 以 / 开头，那么它应该完全包含父 route 的 path，否则报错
+        if (meta.relativePath.startsWith("/")) {
+          invariant(
+            meta.relativePath.startsWith(parentPath),
+            `Absolute route path "${meta.relativePath}" nested under path ` +
+              `"${parentPath}" is not valid. An absolute child route path ` +
+              `must start with the combined path of all its parent routes.`
+          );
+    
+          // 把父路由前缀去除，只要相对路径
+          meta.relativePath = meta.relativePath.slice(parentPath.length);
+        }
+    
+        // 完整的 path，合并了父路由的 path
+        let path = joinPaths([parentPath, meta.relativePath]);
+        // 第一次使用 parentsMeta 为空数组，从外到内依次推入 meta 到该数组中
+        let routesMeta = parentsMeta.concat(meta);
+    
+        // 开始递归
+        if (route.children && route.children.length > 0) {
+          // 如果是 index route，报错，因为 index route 不能有 children
+          invariant(
+            route.index !== true,
+            `Index routes must not have child routes. Please remove ` +
+              `all child routes from route path "${path}".`
+          );
+    
+          flattenRoutes(route.children, branches, routesMeta, path);
+        }
+    
+        // 没有路径的路由（之前提到过的布局路由）不参与路由匹配，除非它是索引路由
+        /* 
+          注意：递归是在前面进行的，也就是说布局路由的子路由是会参与匹配的
+          而子路由会有布局路由的路由信息，这也是布局路由能正常渲染的原因。
+        */
+        if (route.path == null && !route.index) {
+          return;
+        }
+    
+        // routesMeta，包含父 route 到自己的全部 meta 信息
+        // computeScore 是计算权值的方法，我们后面再说
+        branches.push({ path, score: computeScore(path, route.index), routesMeta });
+      });
+    
+      return branches;
+    }
+    ```
+
+  - rankRouteBranches
+
+    ```tsx
+    // 动态路由权重，比如 /foo/:id
+    const dynamicSegmentValue = 3;
+    // 索引路由权重，也就是加了 index 为 true 属性的路由
+    const indexRouteValue = 2;
+    // 空路由权重，当一段路径值为空时匹配，只有最后的路径以 / 结尾才会用到它
+    const emptySegmentValue = 1;
+    // 静态路由权重
+    const staticSegmentValue = 10;
+    // 路由通配符权重，为负的，代表当我们写 * 时实际会降低权重
+    const splatPenalty = -2;
+    
+    // 判断是否有动态参数，比如 :id 等
+    const paramRe = /^:\w+$/;
+    // 判断是否为 *
+    const isSplat = (s: string) => s === "*";
+    
+    /**
+     * 计算路由权值，根据权值大小匹配路由
+     * 静态值 > params 动态参数
+     * @param path 完整的路由路径，不是相对路径
+     * @param index
+     * @returns
+     */
+    function computeScore(path: string, index: boolean | undefined): number {
+      let segments = path.split("/");
+      // 初始化权重值，有几段路径就是几，路径多的初始权值高
+      let initialScore = segments.length;
+      // 有一个 * 权重减 2
+      if (segments.some(isSplat)) {
+        initialScore += splatPenalty;
+      }
+    
+      // 用户传了 index，index 是布尔值，代表 IndexRouter，权重 +2
+      if (index) {
+        initialScore += indexRouteValue;
+      }
+    
+      // 在过滤出非 * 的部分
+      return segments
+        .filter(s => !isSplat(s))
+        .reduce(
+          (score, segment) =>
+            score +
+            // 如果有动态参数
+            (paramRe.test(segment)
+              ? // 动态参数权重 3
+                dynamicSegmentValue
+              : segment === ""
+              ? // 空值权重为 1，这个其实只有一种情况，path 最后面多一个 /，比如 /foo 与 /foo/ 的区别
+                emptySegmentValue
+              : // 静态值权重最高为 10
+                staticSegmentValue),
+          initialScore
+        );
+    }
+    
+    /**
+     * 排序，比较权重值
+     * @param branches
+     */
+    function rankRouteBranches(branches: RouteBranch[]): void {
+      branches.sort((a, b) =>
+        a.score !== b.score
+          // 排序，权值大的在前面
+          ? b.score - a.score
+          : // 如果 a.score === b.score
+            compareIndexes(
+              // routesMeta 是一个从最外层路由到子路由的数组
+              // childrenIndex 是按照 routes 中 route 传入的顺序传值的，写在后面的 index 更大（注意是同级）
+              a.routesMeta.map(meta => meta.childrenIndex),
+              b.routesMeta.map(meta => meta.childrenIndex)
+            )
+      );
+    }
+    
+    
+    /**
+     * 比较子 route 的 index，判断是否为兄弟 route，如果不是则返回 0，比较没有意义，不做任何操作
+     * @param a
+     * @param b
+     * @returns
+     */
+    function compareIndexes(a: number[], b: number[]): number {
+      // 是否为兄弟 route
+      let siblings =
+        // 这里是比较除了最后一个 route 的 path，需要全部一致才是兄弟 route
+        a.length === b.length && a.slice(0, -1).every((n, i) => n === b[i]);
+    
+      return siblings
+        ? 
+          // 如果是兄弟节点，按照传入的顺序排序 a.length - 1 和 b.length - 1 是相等的，只是内部的值不同
+          a[a.length - 1] - b[b.length - 1]
+        : 
+          // 只比较兄弟节点，如果不是兄弟节点，则权重相同
+          0;
+    }
+    ```
+
+  - matchRouteBranch
+
+  ```tsx
+  /**
+   * 通过 branch 和当前的 pathname 得到真正的 matches 数组
+   * @param branch
+   * @param routesArg
+   * @param pathname
+   * @returns
+   */
+  function matchRouteBranch<ParamKey extends string = string>(
+    branch: RouteBranch,
+    pathname: string
+  ): RouteMatch<ParamKey>[] | null {
+    let { routesMeta } = branch;
+  
+    // 初始化匹配到的值
+    let matchedParams = {};
+    let matchedPathname = "/";
+    // 最终的 matches 数组
+    let matches: RouteMatch[] = [];
+    // 遍历 routesMeta 数组，最后一项是自己的 route，前面是 parentRoute
+    for (let i = 0; i < routesMeta.length; ++i) {
+      let meta = routesMeta[i];
+      // 是否为最后一个 route
+      let end = i === routesMeta.length - 1;
+      // pathname 匹配过父 route 后的剩余的路径名
+      let remainingPathname =
+        matchedPathname === "/"
+          ? pathname
+          : pathname.slice(matchedPathname.length) || "/";
+      // 使用的相对路径规则匹配剩余的值
+      let match = matchPath(
+        // 在匹配时只有最后一个 route 的 end 才会是 true，其余都是 false，这里的 end 意味路径最末尾的 /
+        { path: meta.relativePath, caseSensitive: meta.caseSensitive, end },
+        remainingPathname
+      );
+  
+      // 没匹配上，直接返回 null，整个 route 都匹配失败
+      if (!match) return null;
+  
+      // 匹配上了合并 params，注意这里是改变的 matchedParams，所以所有 route 的 params 都是同一个
+      Object.assign(matchedParams, match.params);
+  
+      let route = meta.route;
+  
+      // 匹配上了就把路径再补全
+      matches.push({
+        params: matchedParams,
+        pathname: joinPaths([matchedPathname, match.pathname]),
+        pathnameBase: joinPaths([matchedPathname, match.pathnameBase]),
+        route
+      });
+  
+      // 更改 matchedPathname，已经匹配上的 pathname 前缀，用作后续子 route 的循环
+      if (match.pathnameBase !== "/") {
+        matchedPathname = joinPaths([matchedPathname, match.pathnameBase]);
+      }
+    }
+  
+    return matches;
+  }
+  ```
+
+- _renderMatches
+
+  ![img](https://cdn.nlark.com/yuque/0/2022/png/2340337/1653642757557-b4892d92-ac95-4d3a-bc26-63bdc9d88633.png)
+
+```tsx
+/**
+ * 其实就是渲染 RouteContext.Provider 组件（包括多个嵌套的 Provider）
+ */
+function _renderMatches(
+  matches: RouteMatch[] | null,
+  // 如果在已有 match 的 route 内部调用，会合并父 context 的 match
+  parentMatches: RouteMatch[] = []
+): React.ReactElement | null {
+  if (matches == null) return null;
+
+  // 生成 outlet 组件，注意这里是从后往前 reduce，所以索引在前的 match 是最外层，也就是父路由对应的 match 是最外层
+  /**
+   *  可以看到 outlet 是通过不断递归生成的组件，最外层的 outlet 递归层数最多，包含有所有的内层组件，
+   *  所以我们在外层使用的 <Outlet /> 是包含有所有子组件的聚合组件
+   * */
+  return matches.reduceRight((outlet, match, index) => {
+    return (
+      <RouteContext.Provider
+        // 如果有 element 就渲染 element，如果没有填写 element，则默认是 <Outlet />，继续渲染内嵌的 <Route />
+        children={
+          match.route.element !== undefined ? match.route.element : <Outlet />
+        }
+        // 代表当前 RouteContext 匹配到的值，matches 并不是全局状态一致的，会根据层级不同展示不同的值，最后一个层级是完全的 matches，这也是之前提到过的不要在外部使用 RouteContext 的原因
+        value={{
+          outlet,
+          matches: parentMatches.concat(matches.slice(0, index + 1))
+        }}
+      />
+    );
+    // 最内层的 outlet 为 null，也就是最后的子路由
+  }, null as React.ReactElement | null);
+}
+```
+
+- 总结
+
+  a. useRoutes是react-router中核心，用户不管是直接使用useRoutes还是用Routes与Route组件结合最终都会转换为它。该hook拥有三个阶段：路由上下文解析阶段、路由匹配阶段、路由渲染阶段；
+
+  b. useRoutes在上下文解析阶段会解析在外层是否已经调用过useRoutes，如果调用过会先获取外层的上下文数据，最后将外层数据与用户传入的routes数组结合，生成最终结果；
+
+  c. useRoutes在匹配阶段会将传入的routes与当前的location（可手动传入，但内部会做校验）做一层匹配，通过对route中声明的path的权重计算，拿到当前pathname所能匹配到的最佳matches数组，索引从小到大层数关系从外到内；
+
+  d. useRoutes在渲染阶段会将matches数组渲染为一个聚合的React Element，该元素整体是许多 RouteContext.Provider的嵌套，从外到内依次是【父 => 子 => 孙子】这样的关系，每个 Provider包含两个值，与该级别对应的matches数组（最后的元素时该级别的route自身）与outlet元素，outlet元素就是嵌套RouteContext.Provider存放的地方，每个RouteContext.Provider的children就是route的element属性；
+
+  e. 每次使用outlet实际上都是渲染的内置的路由关系（如果当前route没有element属性，则默认渲染outlet，这也是为什么可以直接写不带element的<Route/>组件嵌套的原因），我们可以在当前级别route的element中任意地方使用outlet来渲染子路由;
+
+##### 3.4.1.5 Navigate
+
+```tsx
+// useNavigate 返回的 navigate 函数定义，可以传入 to 或者传入数字控制浏览器页面栈的显示
+export interface NavigateFunction {
+  (to: To, options?: NavigateOptions): void;
+  (delta: number): void;
+}
+
+export interface NavigateOptions {
+  // 是否替换当前栈
+  replace?: boolean;
+  // 当前导航的 state
+  state?: any;
+}
+
+/**
+ * 返回的 navigate 函数可以传和文件夹相同的路径规则
+ */
+export function useNavigate(): NavigateFunction {
+  invariant(
+    useInRouterContext(),
+    // TODO: This error is probably because they somehow have 2 versions of the
+    // router loaded. We can help them understand how to avoid that.
+    `useNavigate() may be used only in the context of a <Router> component.`
+  );
+  
+  // Router 提供的 navigator，本质是 history 对象
+  let { basename, navigator } = React.useContext(NavigationContext);
+  // 当前路由层级的 matches 对象（我们在前面说了，不同的 RouteContext.Provider 层级不同该值不同）
+  let { matches } = React.useContext(RouteContext);
+  let { pathname: locationPathname } = useLocation();
+
+  // 依次匹配到的子路由之前的路径（/* 之前）
+  let routePathnamesJson = JSON.stringify(
+    matches.map(match => match.pathnameBase)
+  );
+
+  // 是否已经初始化完毕（useEffect），这里是要让页面不要在一渲染的时候就跳转，应该在 useEffect 后才能跳转，也就是说如果一渲染就要跳转页面应该写在 useEffect 中
+  let activeRef = React.useRef(false);
+  React.useEffect(() => {
+    activeRef.current = true;
+  });
+
+  // 返回的跳转函数
+  let navigate: NavigateFunction = React.useCallback(
+    (to: To | number, options: NavigateOptions = {}) => {
+      if (!activeRef.current) return;
+
+      // 如果是数字
+      if (typeof to === "number") {
+        navigator.go(to);
+        return;
+      }
+
+      // 实际路径的获取，这个方法比较复杂，我们下面单独说
+      let path = resolveTo(
+        to,
+        JSON.parse(routePathnamesJson),
+        locationPathname
+      );
+
+      // 有 basename，加上 basename
+      if (basename !== "/") {
+        path.pathname = joinPaths([basename, path.pathname]);
+      }
+
+      (!!options.replace ? navigator.replace : navigator.push)(
+        path,
+        options.state
+      );
+    },
+    [basename, navigator, routePathnamesJson, locationPathname]
+  );
+
+  return navigate;
+}
+
+import type { To } from 'history';
+
+export interface NavigateProps {
+  // To 从 history 中引入
+  /*
+    export declare type To = string | PartialPath;
+  */
+  to: To;
+  replace?: boolean;
+  state?: any;
+}
+
+/**
+ * 组件式导航，当页面渲染后立刻调用 navigate 方法，很简单的封装
+ */
+export function Navigate({ to, replace, state }: NavigateProps): null {
+  // 必须在 Router 上下文中
+  invariant(
+    useInRouterContext(),
+    // TODO: This error is probably because they somehow have 2 versions of
+    // the router loaded. We can help them understand how to avoid that.
+    `<Navigate> may be used only in the context of a <Router> component.`
+  );
+
+  let navigate = useNavigate();
+  React.useEffect(() => {
+    navigate(to, { replace, state });
+  });
+
+  return null;
+}
+```
+
+- 总结：Navigate内部还是调用的useNavigate，而useNavigate内部则是对用户传入的路径做处理，获取到最终的路径值，再传递给NavigationContext提供navigator对象；
+
+#### 3.4.2 react-router-dom
+
+主要介绍在react-router-dom中引用的BrowserRouter 、 hashRouter 以及 historyRouter
+
+BrowserRouter 和 HashRouter的区别，是区分链接还是hash，从history库中取到
+
+```tsx
+import { createBrowserHistory, createHashHistory } from "history";
+```
+
+##### 3.4.2.1 BrowserRouter
+
+```tsx
+export interface BrowserRouterProps {
+  basename?: string;
+  children?: React.ReactNode;
+  window?: Window;
+}
+
+/**
+ * A `<Router>` for use in web browsers. Provides the cleanest URLs.
+ */
+export function BrowserRouter({
+  basename,
+  children,
+  window,
+}: BrowserRouterProps) {
+  let historyRef = React.useRef<BrowserHistory>();
+  if (historyRef.current == null) {
+    historyRef.current = createBrowserHistory({ window });
+  }
+
+  let history = historyRef.current;
+  let [state, setState] = React.useState({
+    action: history.action,
+    location: history.location,
+  });
+
+  React.useLayoutEffect(() => history.listen(setState), [history]);
+
+  return (
+    <Router
+      basename={basename}
+      children={children}
+      location={state.location}
+      navigationType={state.action}
+      navigator={history}
+    />
+  );
+}
+```
+
+##### 3.4.2.2 hashRouter
+
+```tsx
+export interface HashRouterProps {
+  basename?: string;
+  children?: React.ReactNode;
+  window?: Window;
+}
+
+/**
+ * A `<Router>` for use in web browsers. Stores the location in the hash
+ * portion of the URL so it is not sent to the server.
+ */
+export function HashRouter({ basename, children, window }: HashRouterProps) {
+  let historyRef = React.useRef<HashHistory>();
+  if (historyRef.current == null) {
+    historyRef.current = createHashHistory({ window });
+  }
+
+  let history = historyRef.current;
+  let [state, setState] = React.useState({
+    action: history.action,
+    location: history.location,
+  });
+
+  React.useLayoutEffect(() => history.listen(setState), [history]);
+
+  return (
+    <Router
+      basename={basename}
+      children={children}
+      location={state.location}
+      navigationType={state.action}
+      navigator={history}
+    />
+  );
+}
+```
+
+##### 3.4.2.3 HistoryRouter
+
+```tsx
+export interface HistoryRouterProps {
+  basename?: string;
+  children?: React.ReactNode;
+  history: History;
+}
+
+/**
+ * A `<Router>` that accepts a pre-instantiated history object. It's important
+ * to note that using your own history object is highly discouraged and may add
+ * two versions of the history library to your bundles unless you use the same
+ * version of the history library that React Router uses internally.
+ */
+function HistoryRouter({ basename, children, history }: HistoryRouterProps) {
+  const [state, setState] = React.useState({
+    action: history.action,
+    location: history.location,
+  });
+
+  React.useLayoutEffect(() => history.listen(setState), [history]);
+
+  return (
+    <Router
+      basename={basename}
+      children={children}
+      location={state.location}
+      navigationType={state.action}
+      navigator={history}
+    />
+  );
+}
+
+if (__DEV__) {
+  HistoryRouter.displayName = "unstable_HistoryRouter";
+}
+
+export { HistoryRouter as unstable_HistoryRouter };
+```
+
+## 4. 学习react-router的依赖库--history库
+
+https://www.yuque.com/lpldplws/web/yr5hmd?singleDoc# 《配套习题》 密码：fggd
+
+地址：https://github.com/remix-run/history
+
+react-router v6 相比 v5 的api 有着很大的变动，代码包体积也减少了一半多（20k => 8k），源码行数缩减到了 1600 行，基本可以当做reafactor了一遍，下面主要讲解其依赖的history库究竟完成了什么样的功能
+
+### 4.1 定义
+
+The history library lets you easily manage session history anywhere JavaScript runs. A history object abstracts away the differences in various environments and provides a minimal API that lets you manage the history stack, navigate, and persist state between sessions.
+
+history库可让您在 JavaScript 运行的任何地方轻松管理会话历史记录。history 实例基于环境中的差异，抽象出了一个最小的 API，让您可以管理历史堆栈、导航和保持会话之间的状态。
+
+1. createBrowserHistory：基于浏览器history对象最新 api；
+
+2. createHashHistory：基于浏览器 url 的 hash 参数；
+
+3. createMemoryHistory：基于内存栈，不依赖任何平台；
+
+上面三种方法创建的history对象在react-router中作为三种主要路由的导航器使用：
+
+- BrowserRouter对应createBrowserHistory，由react-router-dom提供
+
+- HashRouter对应createHashHistory，由react-router-dom提供
+
+- MemoryRouter对应createMemoryHistory，由react-router提供，主要用于react-native等基于内存的路由系统
+
+react-router-native是MemoryRouter 换了层皮
+
+```tsx
+export interface NativeRouterProps extends MemoryRouterProps {}
+
+/**
+ * NativeRouter 就是 react-router 里的 MemoryRouter，使用内存做导航
+ * A <Router> that runs on React Native.
+ */
+export function NativeRouter(props: NativeRouterProps) {
+  return <MemoryRouter {...props} />;
+}
+```
+
+StaticRouter 用于SSR，不依赖history，只对props进行校验
+
+```tsx
+import { StaticRouter } from 'react-router-dom/server'
+```
+
+### 4.2 路由切换时Action
+
+history定义了三类action：
+
+```tsx
+export enum Action {
+  Pop = 'POP',
+  Push = 'PUSH',
+  Replace = 'REPLACE'
+}
+
+```
+
+### 4.3 抽象Path与Location
+
+在一次url跳转中，history抽象了两层：Path 和 Location
+
+#### 4.3.1 Path
+
+```tsx
+// 下面三个分别是对 url 的 path，query 与 hash 部分的类型别名
+export type Pathname = string;
+export type Search = string;
+export type Hash = string;
+
+// 一次跳转 url 对应的对象
+export interface Path {
+  pathname: Pathname;
+  search: Search;
+  hash: Hash;
+}
+
+/**
+ *  pathname + search + hash 创建完整 url
+ */
+export function createPath({
+  pathname = '/',
+  search = '',
+  hash = ''
+}: Partial<Path>) {
+  if (search && search !== '?')
+    pathname += search.charAt(0) === '?' ? search : '?' + search;
+  if (hash && hash !== '#')
+    pathname += hash.charAt(0) === '#' ? hash : '#' + hash;
+  return pathname;
+}
+
+/**
+ * 解析 url，将其转换为 Path 对象
+ */
+export function parsePath(path: string): Partial<Path> {
+  let parsedPath: Partial<Path> = {};
+
+  if (path) {
+    let hashIndex = path.indexOf('#');
+    if (hashIndex >= 0) {
+      parsedPath.hash = path.substr(hashIndex);
+      path = path.substr(0, hashIndex);
+    }
+
+    let searchIndex = path.indexOf('?');
+    if (searchIndex >= 0) {
+      parsedPath.search = path.substr(searchIndex);
+      path = path.substr(0, searchIndex);
+    }
+
+    if (path) {
+      parsedPath.pathname = path;
+    }
+  }
+
+  return parsedPath;
+}
+```
+
+#### 4.3.2 Location
+
+记录url变化时上下文（state）以及唯一值key
+
+```ts
+// 唯一字符串，与每次跳转的 location 匹配
+export type Key = string;
+
+// 路由跳转抽象化的导航对象
+export interface Location extends Path {
+  // 与当前 location 关联的 state 值，可以是任意手动传入的值
+  state: unknown;
+  // 当前 location 的唯一 key，一般都是自动生成
+  key: Key;
+}
+
+/**
+ * 创建唯一 key
+ */
+function createKey() {
+  return Math.random().toString(36).substr(2, 8);
+}
+```
+
+### 4.4 学习History对象
+
+createBrowserHistory、createHashHistory 以及 createMemoryHistory是基于一个基类的History创建的
+
+#### 4.4.1 base history
+
+一个基类的history包含：
+
+- action（跳转行为）、location（导航对象）
+- utils：createHref：将history定义的Path转为url
+
+```ts
+history.createHref({
+    pathname: '/home',
+    search: 'the=query',
+    hash:'hash'
+}) // 输出: /home?the=query#hash
+```
+
+- 路由的跳转方法：push、replace、go、back与forward
+
+```ts
+// 将一个新的历史导航推入历史栈，并且移动当前指针到该历史导航
+history.push('/home');
+// 将当前的路由使用新传入的历史导航替换
+history.replace('/home');
+
+// 此方法可以传入一个 Path 对象，同时也可以接收第二个参数 state，可用于保存在内存中的历史导航上下文信息
+history.push({
+  pathname: '/home',
+  search: '?the=query'
+}, {
+  some: state
+});
+
+// replace 方法同上
+history.replace({
+  pathname: '/home',
+  search: '?the=query'
+}, {
+  some: state
+});
+
+// 返回上一个历史导航
+history.go(-1);
+history.back();
+
+// 去往下一个历史导航
+history.go(1);
+history.forward();
+```
+
+- 路由监听方法：listen、block
+  - history.listen：类似后置守卫，在跳转后监听
+  - history.block：类似前置钩子，跳转前监听；
+
+- ```ts
+  // 开始监听路由跳转
+  let unlisten = history.listen(({ action, location }) => {
+    // The current location changed.
+  });
+  
+  // 取消监听
+  unlisten();
+  
+  // 开始阻止路由跳转
+  let unblock = history.block(({ action, location, retry }) => {
+    // retry 方法可以让我们重新进入被阻止跳转的路由
+    // 取消监听，如果想要 retry 生效，必须要在先取消掉所有 block 监听，否则 retry 后依然会被拦截然后进入 block 监听中
+    unblock();
+    retry();
+  });
+  ```
+
+- History对象的接口定义
+
+```ts
+// listen 回调的参数，包含有更新的行为 Action 和 Location 对象
+export interface Update {
+  action: Action; // 上面提到的 Action
+  location: Location; // 上面提到的 Location
+}
+
+// 监听函数 listener 的定义
+export interface Listener {
+  (update: Update): void;
+}
+
+
+// block 回调的参数，除了包含有 listen 回调参数的所有值外还有一个 retry 方法
+// 如果阻止了页面跳转（blocker 监听），可以使用 retry 重新进入页面
+export interface Transition extends Update {
+  /**
+   * 重新进入被 block 的页面
+   */
+  retry(): void;
+}
+
+/**
+ * 页面跳转失败后拿到的 Transition 对象
+ */
+export interface Blocker {
+  (tx: Transition): void;
+}
+
+// 跳转链接，可以是完整的 url，也可以是 Path 对象
+export type To = string | Partial<Path>;
+
+export interface History {
+  // 最后一次浏览器跳转的行为，可变
+  readonly action: Action;
+
+  // 挂载有当前的 location 可变
+  readonly location: Location;
+
+  // 工具方法，把 to 对象转化为 url 字符串，其实内部就是对之前提到的 createPath 函数的封装
+  createHref(to: To): string;
+
+  // 推入一个新的路由到路由栈中
+  push(to: To, state?: any): void;
+  // 替换当前路由
+  replace(to: To, state?: any): void;
+  // 将当前路由指向路由栈中第 delta 个位置的路由
+  go(delta: number): void;
+  // 将当前路由指向当前路由的前一个路由
+  back(): void;
+  // 将当前路由指向当前路由的后一个路由
+  forward(): void;
+
+  // 页面跳转后触发，相当于后置钩子
+  listen(listener: Listener): () => void;
+
+  // 也是监听器，但是会阻止页面跳转，相当于前置钩子，注意只能拦截当前 history 对象的钩子，也就是说如果 history 对象不同，是不能够拦截到的
+  block(blocker: Blocker): () => void;
+}
+```
+
+#### 4.4.2 History对象的创建
+
+- createBrowserHistory
+
+用于给用户提供的创建基于浏览器 history API 的History对象，适用于绝大多数现代浏览器（除了少部分不支持 HTML5 新加入的 history API 的浏览器，也就是浏览器的history对象需要具有pushState、replaceState和state等属性和方法），同时在生产环境需要服务端的重定向配置才能正常使用；
+
+- createHashHistory
+
+用于给用户提供基于浏览器 url hash 值的History对象，一般来说使用这种方式可以兼容几乎所有的浏览器，但是考虑到目前浏览器的发展，在5.x版本内部其实同createBrowserHistory，也是使用最新的 history API 实现路由跳转的（如果你确实需要兼容旧版本浏览器，应该选择使用4.x版本），同时由于浏览器不会将 url 的 hash 值发送到服务端，前端发送的路由 url 都是一致的，就不用服务端做额外配置了；
+
+- createMemoryHistory
+
+用于给用户提供基于内存系统的History对象，适用于所有可以运行 JavaScript 的环境（包括 Node），内部的路由系统完全由用户支配
+
+```ts
+export interface BrowserHistory extends History {}
+export interface HashHistory extends History {}
+export interface MemoryHistory extends History {
+  readonly index: number;
+}
+```
+
+- BrowserHistory与HashHistory的类型就是我们之前提到的History对象的类型；
+- MemoryHistory还有一个index属性，因为是基于内存的路由系统，所以我们可以清楚知道当前路由在历史栈中的位置，这个属性就是告诉用户目前的内存历史栈索引的；
+- createBrowserHistory
+
+```tsx
+// 可以传入指定的 window 对象作为参数，默认为当前 window 对象
+export type BrowserHistoryOptions = { window?: Window };
+
+export function createBrowserHistory(
+  options: BrowserHistoryOptions = {}
+): BrowserHistory {
+  let { window = document.defaultView! } = options;
+  // 拿到浏览器的 history 对象，后续会基于此对象封装方法
+  let globalHistory = window.history;
+  // 初始化 action 与 location
+  let action = Action.Pop;
+  let [index, location] = getIndexAndLocation(); // 获取当前路由的 index 和 location
+
+  // 省略其余代码
+  
+  let history: BrowserHistory = {
+    get action() {
+      return action;
+    },
+    get location() {
+      return location;
+    },
+    createHref,
+    push,
+    replace,
+    go,
+    back() {
+      go(-1);
+    },
+    forward() {
+      go(1);
+    },
+    listen(listener) {
+       // 省略其余代码
+    },
+    block(blocker) {
+       // 省略其余代码
+    }
+  };
+
+  return history;
+}
+```
+
+- createHashHistory
+
+```tsx
+// 这里同 BrowserRouter
+export type HashHistoryOptions = { window?: Window };
+
+export function createHashHistory(
+options: HashHistoryOptions = {}
+): HashHistory {
+  let { window = document.defaultView! } = options;
+       // 浏览器本身就有 history 对象，只是 HTML5 新加入了几个有关 state 的 api
+       let globalHistory = window.history;
+       let action = Action.Pop;
+       let [index, location] = getIndexAndLocation();
+  
+  // 省略其余代码
+  
+  let history: HashHistory = {
+    get action() {
+      return action;
+    },
+    get location() {
+      return location;
+    },
+    createHref,
+    push,
+    replace,
+    go,
+    back() {
+      go(-1);
+    },
+    forward() {
+      go(1);
+    },
+    listen(listener) {
+      // 省略其余代码
+    },
+    block(blocker) {
+      // 省略其余代码
+    }
+  };
+  
+  return history;
+}
+```
+
+- createMemoryHistory
+
+```ts
+// 这里与 BrowserRouter 和 HashRouter 相比有略微不同，因为没有浏览器的参与，所以我们需要模拟历史栈
+// 用户提供的描述历史栈的对象
+export type InitialEntry = string | Partial<Location>;// 上面提到的 Location 
+
+// 因为不是真实的路由，所以不需要 window 对象，取而代之的是
+export type MemoryHistoryOptions = {
+  // 初始化的历史栈
+  initialEntries?: InitialEntry[];
+  // 初始化的 index
+  initialIndex?: number;
+};
+
+
+// 判断上下限值
+function clamp(n: number, lowerBound: number, upperBound: number) {
+  return Math.min(Math.max(n, lowerBound), upperBound);
+}
+
+export function createMemoryHistory(
+  options: MemoryHistoryOptions = {}
+): MemoryHistory {
+  let { initialEntries = ['/'], initialIndex } = options;
+  // 将用户传入的 initialEntries 转换为包含 Location 对象数组，会在之后用到
+  let entries: Location[] = initialEntries.map((entry) => {
+    // readOnly 就是调用 Object.freeze 冻结对象，这里做了个开发模式的封装，遇到都可以直接跳过
+    let location = readOnly<Location>({
+      pathname: '/',
+      search: '',
+      hash: '',
+      state: null,
+      key: createKey(),
+      ...(typeof entry === 'string' ? parsePath(entry) : entry)
+    });
+    return location;
+  });
+  // 这里的 location 与 index 的获取方式不同了，是直接从初始化的 entries 中取的
+  let action = Action.Pop;
+  let location = entries[index];
+  // clamp 函数用于取上下限值，如果 没有传 initialIndex 默认索引为最后一个 location
+  // 这这里调用是为了规范初始化的 initialIndex 的值
+  let index = clamp(
+    initialIndex == null ? entries.length - 1 : initialIndex,
+    0,
+    entries.length - 1
+  );
+
+  // 省略其余代码
+  let history: MemoryHistory = {
+    get index() {
+      return index;
+    },
+    get action() {
+      return action;
+    },
+    get location() {
+      return location;
+    },
+    createHref,
+    push,
+    replace,
+    go,
+    back() {
+      go(-1);
+    },
+    forward() {
+      go(1);
+    },
+    listen(listener) {
+       // 省略其余代码
+    },
+    block(blocker) {
+       // 省略其余代码
+    }
+  };
+
+  return history;
+}
+```
+
+##### 4.4.2.1 action、location与index
+
+除了createMemoryHistory，其余两个方法的index和location都是通过getIndexAndLocation()获取的。下面是getIndexAndLocation()方法的内部逻辑：
+
+- createBrowserHistory
+
+```ts
+export function createBrowserHistory(
+  options: BrowserHistoryOptions = {}
+): BrowserHistory {
+  let { window = document.defaultView! } = options;
+  let globalHistory = window.history;
+
+  /**
+   * 拿到当前的 state 的 idx 和 location 对象
+   */
+  function getIndexAndLocation(): [number, Location] {
+    let { pathname, search, hash } = window.location;
+    // 获取当前浏览器的 state
+    let state = globalHistory.state || {};
+    // 可以看到下面很多属性都是保存到了 history api 的 state 中
+    return [
+      state.idx,
+      readOnly<Location>({
+        pathname,
+        search,
+        hash,
+        state: state.usr || null,
+        key: state.key || 'default'
+      })
+    ];
+  }
+  let action = Action.Pop;
+  let [index, location] = getIndexAndLocation();
+  
+  // 初始化 index
+  if (index == null) {
+    index = 0;
+    // 调用的是 history api 提供的 replaceState 方法传入 index，这里只是初始化浏览器中保存的 state，没有改变 url
+    globalHistory.replaceState({ ...globalHistory.state, idx: index }, '');
+  }
+
+  //...
+
+  let history: BrowserHistory = {
+    get action() {
+      return action;
+    },
+    get location() {
+      return location;
+    }
+    // ...
+  };
+
+  return history;
+}
+```
+
+- createHashHistory
+
+```ts
+export function createHashHistory(
+  options: HashHistoryOptions = {}
+): HashHistory {
+  let { window = document.defaultView! } = options;
+  let globalHistory = window.history;
+
+ function getIndexAndLocation(): [number, Location] {
+    // 注意这里和 browserHistory 不同了，拿的是 hash，其余逻辑是一样的
+    // parsePath 方法前面有讲到过，解析 url 为 Path 对象
+    let {
+      pathname = '/',
+      search = '',
+      hash = ''
+    } = parsePath(window.location.hash.substr(1));
+    let state = globalHistory.state || {};
+    return [
+      state.idx,
+      readOnly<Location>({
+        pathname,
+        search,
+        hash,
+        state: state.usr || null,
+        key: state.key || 'default'
+      })
+    ];
+  }
+
+  let action = Action.Pop;
+  let [index, location] = getIndexAndLocation();
+
+ if (index == null) {
+    index = 0;
+    globalHistory.replaceState({ ...globalHistory.state, idx: index }, '');
+  }
+  //...
+
+  let history: HashHistory = {
+    get action() {
+      return action;
+    },
+    get location() {
+      return location;
+    }
+    // ...
+  };
+
+  return history;
+}
+```
+
+##### 4.4.2.2 createHref
+
+主要用于将history内部定义的To对象（type To = string | Partial<Path>）转回为 url 字符串
+
+- createBrowserHistory
+
+```ts
+export function createBrowserHistory(
+  options: BrowserHistoryOptions = {}
+): BrowserHistory {
+   // ...
+   // BrowserHistory 只需要简单判断一下类型就可以了
+  function createHref(to: To) {
+    return typeof to === 'string' ? to : createPath(to); // createPath见上文
+  }
+  // ...
+  let history: BrowserHistory = {
+      // ...
+      createHref
+      // ...
+  }
+  return history
+}
+```
+
+- createHashHistory
+
+```ts
+export function createHashHistory(
+  options: HashHistoryOptions = {}
+): HashHistory {
+   // ...
+   /**
+   * 查看是否有 base 标签，如果有则取 base 的 url（不是从 base 标签获取，是从 window.location.href 获取）
+   */
+  function getBaseHref() {
+    let base = document.querySelector('base');
+    let href = '';
+
+    if (base && base.getAttribute('href')) {
+      let url = window.location.href;
+      let hashIndex = url.indexOf('#');
+      // 拿到去除了 # 的 url
+      href = hashIndex === -1 ? url : url.slice(0, hashIndex);
+    }
+
+    return href;
+  }
+  // HashHistory 需要额外拿到当前页面的 base url
+  function createHref(to: To) {
+    return getBaseHref() + '#' + (typeof to === 'string' ? to : createPath(to));
+  }
+
+  // ...
+
+  let history: HashHistory = {
+      // ...
+      createHref
+      // ...
+  }
+  return history
+}
+```
+
+- createMemoryHistory
+
+```ts
+export function createMemoryHistory(
+  options: MemoryHistoryOptions = {}
+): MemoryHistory {
+   // ...
+   // 同 BrowserHistory
+  function createHref(to: To) {
+    return typeof to === 'string' ? to : createPath(to);
+  }
+  // ...
+
+  let history: MemoryHistory = {
+      // ...
+      createHref
+      // ...
+  }
+  return history
+}
+```
+
+##### 4.4.2.3 listen
+
+本质上是事件的发布订阅模式
+
+```ts
+/**
+ * 事件对象
+ */
+type Events<F> = {
+  length: number;
+  push: (fn: F) => () => void;
+  call: (arg: any) => void;
+};
+
+/**
+ * 内置的发布订阅事件模型
+ */
+function createEvents<F extends Function>(): Events<F> {
+  let handlers: F[] = [];
+
+  return {
+    get length() {
+      return handlers.length;
+    },
+    // push 时返回对应的 clear 语句
+    push(fn: F) {
+      handlers.push(fn);
+      return function () {
+        handlers = handlers.filter((handler) => handler !== fn);
+      };
+    },
+    call(arg) {
+      handlers.forEach((fn) => fn && fn(arg));
+    }
+  };
+}
+
+export interface Update {
+  action: Action;
+  location: Location;
+}
+// Listener 类型在之前有提到过，可以往回看看
+export interface Listener {
+  (update: Update): void;
+}
+
+export function createBrowserHistory(
+  options: BrowserHistoryOptions = {}
+): BrowserHistory {
+  // ...
+  let listeners = createEvents<Listener>();
+  // ...
+  let history: BrowserHistory = {
+    // ...
+    listen(listener) {
+      return listeners.push(listener);
+    },
+    // ...
+  };
+
+  return history;
+}
+
+export function createHashHistory(
+  options: HashHistoryOptions = {}
+): HashHistory {
+  // ...
+  let listeners = createEvents<Listener>();
+  // ...
+  let history: HashHistory = {
+    // ...
+    listen(listener) {
+      return listeners.push(listener);
+    },
+    // ...
+  };
+
+  return history;
+}
+
+export function createMemoryHistory(
+  options: MemoryHistoryOptions = {}
+): MemoryHistory {
+  // ...
+  let listeners = createEvents<Listener>();
+  // ...
+  let history: MemoryHistory = {
+    // ...
+    listen(listener) {
+      return listeners.push(listener);
+    },
+    // ...
+  };
+
+  return history;
+}
+```
+
+##### 4.4.2.5 block
+
+与listen类似，只是BrowserHistory和HashHistory内部额外对于浏览器的beforeunload事件做了监听
+
+```ts
+export interface Update {
+  action: Action;
+  location: Location;
+}
+export interface Transition extends Update {
+  retry(): void;
+}
+
+// Blocker 我们之前也提到过
+export interface Blocker {
+  (tx: Transition): void;
+}
+
+const BeforeUnloadEventType = 'beforeunload';
+
+export function createBrowserHistory(
+  options: BrowserHistoryOptions = {}
+): BrowserHistory {
+  // ...
+  let blockers = createEvents<Blocker>();
+  // ...
+  let history: BrowserHistory = {
+    // ...
+    block(blocker) {
+      let unblock = blockers.push(blocker);
+
+      // 当我们需要监听跳转失败时才加入，并且只需要一个事件来阻止页面关闭
+      if (blockers.length === 1) {
+        window.addEventListener(BeforeUnloadEventType, promptBeforeUnload);
+      }
+
+      return function () {
+        unblock();
+        // 当没有 blocker 监听时应该删除 beforeunload 事件的监听
+        if (!blockers.length) {
+          window.removeEventListener(BeforeUnloadEventType, promptBeforeUnload);
+        }
+      };
+    }
+    // ...
+  };
+
+  return history;
+}
+
+export function createHashHistory(
+  options: HashHistoryOptions = {}
+): HashHistory {
+  // ...
+  let blockers = createEvents<Blocker>();
+  // ...
+  let history: HashHistory = {
+    // ...
+    block(blocker) {
+      let unblock = blockers.push(blocker);
+
+      if (blockers.length === 1) {
+        window.addEventListener(BeforeUnloadEventType, promptBeforeUnload);
+      }
+
+      return function () {
+        unblock();
+        if (!blockers.length) {
+          window.removeEventListener(BeforeUnloadEventType, promptBeforeUnload);
+        }
+      };
+    }
+    // ...
+  };
+  return history;
+}
+
+// MemoryHistory 这里同 listen 方法一样
+export function createMemoryHistory(
+  options: MemoryHistoryOptions = {}
+): MemoryHistory {
+  // ...
+  let blockers = createEvents<Blocker>();
+  // ...
+  let history: MemoryHistory = {
+    // ...
+    // 这里就没有监听浏览器的 beforeunload 事件了
+    block(blocker) {
+      return blockers.push(blocker);
+    }
+    // ...
+  };
+
+  return history;
+}
+```
+
+##### 4.4.2.5 push & replace
+
+push和replace除了需要封装将新的导航推入到历史栈的功能外，还需要同时改变当前的action与location，并且判断并调用相应的监听方法
+
+- createBrowserHistory 和 createHasHistory
+
+```ts
+function push(to: To, state?: any) {
+    let nextAction = Action.Push;
+    let nextLocation = getNextLocation(to, state);
+
+    /**
+     * 重新执行 push 操作
+     */
+    function retry() {
+      push(to, state);
+    }
+
+    // 当没有 block 监听时 allowTx 返回 true，否则都是返回 false，不会推送新的导航
+    if (allowTx(nextAction, nextLocation, retry)) {
+      let [historyState, url] = getHistoryStateAndUrl(nextLocation, index + 1);
+
+      // try...catch 是因为 ios 限制最多调用 100 次 pushState 方法，否则会报错
+      try {
+        globalHistory.pushState(historyState, '', url);
+      } catch (error) {
+        // push 失败后就没有 state 了，直接使用 href 跳转
+        window.location.assign(url);
+      }
+
+      applyTx(nextAction);
+    }
+}
+
+function replace(to: To, state?: any) {
+    let nextAction = Action.Replace;
+    let nextLocation = getNextLocation(to, state);
+    function retry() {
+      replace(to, state);
+    }
+
+    // 同 push 函数，否则不会替换新的导航
+    if (allowTx(nextAction, nextLocation, retry)) {
+      let [historyState, url] = getHistoryStateAndUrl(nextLocation, index);
+
+      globalHistory.replaceState(historyState, '', url);
+
+      applyTx(nextAction);
+    }
+}
+```
+
+- createMemoryHistory
+
+```ts
+function push(to: To, state?: any) {
+  let nextAction = Action.Push;
+  let nextLocation = getNextLocation(to, state);
+  function retry() {
+    push(to, state);
+  }
+
+  if (allowTx(nextAction, nextLocation, retry)) {
+    // 修改 index 与 entries 历史栈数组
+    index += 1;
+    // 添加一个新的 location，删除原来 index 往后的栈堆
+    entries.splice(index, entries.length, nextLocation);
+    applyTx(nextAction, nextLocation);
+  }
+}
+
+function replace(to: To, state?: any) {
+  let nextAction = Action.Replace;
+  let nextLocation = getNextLocation(to, state);
+  function retry() {
+    replace(to, state);
+  }
+
+  if (allowTx(nextAction, nextLocation, retry)) {
+    // 覆盖掉原来的 location
+    entries[index] = nextLocation;
+    applyTx(nextAction, nextLocation);
+  }
+}
+```
+
+##### 4.4.2.6 浏览器popstate事件
+
+在浏览器环境下，除了手动调用 history.push 与 history.replace 外，用户还可以通过浏览器的前进和后退按钮改变导航历史，这样的行为在history中则对应着Action的POP，同时浏览器也提供了对应的事件popstate，需要在createBrowserHistory和createHashHistory 事件下处理
+
+```ts
+const HashChangeEventType = 'hashchange';
+const PopStateEventType = 'popstate';
+
+export function createBrowserHistory(
+  options: BrowserHistoryOptions = {}
+): BrowserHistory {
+   //...
+
+  let blockedPopTx: Transition | null = null;
+  /**
+   * 事件监听回调函数
+   * 如果设置了 blocker 的监听器，该函数会执行两次，第一次是跳回到原来的页面，第二次是执行 blockers 的所有回调
+   * 这个函数用于监听浏览器的前进后退，因为我们封装的 push 函数已经被我们拦截了
+   */
+  function handlePop() {
+    if (blockedPopTx) {
+      blockers.call(blockedPopTx);
+      blockedPopTx = null;
+    } else {
+      let nextAction = Action.Pop;
+      let [nextIndex, nextLocation] = getIndexAndLocation();
+
+      // 如果有前置钩子
+      if (blockers.length) {
+        if (nextIndex != null) {
+          // 计算跳转层数
+          let delta = index - nextIndex;
+          if (delta) {
+            // Revert the POP
+            blockedPopTx = {
+              action: nextAction,
+              location: nextLocation,
+              // 恢复页面栈，也就是 nextIndex 的页面栈
+              retry() {
+                go(delta * -1);
+              }
+            };
+            // 跳转回去（index 原本的页面栈）
+            go(delta);
+          }
+        } else {
+          // asset
+          // nextIndex 如果为 null 会进入该分支打警告信息，这里就先不管它
+        }
+      } else {
+        // 改变当前 action，调用所有的 listener
+        applyTx(nextAction);
+      }
+    }
+  }
+
+  // 可以看到在创建 History 对象的时候就进行监听了
+  window.addEventListener(PopStateEventType, handlePop);
+  //...
+}
+
+
+export function createHashHistory(
+  options: HashHistoryOptions = {}
+): HashHistory {
+   //...
+
+  // 下面和 createBrowserHistory 一样
+  let blockedPopTx: Transition | null = null;
+  function handlePop() {
+    //...
+  }
+  
+    
+  // 下面额外监听了 hashchange 事件
+  window.addEventListener(PopStateEventType, handlePop);
+  // 低版本兼容，监听 hashchange 事件
+  // https://developer.mozilla.org/de/docs/Web/API/Window/popstate_event
+  window.addEventListener(HashChangeEventType, () => {
+    let [, nextLocation] = getIndexAndLocation();
+
+    // 如果支持 popstate 事件这里就会相等，因为会先执行 popstate 的回调
+    if (createPath(nextLocation) !== createPath(location)) {
+      handlePop();
+    }
+  });
+  //...
+}
+```
+
+##### 4.4.2.7 go、back、forward
+
+- createBrowserHistory 与 createHashHistory 
+
+```ts
+export function createBrowserHistory(
+  options: BrowserHistoryOptions = {}
+): BrowserHistory {
+  // ...
+  function go(delta: number) {
+    globalHistory.go(delta);
+  }
+  // ...
+  let history: BrowserHistory = {
+    go,
+    back() {
+      go(-1);
+    },
+    forward() {
+      go(1);
+    },
+    // ...
+  };
+
+  return history;
+}
+
+export function createHashHistory(
+  options: HashHistoryOptions = {}
+): HashHistory {
+  // ...
+  function go(delta: number) {
+    globalHistory.go(delta);
+  }
+  // ...
+  let history: HashHistory = {
+    go,
+    back() {
+      go(-1);
+    },
+    forward() {
+      go(1);
+    },
+    // ...
+  };
+
+  return history;
+}
+```
+
+- createMemoryHistory
+
+```ts
+export function createMemoryHistory(
+  options: MemoryHistoryOptions = {}
+): HashHistory {
+  // ...
+  function go(delta: number) {
+    // 跳转到原来的 location
+    let nextIndex = clamp(index + delta, 0, entries.length - 1);
+    let nextAction = Action.Pop;
+    let nextLocation = entries[nextIndex];
+    function retry() {
+      go(delta);
+    }
+
+    if (allowTx(nextAction, nextLocation, retry)) {
+      index = nextIndex;
+      applyTx(nextAction, nextLocation);
+    }
+  }
+  // ...
+  let history: MemoryHistory = {
+    go,
+    back() {
+      go(-1);
+    },
+    forward() {
+      go(1);
+    },
+    // ...
+  };
+
+  return history;
+}
+```
+
+# React SSR & 同构
+
+https://www.yuque.com/lpldplws/web/qbadd9?singleDoc# 《React SSR & 同构》 密码：wg39
+
+## 1. 课程目标
+
+1. 掌握CSR与SSR的区别，掌握SSR的基本用法；
+2. 学会在React中如何使用SSR；
+3. 实战中掌握SSR里，router、redux、api的封装；
+
+## 2. 课程大纲
+
+1. SSR定义
+2. SSR由来
+3. 服务端渲染的利弊
+4. 同构
+5. SSR实战
+
+## 3.SSR 定义
+
+页面的渲染流程：
+
+1. 浏览器通过请求得到一个HTML文本
+2. 渲染进程解析HTML文本，构建DOM树
+3. 解析HTML的同时，如果遇到内联样式或者样式脚本，则下载并构建样式规则（stytle rules），若遇到JavaScript脚本，则会下载执行脚本。
+4. DOM树和样式规则构建完成之后，渲染进程将两者合并成渲染树（render tree）
+5. 渲染进程开始对渲染树进行布局，生成布局树（layout tree）
+6. 渲染进程对布局树进行绘制，生成绘制记录
+7. 渲染进程的对布局树进行分层，分别栅格化每一层，并得到合成帧
+8. 渲染进程将合成帧信息发送给GPU进程显示到页面中
+
+![img](https://cdn.nlark.com/yuque/0/2022/png/2340337/1658411852170-3f0d3576-b151-42e5-95da-9572124b6fd6.png)
+
+
+
+可以看到，页面的渲染其实就是浏览器将HTML文本转化为页面帧的过程。而如今我们大部分WEB应用都是使用 JavaScript 框架（Vue、React、Angular）进行页面渲染的，也就是说，在执行 JavaScript 脚本的时候，HTML页面已经开始解析并且构建DOM树了，JavaScript 脚本只是动态的改变 DOM 树的结构，使得页面成为希望成为的样子，这种渲染方式叫动态渲染，也可以叫客户端渲染（client side rende）；
+
+那么什么是服务端渲染（server side render）？顾名思义，服务端渲染就是在浏览器请求页面URL的时候，服务端将我们需要的HTML文本组装好，并返回给浏览器，这个HTML文本被浏览器解析之后，不需要经过 JavaScript 脚本的执行，即可直接构建出希望的 DOM 树并展示到页面中。这个服务端组装HTML的过程，叫做服务端渲染；
+
+![img](https://raw.githubusercontent.com/yacan8/blog/master/images/%E6%9C%8D%E5%8A%A1%E7%AB%AF%E6%B8%B2%E6%9F%93%E5%8E%9F%E7%90%86/image-20200731165404271.png)
+
+## 4.SSR由来
+
+### 4.1 web1.0
+
+在没有AJAX的时候，也就是web1.0时代，几乎所有应用都是服务端渲染（此时服务器渲染非现在的服务器渲染），那个时候的页面渲染大概是这样的，浏览器请求页面URL，然后服务器接收到请求之后，到数据库查询数据，将数据丢到后端的组件模板（php、asp、jsp等）中，并渲染成HTML片段，接着服务器在组装这些HTML片段，组成一个完整的HTML，最后返回给浏览器，这个时候，浏览器已经拿到了一个完整的被服务器动态组装出来的HTML文本，然后将HTML渲染到页面中，过程没有任何JavaScript代码的参与。
+
+[![img](https://raw.githubusercontent.com/yacan8/blog/master/images/%E6%9C%8D%E5%8A%A1%E7%AB%AF%E6%B8%B2%E6%9F%93%E5%8E%9F%E7%90%86/image-20200731115513579.png)](https://raw.githubusercontent.com/yacan8/blog/master/images/服务端渲染原理/image-20200731115513579.png)
+
+### 4.2 客户端渲染
+
+在WEB1.0时代，服务端渲染看起来是一个当时的最好的渲染方式，但是随着业务的日益复杂和后续AJAX的出现，也渐渐开始暴露出了WEB1.0服务器渲染的缺点。
+
+- 每次更新页面的一小的模块，都需要重新请求一次页面，重新查一次数据库，重新组装一次HTML
+- 前端JavaScript代码和后端（jsp、php、jsp）代码混杂在一起，使得日益复杂的WEB应用难以维护
+
+而且那个时候，根本就没有前端工程师这一职位，前端js的活一般都由后端同学 jQuery 一把梭。但是随着前端页面渐渐地复杂了之后，后端开始发现js好麻烦，虽然很简单，但是坑太多了，于是让公司招聘了一些专门写js的人，也就是前端，这个时候，前后端的鄙视链就出现了，后端鄙视前端，因为后端觉得js太简单，无非就是写写页面的特效（JS），切切图（CSS），根本算不上是真正的程序员。
+
+随之 nodejs 的出现，前端看到了翻身的契机，为了摆脱后端的指指点点，前端开启了一场前后端分离的运动，希望可以脱离后端独立发展。前后端分离，表面上看上去是代码分离，实际上是为了前后端人员分离，也就是前后端分家，前端不再归属于后端团队。
+
+前后端分离之后，网页开始被当成了独立的应用程序（SPA，Single Page Application），前端团队接管了所有页面渲染的事，后端团队只负责提供所有数据查询与处理的API，大体流程是这样的：首先浏览器请求URL，前端服务器直接返回一个空的静态HTML文件（不需要任何查数据库和模板组装），这个HTML文件中加载了很多渲染页面需要的 JavaScript 脚本和 CSS 样式表，浏览器拿到 HTML 文件后开始加载脚本和样式表，并且执行脚本，这个时候脚本请求后端服务提供的API，获取数据，获取完成后将数据通过JavaScript脚本动态的将数据渲染到页面中，完成页面显示。
+
+[![img](https://raw.githubusercontent.com/yacan8/blog/master/images/%E6%9C%8D%E5%8A%A1%E7%AB%AF%E6%B8%B2%E6%9F%93%E5%8E%9F%E7%90%86/image-20200731142605631.png)](https://raw.githubusercontent.com/yacan8/blog/master/images/服务端渲染原理/image-20200731142605631.png)
+
+这一个前后端分离的渲染模式，也就是客户端渲染（CSR）。
+
+### 4.3 服务端渲染
+
+随着单页应用（SPA）的发展，程序员们渐渐发现 SEO（Search Engine Optimazition，即搜索引擎优化）出了问题，而且随着应用的复杂化，JavaScript 脚本也不断的臃肿起来，使得首屏渲染相比于 Web1.0时候的服务端渲染，也慢了不少。
+
+自己选的路，跪着也要走下去。于是前端团队选择了使用 nodejs 在服务器进行页面的渲染，进而再次出现了服务端渲染。大体流程与客户端渲染有些相似，首先是浏览器请求URL，前端服务器接收到URL请求之后，根据不同的URL，前端服务器向后端服务器请求数据，请求完成后，前端服务器会组装一个携带了具体数据的HTML文本，并且返回给浏览器，浏览器得到HTML之后开始渲染页面，同时，浏览器加载并执行 JavaScript 脚本，给页面上的元素绑定事件，让页面变得可交互，当用户与浏览器页面进行交互，如跳转到下一个页面时，浏览器会执行 JavaScript 脚本，向后端服务器请求数据，获取完数据之后再次执行 JavaScript 代码动态渲染页面。
+
+[![img](https://raw.githubusercontent.com/yacan8/blog/master/images/%E6%9C%8D%E5%8A%A1%E7%AB%AF%E6%B8%B2%E6%9F%93%E5%8E%9F%E7%90%86/image-20200731172929911.png)](https://raw.githubusercontent.com/yacan8/blog/master/images/服务端渲染原理/image-20200731172929911.png)
+
+## 5. 服务端渲染的利弊
+
+相比于客户端渲染，服务端渲染有什么优势？
+
+### 5.1. 好处
+
+- 利于SEO
+
+有利于SEO，其实就是有利于爬虫来爬你的页面，然后在别人使用搜索引擎搜索相关的内容时，你的网页排行能靠得更前，这样你的流量就有越高。那为什么服务端渲染更利于爬虫爬你的页面呢？其实，爬虫也分低级爬虫和高级爬虫。
+
+- - 低级爬虫：只请求URL，URL返回的HTML是什么内容就爬什么内容。
+  - 高级爬虫：请求URL，加载并执行JavaScript脚本渲染页面，爬JavaScript渲染后的内容。
+
+也就是说，低级爬虫对客户端渲染的页面来说，简直无能为力，因为返回的HTML是一个空壳，它需要执行 JavaScript 脚本之后才会渲染真正的页面。而目前像百度、谷歌、微软等公司，有一部分年代老旧的爬虫还属于低级爬虫，使用服务端渲染，对这些低级爬虫更加友好一些。
+
+- 白屏时间更短
+
+相对于客户端渲染，服务端渲染在浏览器请求URL之后已经得到了一个带有数据的HTML文本，浏览器只需要解析HTML，直接构建DOM树就可以。而客户端渲染，需要先得到一个空的HTML页面，这个时候页面已经进入白屏，之后还需要经过加载并执行 JavaScript、请求后端服务器获取数据、JavaScript 渲染页面几个过程才可以看到最后的页面。特别是在复杂应用中，由于需要加载 JavaScript 脚本，越是复杂的应用，需要加载的 JavaScript 脚本就越多、越大，这会导致应用的首屏加载时间非常长，进而降低了体验感。
+
+[![img](https://raw.githubusercontent.com/yacan8/blog/master/images/%E6%9C%8D%E5%8A%A1%E7%AB%AF%E6%B8%B2%E6%9F%93%E5%8E%9F%E7%90%86/image-20200731165404271.png?date=1677586921182)
+
+### 5.2. 缺点 
+
+并不是所有的WEB应用都必须使用SSR，这需要开发者自己来权衡，因为服务端渲染会带来以下问题：
+
+- 代码复杂度增加。为了实现服务端渲染，应用代码中需要兼容服务端和客户端两种运行情况，而一部分依赖的外部扩展库却只能在客户端运行，需要对其进行特殊处理，才能在服务器渲染应用程序中运行。
+
+- 需要更多的服务器负载均衡。由于服务器增加了渲染HTML的需求，使得原本只需要输出静态资源文件的nodejs服务，新增了数据获取的IO和渲染HTML的CPU占用，如果流量突然暴增，有可能导致服务器down机，因此需要使用响应的缓存策略和准备相应的服务器负载。
+
+- 涉及构建设置和部署的更多要求。与可以部署在任何静态文件服务器上的完全静态单页面应用程序 (SPA) 不同，服务器渲染应用程序，需要处于 Node.js server 运行环境。
+
+ 
+
+# 6.同构
+
+在服务端渲染中，有两种页面渲染的方式：
+
+- 前端服务器通过请求后端服务器获取数据并组装 HTML 返回给浏览器，浏览器直接解析 HTML 后渲染页面
+
+- 浏览器在交互过程中，请求新的数据并动态更新渲染页面
+
+这两种渲染方式有一个不同点就是，一个是在服务端中组装 html 的，一个是在客户端中组装 html 的，运行环境是不一样的。所谓同构，就是让一份代码，既可以在服务端中执行，也可以在客户端中执行，并且执行的效果都是一样的，都是完成这个 html 的组装，正确的显示页面。也就是说，一份代码，既可以客户端渲染，也可以服务端渲染。
+
+![img](https://raw.githubusercontent.com/yacan8/blog/master/images/%E6%9C%8D%E5%8A%A1%E7%AB%AF%E6%B8%B2%E6%9F%93%E5%8E%9F%E7%90%86/image-20200731175841011.png?date=1677587030193)
+
+## 7. SSR实战 
+
+完成同构SPA的SSR应用
+
+1. 基本功能
+
+2. router
+
+3. redux
+
+4. api
+
+# React组件库设计
+
+https://www.yuque.com/lpldplws/web/fab8hw?singleDoc# 《React组件库设计》 密码：iol1
+
+## 1.课程目标
+
+P6~P6+：
+
+1. 学习React组件库设计原理；
+2. 掌握常见组件库架构设计分析；
+
+P7~P7+：
+
+1. 能够结合业务从0~1完成组件库开发搭建；
+2. 熟悉现有市场上组件库方案，能够结合业务完成组件库的落地；
+
+## 2. 课程大纲
+
+- 项目初始化；
+- 开发调试；
+- 编译打包；
+- 标准化发布流程；
+
+## 3. 主要内容
+
+### 3.1 项目初始化
+
+主要安装项目依赖文件
+
+### 3.1.1 初始化npm包
+
+```ts
+mkdir xianzao-ui
+
+cd xianzao-ui
+
+npm init --y // 默认跳过或者自定义完成初始化
+```
+
+#### 3.1.2 代码规范
+
+多人项目里代码规范是，基于时间原因，直接使用现成的 [@umijs/fabric](https://github.com/umijs/fabric) 的配置。
+
+```ts
+npm i @umijs/fabric prettier -D // 因为@umijs/fabric没有将prettier作为依赖 所以我们需要手动安装
+```
+
+如果不想使用这套规范，可以自定义配置
+
+- [EditorConfig](https://editorconfig.org/)：不同编辑器和IDE之间定义和维护一致的代码风格；.editorconfig；
+
+```bash
+# http://editorconfig.org
+root = true
+
+[*]
+charset = utf-8
+end_of_line = lf
+indent_size = 2
+indent_style = space
+insert_final_newline = true
+max_line_length = 80
+trim_trailing_whitespace = true
+
+[*.md]
+max_line_length = 0
+```
 
 
 
@@ -24715,7 +28947,53 @@ https://www.yuque.com/lpldplws/web/ai228r?singleDoc# 《配套习题》 密码�
 https://www.yuque.com/lpldplws/web/bcocaq?singleDoc# 《React高级用法》 密码：acr1
 https://www.yuque.com/lpldplws/web/agvv1m?singleDoc# 《配套习题》 密码：ex5l
 
-https://www.yuque.com/lpldplws/web/bgn3sl?singleDoc# 《react学习路径》 密码：ei05
+# 2023前端面试&框架高频考点解析
 
-https://www.yuque.com/lpldplws/web/bcocaq?singleDoc# 《React高级用法》 密码：acr1
+## 前端常见的认知误区
+
+Job Model
+
+- 前端开发
+- 前端架构（比如prettier,eslint）
+- 可视化 echarts
+- node
+- 图像互动： 2d 3d
+- 前端体验 前端数据度量水平 & 体验
+- 前端工程化 ci/cd
+- 跨端应用 weex rn  flutter ->编译原理electron->tar
+- 后台应用 form ui库 low code
+- 多媒体流
+
+写页面 ->更高的水平
+
+- prettier
+
+- editor
+- eslint
+- tsconfig
+- husky
+- create react app
+- vite template
+
+封装成团队统一的规范 cli+ 按需引入ui +埋点
+
+## 面试常见的问题
+
+如果项目有特点，反而八股文问的比较少
+
+A同学 3-5年
+
+- pc web  小程序 electron
+
+- react vue 业务内容
+
+- 权限管理
+
+- CI/CD
+- 推动CR脚手架 规范代码风格
+- github star
+
+jest 定制化代码规范 SSR DNS CDN
+
+
 
