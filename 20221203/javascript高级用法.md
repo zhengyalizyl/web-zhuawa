@@ -5322,9 +5322,7 @@ https://www.yuque.com/lpldplws/atomml/gtn6hvlf3fh1gl6e?singleDoc# 《前端异�
 
 ## 3.简版Promise
 
-
-
-## promise
+### 3.1 reolve和reject
 
 ```js
 let p1=new Promise((resolve,reject)=>{
@@ -5348,17 +5346,19 @@ console.log('p3',p3);
 //p3 Promise{<rejected>:'error'}
 ```
 
-1.执行resolve ->fullfilled
+![img](https://cdn.nlark.com/yuque/0/2022/png/2340337/1670244647596-10c599c5-b64e-46a3-99e0-31e55de924b5.png)
 
-2.执行reject ->rejected
+这里说明了Promise的四个特点：
 
-3.Promise 状态更改后不可改变
+1. 执行了resolve，Promise状态会变成fulfilled；
+2. 执行了reject，Promise状态会变成rejected；
+3. Promise状态不可逆，第一次成功就永久为fulfilled，第一次失败就永远状态为rejected；
+4. Promise中有throw的话，就相当于执行了reject；
 
-4.throw等同于reject
+#### 3.1.1实现resolve reject
 
-5.初始状态pending
-
-### 实现resolve reject
+1. Promise的初始化状态是pending
+2. 需要对resolve和reject绑定this：确定resolve和reject的this指向永远指向当前的MyPromise实例，防止随着函数执行环境的改变而改变
 
 ```js
 class MyPromise{
@@ -5401,26 +5401,230 @@ class MyPromise{
 }
 ```
 
-例子：
+测试如下：
 
 ```js
-const p1=new Promise((resolve,reject)=>{
+const test1 = new MyPromise((resolve, reject) => {
     resolve('success')
-}).then(res=>console.log(res),err=>console.log(err)); //success
+})
+console.log(test1) // MyPromise { PromiseState: 'fulfilled', PromiseResult: 'success' }
 
-const p2=new Promise((resolve,reject)=>{
-    setTimeOut(()=>{
-        reject('fail')
-    },1000)
-}).then(res=>console.log(res),err=>console.log(err)); //fail
-
-const p3=new Promise((resolve,reject)=>{
-    resolve(100)
-}).then(res=>2*res,err=>console.log(err)).then(res=>console.log(res),err=>console.log(err)) //200
-
+const test2 = new MyPromise((resolve, reject) => {
+    reject('fail')
+})
+console.log(test2) // MyPromise { PromiseState: 'rejected', PromiseResult: 'fail' }
 ```
 
-源码实现
+#### 3.1.2 状态不可变
+
+```js
+const test1 = new MyPromise((resolve, reject) => {
+    resolve('success')
+    reject('fail')
+})
+console.log(test1) // MyPromise { PromiseState: 'rejected', PromiseResult: 'fail' }
+```
+
+正确的应该是状态为fulfilled，但这里状态又变成了rejected。
+
+Promise有三种状态：
+
+- pending：等待中，是初始状态；
+- fulfilled：成功状态；
+- rejected：失败状态；
+
+一旦状态从pending变为fulfilled或者rejected，那么此Promise实例的状态就不可以改变了。
+
+![img](https://cdn.nlark.com/yuque/0/2022/png/2340337/1670244647795-2efa2831-a1d5-4849-af3a-107ea7c701fc.png)
+
+这步只需要:
+
+```js
+    resolve(value) {
+        // state是不可变的
++        if (this.PromiseState !== 'pending') return
+        // 如果执行resolve，状态变为fulfilled
+        this.PromiseState = 'fulfilled'
+        // 终值为传进来的值
+        this.PromiseResult = value
+    }
+
+    reject(reason) {
+        // state是不可变的
++        if (this.PromiseState !== 'pending') return
+        // 如果执行reject，状态变为rejected
+        this.PromiseState = 'rejected'
+        // 终值为传进来的reason
+        this.PromiseResult = reason
+    }
+```
+
+也就是：
+
+```js
+class MyPromise {
+    // 构造方法
+    constructor(executor) {
+        // 初始化值
+        this.initValue()
+        // 初始化this指向
+        this.initBind()
+        // 执行传进来的函数
+        executor(this.resolve, this.reject)
+    }
+
+    initBind() {
+        // 初始化this
+        this.resolve = this.resolve.bind(this)
+        this.reject = this.reject.bind(this)
+    }
+
+    initValue() {
+        // 初始化值
+        this.PromiseResult = null // 终值
+        this.PromiseState = 'pending' // 状态
+    }
+
+    resolve(value) {
+        // state是不可变的
+      	if (this.PromiseState !== 'pending') return
+        // 如果执行resolve，状态变为fulfilled
+        this.PromiseState = 'fulfilled'
+        // 终值为传进来的值
+        this.PromiseResult = value
+    }
+
+    reject(reason) {
+        // state是不可变的
+        if (this.PromiseState !== 'pending') return
+        // 如果执行reject，状态变为rejected
+        this.PromiseState = 'rejected'
+        // 终值为传进来的reason
+        this.PromiseResult = reason
+    }
+}
+```
+
+结果如下：
+
+```js
+const test1 = new MyPromise((resolve, reject) => {
+    // 只以第一次为准
+    resolve('success')
+    reject('fail')
+})
+console.log(test1) // MyPromise { PromiseState: 'fulfilled', PromiseResult: 'success' }
+```
+
+#### 3.1.3 throw
+
+![img](https://cdn.nlark.com/yuque/0/2022/png/2340337/1670244647961-dd8a421b-4cb2-45fd-a20c-b7ce03f338b2.png)
+
+Promise中有throw的话，就相当于执行了reject。这就要使用try catch了
+
+```js
++        try {
+            // 执行传进来的函数
+            executor(this.resolve, this.reject)
++        } catch (e) {
+            // 捕捉到错误直接执行reject
++            this.reject(e)
++        }
+```
+
+完整代码为：
+
+```js
+class MyPromise {
+    // 构造方法
+    constructor(executor) {
+
+        // 初始化值
+        this.initValue()
+        // 初始化this指向
+        this.initBind()
+      	try {
+            // 执行传进来的函数
+            executor(this.resolve, this.reject)
+        } catch (e) {
+            // 捕捉到错误直接执行reject
+            this.reject(e)
+        }
+    }
+
+    initBind() {
+        // 初始化this
+        this.resolve = this.resolve.bind(this)
+        this.reject = this.reject.bind(this)
+    }
+
+    initValue() {
+        // 初始化值
+        this.PromiseResult = null // 终值
+        this.PromiseState = 'pending' // 状态
+    }
+
+    resolve(value) {
+        // state是不可变的
+      	if (this.PromiseState !== 'pending') return
+        // 如果执行resolve，状态变为fulfilled
+        this.PromiseState = 'fulfilled'
+        // 终值为传进来的值
+        this.PromiseResult = value
+    }
+
+    reject(reason) {
+        // state是不可变的
+        if (this.PromiseState !== 'pending') return
+        // 如果执行reject，状态变为rejected
+        this.PromiseState = 'rejected'
+        // 终值为传进来的reason
+        this.PromiseResult = reason
+    }
+}
+```
+
+测试代码:
+
+```js
+const test3 = new MyPromise((resolve, reject) => {
+    throw('fail')
+})
+console.log(test3) // MyPromise { PromiseState: 'rejected', PromiseResult: 'fail' }
+```
+
+### 3.2 then
+
+平时业务中then的使用一般如下：
+
+```js
+// 马上输出 ”success“
+const p1 = new Promise((resolve, reject) => {
+    resolve('success')
+}).then(res => console.log(res), err => console.log(err))
+
+// 1秒后输出 ”fail“
+const p2 = new Promise((resolve, reject) => {
+    setTimeout(() => {
+        reject('fail')
+    }, 1000)
+}).then(res => console.log(res), err => console.log(err))
+
+// 链式调用 输出 200
+const p3 = new Promise((resolve, reject) => {
+    resolve(100)
+}).then(res => 2 * res, err => console.log(err))
+  .then(res => console.log(res), err => console.log(err))
+```
+
+根据上述代码可以确定：
+
+1. then接收两个回调，一个是成功回调，一个是失败回调；
+2. 当Promise状态为fulfilled执行成功回调，为rejected执行失败回调；
+3. 如resolve或reject在定时器里，则定时器结束后再执行then；
+4. then支持链式调用，下一次then执行受上一次then返回值的影响；
+
+#### 3.2.1 实现then源码实现
 
 ```js
   then(onFulfilled,onRejected){
@@ -5437,214 +5641,730 @@ if(this.PromiseState==='fulfilled'){
   }
 ```
 
-1.then接收2个回调：res,err
-
-2.resolve->res, reject->err
-
-3.resolve reject在定时器中执行，等定时器执行后再进行then
-
-4.then支持链式，下次then会受到上次影响
-
-例子：
-
-```js
-const p3=new Promise((resolve,reject)=>{resolve(100)})
-.then(res=>2*res,err=>console.log(err))
-.then(res=>console.log(res),err=>console.log(err));
-
-const p4=new Promise((resolve,reject)=>{resolve(100)})
-.then(res=>new Promise(resolve,reject)=>resolve(3*res),err=>console.log(err))
-.then(res=>console.log(res),err=>console.log(err))
-
-
-```
-
- then本身就会返回promise对象
-
- 返回值为promise对象，success/fail->新的promise success/fail
-
- 返回的值为非promise对象，返回success val
-
-实现的源码
+完整代码为：
 
 ```js
 class MyPromise {
+    // 构造方法
     constructor(executor) {
-        //初始状态
-        this.initValue();
-        //初始化this指向
-        this.initBind();
-        //执行传入的函数
-        try {
-            executor(this.resolve, this.reject);
+
+        // 初始化值
+        this.initValue()
+        // 初始化this指向
+        this.initBind()
+      	try {
+            // 执行传进来的函数
+            executor(this.resolve, this.reject)
         } catch (e) {
+            // 捕捉到错误直接执行reject
             this.reject(e)
         }
-
-    }
-
-    initValue() {
-        this.PromiseResult = null;
-        this.PromiseState = 'pending';
-        this.onFulfilledCallbacks = []; //成功的回调
-        this.onRejectedCallbacks = []; //失败的回调
     }
 
     initBind() {
-        this.reolve = this.resolve.bind(this);
-        this.reject = this.reject.bind(this); //绑定MyPromise的实例
+        // 初始化this
+        this.resolve = this.resolve.bind(this)
+        this.reject = this.reject.bind(this)
     }
 
-    resolve(val) {
-        if (this.PromiseState !== 'pending') { return }
-        this.PromiseResult = value;
-        this.PomiseState = 'fullfilled';
+    initValue() {
+        // 初始化值
+        this.PromiseResult = null // 终值
+        this.PromiseState = 'pending' // 状态
+    }
 
-        //执行保存的成功回调
-        while (this.onFulfilledCallbacks.length) {
+    resolve(value) {
+        // state是不可变的
+      	if (this.PromiseState !== 'pending') return
+        // 如果执行resolve，状态变为fulfilled
+        this.PromiseState = 'fulfilled'
+        // 终值为传进来的值
+        this.PromiseResult = value
+    }
+
+    reject(reason) {
+        // state是不可变的
+        if (this.PromiseState !== 'pending') return
+        // 如果执行reject，状态变为rejected
+        this.PromiseState = 'rejected'
+        // 终值为传进来的reason
+        this.PromiseResult = reason
+    }
+
+    then(onFulfilled, onRejected) {
+      // 接收两个回调 onFulfilled, onRejected
+      
+      // 参数校验，确保一定是函数
+      onFulfilled = typeof onFulfilled === 'function' ? onFulfilled : val => val
+      onRejected = typeof onRejected === 'function' ? onRejected : reason => { throw reason }
+
+      if (this.PromiseState === 'fulfilled') {
+          // 如果当前为成功状态，执行第一个回调
+          onFulfilled(this.PromiseResult)
+      } else if (this.PromiseState === 'rejected') {
+          // 如果当前为失败状态，执行第二哥回调
+          onRejected(this.PromiseResult)
+      }
+
+    }
+}
+```
+
+测试then的结果为：
+
+```js
+// 输出 ”success“
+const test = new MyPromise((resolve, reject) => {
+    resolve('success')
+}).then(res => console.log(res), err => console.log(err))
+```
+
+#### 3.2.2 定时器
+
+如何保证下述代码能够在1s后执行then的回调？
+
+```js
+// 1秒后输出 ”fail“
+const p2 = new Promise((resolve, reject) => {
+    setTimeout(() => {
+        reject('fail')
+    }, 1000)
+}).then(res => console.log(res), err => console.log(err))
+```
+
+我们不能确保1秒后才执行then函数，但是我们可以保证1秒后再执行then里的回调（后续课程的事件循环会讲到）
+
+![img](https://cdn.nlark.com/yuque/0/2022/png/2340337/1670244647986-826eb3a0-2e61-4f55-9289-f5e335a3a16b.png)
+
+在这1秒时间内，我们可以先把then里的两个回调保存起来，然后等到1秒过后，执行了resolve或者reject，咱们再去判断状态，并且判断要去执行刚刚保存的两个回调中的哪一个回调。
+
+那么问题来了，我们怎么知道当前1秒还没走完甚至还没开始走呢？其实很好判断，只要状态是pending，那就证明定时器还没跑完，因为如果定时器跑完的话，那状态肯定就不是pending，而是fulfilled或者rejected
+
+那是用什么来保存这些回调呢？建议使用数组，因为一个promise实例可能会多次then，用数组就一个一个保存了
+
+```js
+    initValue() {
+        // 初始化值
+        this.PromiseResult = null // 终值
+        this.PromiseState = 'pending' // 状态
++        this.onFulfilledCallbacks = [] // 保存成功回调
++        this.onRejectedCallbacks = [] // 保存失败回调
+    }
+
+    resolve(value) {
+        // state是不可变的
+        if (this.PromiseState !== 'pending') return
+        // 如果执行resolve，状态变为fulfilled
+        this.PromiseState = 'fulfilled'
+        // 终值为传进来的值
+        this.PromiseResult = value
+        // 执行保存的成功回调
++        while (this.onFulfilledCallbacks.length) {
++            this.onFulfilledCallbacks.shift()(this.PromiseResult)
++        }
+    }
+
+    reject(reason) {
+        // state是不可变的
+        if (this.PromiseState !== 'pending') return
+        // 如果执行reject，状态变为rejected
+        this.PromiseState = 'rejected'
+        // 终值为传进来的reason
+        this.PromiseResult = reason
+        // 执行保存的失败回调
++        while (this.onRejectedCallbacks.length) {
++            this.onRejectedCallbacks.shift()(this.PromiseResult)
++        }
+    }
+    
+    then(onFulfilled, onRejected) {
+        // 接收两个回调 onFulfilled, onRejected
+
+        // 参数校验，确保一定是函数
+        onFulfilled = typeof onFulfilled === 'function' ? onFulfilled : val => val
+        onRejected = typeof onRejected === 'function' ? onRejected : reason => { throw reason }
+
+        if (this.PromiseState === 'fulfilled') {
+            // 如果当前为成功状态，执行第一个回调
+            onFulfilled(this.PromiseResult)
+        } else if (this.PromiseState === 'rejected') {
+            // 如果当前为失败状态，执行第二哥回调
+            onRejected(this.PromiseResult)
++        } else if (this.PromiseState === 'pending') {
++            // 如果状态为待定状态，暂时保存两个回调
++            this.onFulfilledCallbacks.push(onFulfilled.bind(this))
++            this.onRejectedCallbacks.push(onRejected.bind(this))
++        }
+
+    }
+
+```
+
+完整代码为：
+
+```js
+class MyPromise {
+    // 构造方法
+    constructor(executor) {
+
+        // 初始化值
+        this.initValue()
+        // 初始化this指向
+        this.initBind()
+      	try {
+            // 执行传进来的函数
+            executor(this.resolve, this.reject)
+        } catch (e) {
+            // 捕捉到错误直接执行reject
+            this.reject(e)
+        }
+    }
+
+    initBind() {
+        // 初始化this
+        this.resolve = this.resolve.bind(this)
+        this.reject = this.reject.bind(this)
+    }
+
+    initValue() {
+        // 初始化值
+        this.PromiseResult = null // 终值
+        this.PromiseState = 'pending' // 状态
+      	this.onFulfilledCallbacks = [] // 保存成功回调
+        this.onRejectedCallbacks = [] // 保存失败回调
+    }
+
+    resolve(value) {
+        // state是不可变的
+      	if (this.PromiseState !== 'pending') return
+        // 如果执行resolve，状态变为fulfilled
+        this.PromiseState = 'fulfilled'
+        // 终值为传进来的值
+        this.PromiseResult = value
+      	// 执行保存的成功回调
+      	while (this.onFulfilledCallbacks.length) {
             this.onFulfilledCallbacks.shift()(this.PromiseResult)
         }
     }
 
     reject(reason) {
-        if (this.PromiseState !== 'pending') { return }
-        this.PromiseResult = reason;
-        this.PomiseState = 'rejected';
-        //执行保存的成功回调
-        while (this.onRejectedCallbacks.length) {
+        // state是不可变的
+        if (this.PromiseState !== 'pending') return
+        // 如果执行reject，状态变为rejected
+        this.PromiseState = 'rejected'
+        // 终值为传进来的reason
+        this.PromiseResult = reason
+        // 执行保存的失败回调
+	      while (this.onRejectedCallbacks.length) {
             this.onRejectedCallbacks.shift()(this.PromiseResult)
         }
     }
 
-    //如何保证then可以链式调用？返回promise对象，含有then
     then(onFulfilled, onRejected) {
-        //参数校验，确保一定是函数
-        onFulfilled = typeof onFulfilled === 'function' ? onFulfilled : val => val;
-        onRejected = typeof onRejected === 'function' ? onRejected : reason => { throw reason };
-        let thenPromise = new MyPromise((resolve, reject) => {
-            setTimeout(() => {
-                const resolvePromise = (cb) => {
-                    try {
-                        const x = cb(this.PromiseResult);
-                        if (x === thenPromise&&x) {
-                            throw new Error('不能返回自身')
-                        }
-                        //如果返回值是Promise success->success fail->fail
-                        if (x instanceof MyPromise) {
-                            //等同于，只有then才知道promise返回的结果是成功还是失败
-                            x.then(resolve, reject)
-                        } else {
-                            //返回的值是非Promise
-                            resolve(x)
-                        }
-                    } catch (e) {
-                        reject(e);
-                        throw new Error(e)
+      // 接收两个回调 onFulfilled, onRejected
+      
+      // 参数校验，确保一定是函数
+      onFulfilled = typeof onFulfilled === 'function' ? onFulfilled : val => val
+      onRejected = typeof onRejected === 'function' ? onRejected : reason => { throw reason }
+
+      if (this.PromiseState === 'fulfilled') {
+          // 如果当前为成功状态，执行第一个回调
+          onFulfilled(this.PromiseResult)
+      } else if (this.PromiseState === 'rejected') {
+          // 如果当前为失败状态，执行第二哥回调
+          onRejected(this.PromiseResult)
+      } else if (this.PromiseState === 'pending') {
+    			// 如果状态为待定状态，暂时保存两个回调
+          this.onFulfilledCallbacks.push(onFulfilled.bind(this))
+          this.onRejectedCallbacks.push(onRejected.bind(this))
+      }
+    }
+}
+```
+
+看下是否能够实现定时器的功能：
+
+```js
+const test2 = new MyPromise((resolve, reject) => {
+    setTimeout(() => {
+        resolve('success') // 1秒后输出 success
+    }, 1000)
+}).then(res => console.log(res), err => console.log(err))
+```
+
+#### 3.3.3 链式调用
+
+then支持链式调用，下一次then执行受上一次then返回值的影响，给大家举个例子：
+
+```js
+// 链式调用 输出 200
+const p3 = new Promise((resolve, reject) => {
+  resolve(100)
+}).then(res => 2 * res, err => console.log(err))
+  .then(res => console.log(res), err => console.log(err))
+
+// 链式调用 输出300
+const p4 = new Promise((resolve, reject) => {
+  resolve(100)
+}).then(res => new Promise((resolve, reject) => resolve(3 * res)), err => console.log(err))
+  .then(res => console.log(res), err => console.log(err))
+```
+
+根据上文，可以得到：
+
+1. then方法本身会返回一个新的Promise对象；
+
+2. 如果返回值是promise对象，返回值为成功，新promise就是成功；
+
+3. 如果返回值是promise对象，返回值为失败，新promise就是失败；
+
+4. 如果返回值非promise对象，新promise对象就是成功，值为此返回值；
+
+then是Promise上的方法，那如何实现then完还能再then呢？
+
+then执行后返回一个Promise对象就行了，就能保证then完还能继续执行then；
+
+![image.png](https://cdn.nlark.com/yuque/0/2022/png/2340337/1670244647813-454dcadd-6378-4854-9831-22bb463de24e.png?x-oss-process=image%2Fresize%2Cw_556%2Climit_0)
+
+
+
+```js
+    then(onFulfilled, onRejected) {
+        // 接收两个回调 onFulfilled, onRejected
+
+        // 参数校验，确保一定是函数
+        onFulfilled = typeof onFulfilled === 'function' ? onFulfilled : val => val
+        onRejected = typeof onRejected === 'function' ? onRejected : reason => { throw reason }
+
+
+        var thenPromise = new MyPromise((resolve, reject) => {
+
+            const resolvePromise = cb => {
+                try {
+                    const x = cb(this.PromiseResult)
+                    if (x === thenPromise && x) {
+                        // 不能返回自身哦
+                        throw new Error('不能返回自身。。。')
                     }
-
+                    if (x instanceof MyPromise) {
+                        // 如果返回值是Promise
+                        // 如果返回值是promise对象，返回值为成功，新promise就是成功
+                        // 如果返回值是promise对象，返回值为失败，新promise就是失败
+                        // 谁知道返回的promise是失败成功？只有then知道
+                        x.then(resolve, reject)
+                    } else {
+                        // 非Promise就直接成功
+                        resolve(x)
+                    }
+                } catch (err) {
+                    // 处理报错
+                    reject(err)
+                    throw new Error(err)
                 }
+            }
 
-                if (this.PromiseState === 'fulfilled') {
-                    //如果当前为成功状态，执行第一个回调
-                    // onFulfilled(this.PromiseResult);
-                    resolvePromise(onFulfilled)
-                } else if (this.PromiseState === 'rejected') {
-                    //如果当前为失败状态，执行第二个回调
-                    // onRejected(this.PromiseResult)
-                    resolvePromise(onRejected)
-                } else if (this.PormiseState === 'pending') {
-                    this.onFulfilledCallbacks.push(resolvePromise.bind(this, onFulfilled));
-                    this.onRejectedCallbacks.push(resolvePromise.bind(this, onRejected))
-                }
-            }, 0)
+            if (this.PromiseState === 'fulfilled') {
+                // 如果当前为成功状态，执行第一个回调
+                resolvePromise(onFulfilled)
+            } else if (this.PromiseState === 'rejected') {
+                // 如果当前为失败状态，执行第二个回调
+                resolvePromise(onRejected)
+            } else if (this.PromiseState === 'pending') {
+                // 如果状态为待定状态，暂时保存两个回调
+                // 如果状态为待定状态，暂时保存两个回调
+                this.onFulfilledCallbacks.push(resolvePromise.bind(this, onFulfilled))
+                this.onRejectedCallbacks.push(resolvePromise.bind(this, onRejected))
+            }
         })
 
-        return thenPromise;
+        // 返回这个包装的Promise
+        return thenPromise
+
+    }
+```
+
+完整代码为：
+
+```js
+class MyPromise {
+    // 构造方法
+    constructor(executor) {
+
+        // 初始化值
+        this.initValue()
+        // 初始化this指向
+        this.initBind()
+      	try {
+            // 执行传进来的函数
+            executor(this.resolve, this.reject)
+        } catch (e) {
+            // 捕捉到错误直接执行reject
+            this.reject(e)
+        }
     }
 
-```
+    initBind() {
+        // 初始化this
+        this.resolve = this.resolve.bind(this)
+        this.reject = this.reject.bind(this)
+    }
 
-### -all
+    initValue() {
+        // 初始化值
+        this.PromiseResult = null // 终值
+        this.PromiseState = 'pending' // 状态
+      	this.onFulfilledCallbacks = [] // 保存成功回调
+        this.onRejectedCallbacks = [] // 保存失败回调
+    }
 
-1.接收promise数组，如果有非promise的值，返回成功
+    resolve(value) {
+        // state是不可变的
+      	if (this.PromiseState !== 'pending') return
+        // 如果执行resolve，状态变为fulfilled
+        this.PromiseState = 'fulfilled'
+        // 终值为传进来的值
+        this.PromiseResult = value
+      	// 执行保存的成功回调
+      	while (this.onFulfilledCallbacks.length) {
+            this.onFulfilledCallbacks.shift()(this.PromiseResult)
+        }
+    }
 
-2.全部promise都成功，返回成功结果
+    reject(reason) {
+        // state是不可变的
+        if (this.PromiseState !== 'pending') return
+        // 如果执行reject，状态变为rejected
+        this.PromiseState = 'rejected'
+        // 终值为传进来的reason
+        this.PromiseResult = reason
+        // 执行保存的失败回调
+	      while (this.onRejectedCallbacks.length) {
+            this.onRejectedCallbacks.shift()(this.PromiseResult)
+        }
+    }
 
-3.如果有一个不成功，返回失败
+    then(onFulfilled, onRejected) {
+        // 接收两个回调 onFulfilled, onRejected
 
-```js
-all(promiseList){
-    const result=[];
-    let count=0;
-    return new MyPromise((resolve,reject)=>{
-        const addData=(index,val)=>{
-            result[index]=val;
-            count+=1;
-            if(count===promise.length){
-                resolve(result)
+        // 参数校验，确保一定是函数
+        onFulfilled = typeof onFulfilled === 'function' ? onFulfilled : val => val
+        onRejected = typeof onRejected === 'function' ? onRejected : reason => { throw reason }
+
+
+        var thenPromise = new MyPromise((resolve, reject) => {
+
+            const resolvePromise = cb => {
+                try {
+                    const x = cb(this.PromiseResult)
+                    if (x === thenPromise) {
+                        // 不能返回自身哦
+                        throw new Error('不能返回自身。。。')
+                    }
+                    if (x instanceof MyPromise) {
+                        // 如果返回值是Promise
+                        // 如果返回值是promise对象，返回值为成功，新promise就是成功
+                        // 如果返回值是promise对象，返回值为失败，新promise就是失败
+                        // 谁知道返回的promise是失败成功？只有then知道
+                        x.then(resolve, reject)
+                    } else {
+                        // 非Promise就直接成功
+                        resolve(x)
+                    }
+                } catch (err) {
+                    // 处理报错
+                    reject(err)
+                    throw new Error(err)
+                }
             }
-        };
-        promiseList.forEach((promise,index)=>{
-            if(promise instanceof MyPromise){
-                promise.then(res=>{
-                    addData(index,res)
-                },err=>reject(err))
-            }else {
-                addData(index,promise)
+
+            if (this.PromiseState === 'fulfilled') {
+                // 如果当前为成功状态，执行第一个回调
+                resolvePromise(onFulfilled)
+            } else if (this.PromiseState === 'rejected') {
+                // 如果当前为失败状态，执行第二个回调
+                resolvePromise(onRejected)
+            } else if (this.PromiseState === 'pending') {
+                // 如果状态为待定状态，暂时保存两个回调
+                // 如果状态为待定状态，暂时保存两个回调
+                this.onFulfilledCallbacks.push(resolvePromise.bind(this, onFulfilled))
+                this.onRejectedCallbacks.push(resolvePromise.bind(this, onRejected))
             }
         })
-    })
+
+        // 返回这个包装的Promise
+        return thenPromise
+
+    }
 }
 ```
 
-### -race
-
-1.接收promise数组，如果有非promise的值，返回成功
-
-2.返回最快得到结果的promise
+测试一下：
 
 ```js
-race(promiseList){
-    return new MyPromise((resolve,reject)=>{
-        promiseList.forEach((promise,index)=>{
-            if(promise instanceof MyPromise){
-                promise.then(res=>{
-                    resolve(res)
-                },err=>reject(err))
-            }else {
-              resolve(promise)
-            }
-        })
-    })
+const test3 = new MyPromise((resolve, reject) => {
+  resolve(100) // 输出 状态：success 值： 200
+}).then(res => 2 * res, err => 3 * err)
+  .then(res => console.log('success', res), err => console.log('fail', err))
+
+
+const test4 = new MyPromise((resolve, reject) => {
+  resolve(100) // 输出 状态：fail 值：200
+  }).then(res => new MyPromise((resolve, reject) => reject(2 * res)), err => new Promise((resolve, reject) => resolve(3 * err)))
+    .then(res => console.log('success', res), err => console.log('fail', err))
+```
+
+#### 3.3.4 执行顺序
+
+这里需要了解，then方法是微任务（后续课程会讲）
+
+```js
+const p = new Promise((resolve, reject) => {
+    resolve(1)
+}).then(res => console.log(res), err => console.log(err))
+
+console.log(2)
+
+输出顺序是 2 1
+```
+
+这里为了实现类似的功能，使用setTimeout代替（setTimeout为宏任务，此处主要跟在全局上的console对比）
+
+```js
+const resolvePromise = cb => {
+  setTimeout(() => {
+    try {
+      const x = cb(this.PromiseResult)
+      if (x === thenPromise) {
+        // 不能返回自身哦
+        throw new Error('不能返回自身。。。')
+      }
+      if (x instanceof MyPromise) {
+        // 如果返回值是Promise
+        // 如果返回值是promise对象，返回值为成功，新promise就是成功
+        // 如果返回值是promise对象，返回值为失败，新promise就是失败
+        // 谁知道返回的promise是失败成功？只有then知道
+        x.then(resolve, reject)
+      } else {
+        // 非Promise就直接成功
+        resolve(x)
+      }
+    } catch (err) {
+      // 处理报错
+      reject(err)
+      throw new Error(err)
+    }
+  })
 }
 ```
 
-### -allSettled
-
-1.接收promise数组，如果有非promise的值，返回成功
-
-2.保存所有promise的结果，返回数组
+至此，完整的代码为：
 
 ```js
-allSettled(promiseList) {
-    const result = [];
-    let count = 0;
+class MyPromise {
+    // 构造方法
+    constructor(executor) {
+
+        // 初始化值
+        this.initValue()
+        // 初始化this指向
+        this.initBind()
+      	try {
+            // 执行传进来的函数
+            executor(this.resolve, this.reject)
+        } catch (e) {
+            // 捕捉到错误直接执行reject
+            this.reject(e)
+        }
+    }
+
+    initBind() {
+        // 初始化this
+        this.resolve = this.resolve.bind(this)
+        this.reject = this.reject.bind(this)
+    }
+
+    initValue() {
+        // 初始化值
+        this.PromiseResult = null // 终值
+        this.PromiseState = 'pending' // 状态
+      	this.onFulfilledCallbacks = [] // 保存成功回调
+        this.onRejectedCallbacks = [] // 保存失败回调
+    }
+
+    resolve(value) {
+        // state是不可变的
+      	if (this.PromiseState !== 'pending') return
+        // 如果执行resolve，状态变为fulfilled
+        this.PromiseState = 'fulfilled'
+        // 终值为传进来的值
+        this.PromiseResult = value
+      	// 执行保存的成功回调
+      	while (this.onFulfilledCallbacks.length) {
+            this.onFulfilledCallbacks.shift()(this.PromiseResult)
+        }
+    }
+
+    reject(reason) {
+        // state是不可变的
+        if (this.PromiseState !== 'pending') return
+        // 如果执行reject，状态变为rejected
+        this.PromiseState = 'rejected'
+        // 终值为传进来的reason
+        this.PromiseResult = reason
+        // 执行保存的失败回调
+	      while (this.onRejectedCallbacks.length) {
+            this.onRejectedCallbacks.shift()(this.PromiseResult)
+        }
+    }
+
+    then(onFulfilled, onRejected) {
+        // 接收两个回调 onFulfilled, onRejected
+
+        // 参数校验，确保一定是函数
+        onFulfilled = typeof onFulfilled === 'function' ? onFulfilled : val => val
+        onRejected = typeof onRejected === 'function' ? onRejected : reason => { throw reason }
+
+
+        var thenPromise = new MyPromise((resolve, reject) => {
+
+            const resolvePromise = cb => {
+              setTimeout(() => {
+                try {
+                  const x = cb(this.PromiseResult)
+                  if (x === thenPromise) {
+                    // 不能返回自身哦
+                    throw new Error('不能返回自身。。。')
+                  }
+                  if (x instanceof MyPromise) {
+                    // 如果返回值是Promise
+                    // 如果返回值是promise对象，返回值为成功，新promise就是成功
+                    // 如果返回值是promise对象，返回值为失败，新promise就是失败
+                    // 谁知道返回的promise是失败成功？只有then知道
+                    x.then(resolve, reject)
+                  } else {
+                    // 非Promise就直接成功
+                    resolve(x)
+                  }
+                } catch (err) {
+                  // 处理报错
+                  reject(err)
+                  throw new Error(err)
+                }
+              })
+            }
+
+            if (this.PromiseState === 'fulfilled') {
+                // 如果当前为成功状态，执行第一个回调
+                resolvePromise(onFulfilled)
+            } else if (this.PromiseState === 'rejected') {
+                // 如果当前为失败状态，执行第二个回调
+                resolvePromise(onRejected)
+            } else if (this.PromiseState === 'pending') {
+                // 如果状态为待定状态，暂时保存两个回调
+                // 如果状态为待定状态，暂时保存两个回调
+                this.onFulfilledCallbacks.push(resolvePromise.bind(this, onFulfilled))
+                this.onRejectedCallbacks.push(resolvePromise.bind(this, onRejected))
+            }
+        })
+
+        // 返回这个包装的Promise
+        return thenPromise
+
+    }
+}
+```
+
+测试一下：
+
+```js
+const test4 = new MyPromise((resolve, reject) => {
+    resolve(1)
+}).then(res => console.log(res), err => console.log(err))
+
+console.log(2)
+```
+
+### 3.3 其他方法
+
+#### 3.3.1 all
+
+1. 接收一个Promise数组，数组中如有非Promise项，则此项当做成功；
+2. 如果所有Promise都成功，则返回成功结果数组；
+3. 如果有一个Promise失败，则返回这个失败结果；
+
+```js
+static all(promises) {
+    const result = []
+    let count = 0
     return new MyPromise((resolve, reject) => {
-        const addData = (status, val, i) => {
-            result[i] = {
+        const addData = (index, value) => {
+            result[index] = value
+            count++
+            if (count === promises.length) resolve(result)
+        }
+        promises.forEach((promise, index) => {
+            if (promise instanceof MyPromise) {
+                promise.then(res => {
+                    addData(index, res)
+                }, err => reject(err))
+            } else {
+                addData(index, promise)
+            }
+        })
+    })
+}
+```
+
+#### 3.3.2 race
+
+1. 接收一个Promise数组，数组中如有非Promise项，则此项当做成功；
+2. 哪个Promise最快得到结果，就返回那个结果，无论成功失败；
+
+```js
+static race(promises) {
+    return new MyPromise((resolve, reject) => {
+        promises.forEach(promise => {
+            if (promise instanceof MyPromise) {
+                promise.then(res => {
+                    resolve(res)
+                }, err => {
+                    reject(err)
+                })
+            } else {
+                resolve(promise)
+            }
+        })
+    })
+}
+```
+
+#### 3.3.3 allSettled
+
+1. 接收一个Promise数组，数组中如有非Promise项，则此项当做成功；
+2. 把每一个Promise的结果，集合成数组后返回；
+
+```js
+static allSettled(promises) {
+    return new Promise((resolve, reject) => {
+        const res = []
+        let count = 0
+        const addData = (status, value, i) => {
+            res[i] = {
                 status,
-                val
+                value
             }
-            count += 1;
-            if (count === promise.length) {
-                resolve(result)
+            count++
+            if (count === promises.length) {
+                resolve(res)
             }
-        };
-        promiseList.forEach((promise, i) => {
+        }
+        promises.forEach((promise, i) => {
             if (promise instanceof MyPromise) {
                 promise.then(res => {
                     addData('fulfilled', res, i)
-                }, err => addData('rejectd', err, i))
+                }, err => {
+                    addData('rejected', err, i)
+                })
             } else {
                 addData('fulfilled', promise, i)
             }
@@ -5653,258 +6373,1556 @@ allSettled(promiseList) {
 }
 ```
 
-### -any
+#### 3.3.4 any
 
-1.接收promise数组，如果有非promise的值，返回成功
+与all相反
 
-2.如果有一个promise成功，返回成功结果
-
-3.如果全部失败，报错
+1. 接收一个Promise数组，数组中如有非Promise项，则此项当做成功；
+2. 如果有一个Promise成功，则返回这个成功结果；
+3. 如果所有Promise都失败，则报错；
 
 ```js
-any(promiseList) {
-    let count = 0;
-    return new MyPromise((resolve, reject) => {
-        promiseList.forEach((promise, index) => {
-            if (promise instanceof MyPromise) {
-                promise.then(res => {
-                    resolve(res)
-                }, err => {
-                    count += 1;
-                    if (count === promise.length) {
-                        reject('error')
-                    }
-                })
-            } else {
-                resolve(promise)
-            }
-
+static any(promises) {
+    return new Promise((resolve, reject) => {
+        let count = 0
+        promises.forEach((promise) => {
+            promise.then(val => {
+                resolve(val)
+            }, err => {
+                count++
+                if (count === promises.length) {
+                    reject(new AggregateError('All promises were rejected'))
+                }
+            })
         })
     })
 }
+}
 ```
 
-https://www.yuque.com/lpldplws/atomml/gtn6hvlf3fh1gl6e?singleDoc# 《前端异步处理规范及应用》 密码：cdik
+### 3.4 scheduler
 
-## async/await
+实现一个带并发限制的异步调度器 Scheduler，保证同时运行的任务最多有N个。完善下面代码中的 Scheduler 类，使得以下程序能正确输出：
 
 ```js
-function request(num){
-    return new Promise(()=>{
-        setTimeout(()=>{
-            console.log(num*2)//因为没有返回结果
-        },1000)
-    })
+class Scheduler {
+  add(promiseCreator) { ... }
+  // ...
 }
 
-async function fn(){
-    await request(1);
-    await request(2);
+const timeout = (time) => new Promise(resolve => {
+  setTimeout(resolve, time)
+})
+
+const scheduler = new Scheduler(n)
+const addTask = (time, order) => {
+  scheduler.add(() => timeout(time)).then(() => console.log(order))
 }
 
-fn()//只会输出2,
+addTask(1000, '1')
+addTask(500, '2')
+addTask(300, '3')
+addTask(400, '4')
+
+// 打印顺序是：2 3 1 4
 ```
 
+流程分析：
+
+整个的完整执行流程：
+
+1. 起始1、2两个任务开始执行；
+2. 500ms时，2任务执行完毕，输出2，任务3开始执行；
+3. 800ms时，3任务执行完毕，输出3，任务4开始执行；
+4. 1000ms时，1任务执行完毕，输出1，此时只剩下4任务在执行；
+5. 1200ms时，4任务执行完毕，输出4；
+
+当资源不足时将任务加入等待队列，当资源足够时，将等待队列中的任务取出执行
+
+在调度器中一般会有一个等待队列queue，存放当资源不够时等待执行的任务
+具有并发数据限制，假设通过max设置允许同时运行的任务，还需要count表示当前正在执行的任务数量
+当需要执行一个任务A时，先判断count==max 如果相等说明任务A不能执行，应该被阻塞，阻塞的任务放进queue中，等待任务调度器管理
+如果count<max说明正在执行的任务数没有达到最大容量，那么count++执行任务A,执行完毕后count--
+此时如果queue中有值，说明之前有任务因为并发数量限制而被阻塞，现在count<max，任务调度器会将对头的任务弹出执行
+
 ```js
-function request(num){
-        setTimeout(()=>{
-            console.log(num*2)
-        },1000)
+class Scheduler {
+  constructor(max) {
+    this.max = max;
+    this.count = 0; // 用来记录当前正在执行的异步函数
+    this.queue = new Array(); // 表示等待队列
+  }
+  async add(promiseCreator) {
+    /*
+        此时count已经满了，不能执行本次add需要阻塞在这里，将resolve放入队列中等待唤醒,
+        等到count<max时，从队列中取出执行resolve,执行，await执行完毕，本次add继续
+        */
+    if (this.count >= this.max) {
+      await new Promise((resolve, reject) => this.queue.push(resolve));
+    }
+
+    this.count++;
+    let res = await promiseCreator();
+    this.count--;
+    if (this.queue.length) {
+      // 依次唤醒add
+      // 若队列中有值，将其resolve弹出，并执行
+      // 以便阻塞的任务，可以正常执行
+      this.queue.shift()();
+    }
+    return res;
+  }
 }
 
-async function fn(){
-    await request(1);
-    await request(2);
-}
+const timeout = time =>
+  new Promise(resolve => {
+    setTimeout(resolve, time);
+  });
 
-fn()//输出2
-//输出4
+const scheduler = new Scheduler(2);
+
+const addTask = (time, order) => {
+  //add返回一个promise，参数也是一个promise
+  scheduler.add(() => timeout(time)).then(() => console.log(order));
+};
+  
+  addTask(1000, '1');
+  addTask(500, '2');
+  addTask(300, '3');
+  addTask(400, '4');
+  
+// output: 2 3 1 4
 ```
 
-1.如果await后面跟的不是promise，是没法实现类似异步转同步的效果
+## 4. Promise A+规范
 
-async/await
+上文我们实现了简版的Promise，接下来看下标准的Promise/A+的规范
 
-- await async一起用
+- [官方地址](https://promisesaplus.com/)；
+- [github地址](https://github.com/promises-aplus)；
 
-- async返回的内容是promise,要不要返回值，看return
+对照的翻译如下：
 
-- await 接promise异步转同步，不接promise同步
+一个开放、健全且通用的 JavaScript Promise 标准。由开发者制定，供开发者参考。
 
-- async/await 写法异步转同步
+一个 promise 表示异步操作的最终结果。与 promise 进行交互的主要方式是通过它的方法 then。该方法通过注册回调来得到这个 promise 的最终 value ，或者为什么这个 promise 不能被 fulfilled 的 reason 。
 
-## generator
+该规范详细说明了 then 方法的行为，提供了一个可互操作的基础，因此所有符合 `Promises/A+` 的 promise 实现都可以依赖该基础。尽管 `Promises/A+` 组织可能偶尔会通过向后兼容的微小更改来修改此规范，以解决新发现的情况，但我们只有在仔细考虑、讨论和测试后才会进行大的或向后不兼容的更改。因此, 该规范应该被认为是十分稳定的 。·
+
+从历史上看, Promises/A+ 阐明了早期 [Promises/A proposal](https://wiki.commonjs.org/wiki/Promises/A) 的条款，并将部分事实上已经实现的拓展涵盖其中，以及对某些未指定或者有问题的部分省略。
+
+最后，`Promises/A+` 规范的核心不包括：如何 create 、fulfill 或 reject promises。而是选择专注于提供可互操作的 then 方法。不过伴随规范的未来工作可能会涉及这些主题。
+
+这里可以看到，`Promises/A+` 规范目前的核心是规范 then 方法，并没有对如何实现 promise 以及如何改变 promise 的状态进行限制。
+
+### 4.1 术语
+
+1. "prmoise" 是一个拥有符合本规范的 then 方法的对象或者函数；
+2. "thenable" 是一个定义了 then 方法的对象或者函数；
+3. "value" 是 JavaScript 的任意合法值(包括 undefined, thenable, promise)；
+4. "exception" 是一个用 throw 语句抛出的 value ；
+5. "reason" 是一个表示 promise 被 rejected 的 value ；
+
+### 4.2 要求
+
+#### 4.2.1. promise 的状态
+
+pormise 必须是以下三个状态之一: pending, fulfilled, rejected。
+
+- 当 promise 处于 pending 状态时：
+
+- - 可以转换到 fulfilled 或 rejected 状态；
+
+- 当 promise 处于 fulfilled 状态时：
+
+- - 不能转换到其他状态；
+  - 必须有一个 value ，并且不能改变；
+
+- 当 promise 处于 rejected 状态时：
+
+- - 不能转换到其他状态；
+  - 必须有 reason ，并且不能改变；
+
+#### 4.2.2. then方法
+
+promise 必须提供一个 then 方法，能由此去访问当前或最终的 value 或者 reason 。pormise 的 then 方法， 接受两个参数
 
 ```js
-function fn(num){
-    console.log(num);
-    return num;
-}
-
-function *gen(){
-    yield fn(1);
-    yield fn(2);
-    yield fn(3);
-    return 4
-}
-
-const g=gen();
-console.log(g);//gen{<suspended>}
-console.log(g.next());//{value:1,done:false}
-console.log(g.next());//{value:2,done:false}
-console.log(g.next());//{value:3,done:false}
-console.log(g.next());//{value:4,done:true}
+promise.then(onFulfilled, onRejected)
 ```
 
+- onFulfilled 和 onRejected 都是可选参数：
+  ○ 如果 onFulfilled 不是函数，则忽略；
+  ○ 如果 onRejected 不是函数，则忽略；
 
+- 如果 onFulfilled 是一个函数:
+  ○ 它必须在 promise 被 fulfilled 后，以 promise 的 value 作为第一个参数调用；
+  ○ 它不能在 promise 被 fulfilled 之前调用；
+  ○ 它不能被调用多次；
+
+- 如果 onRejected 是一个函数：
+  ○ 它必须在 promise 被 rejected 后，以 promise 的 reason 作为第一个参数调用；
+  ○ 它不能能在 promise 被 rejected 之前调用；
+  ○ 它不能被调用多次；
+  ○ 在 [execution context](https://es5.github.io/#x10.3) 栈（执行上下文栈）只包含平台代码之前， onFulfilled 或者 onRejected 不能被调用 (译者注: 异步执行回调)；
+
+- onFulfilled 或者 onRejected 必须以函数形式调用（即不能有this值）
+- then 方法可以被同一个 promise 调用多次
+  ○ 如果或者当 promise 处于 fulfilled 状态， 所有自己的 onFulfilled 回调函数，必须要按照 then 注册的顺序被调用；
+  ○ 如果或者当 promise 处于 rejected 状态， 所有自己的 onRejected 回调函数，必须要按照 then 注册的顺序被调用；
+- then 方法必须要返回 promise
 
 ```js
-function fn(num){
-    return new Promise(reslove=>{
-        setTimeout(()=>{
-            resolve(num)
-        },1000)
-    })
-}
-
-function *gen(){
-    yield fn(1);
-    yield fn(2);
-    yield fn(3);
-    return 4
-}
-
-const g=gen();
-console.log(g);//gen{<suspended>}
-console.log(g.next());//{value:Promise,done:false}
-console.log(g.next());//{value:Promise,done:false}
-console.log(g.next());//{value:Promise,done:false}
-console.log(g.next());//{value:4,done:true}
+promise2 = promise1.then(onFulfilled, onRejected);
 ```
 
+- - 如果 onFulfilled 或者 onRejected 返回一个值 x ，则执行 Promise Resolution Procedure：`[[Resolve]](promise2, x)`；
+  - 如果 onFulfilled 或者 onRejected 抛出异常 e ， promise2 必须以 e 作为 reason ，转到 rejected 状态；
+  - 如果 onFulfilled 不是函数，并且 promise1 处于 fulfilled 状态 ，则 promise2 必须以与 promise1 同样的 value 被 fulfilled；
+  - 如果 onRejected 不是函数，并且 promise1 处于 rejected 状态 ，则 promise2 必须以与 promise1 同样的 reason 被 rejected
+
+#### 4.2.3 Promise Resolution Procedure
+
+Promise Resolution Procedure 是一个抽象操作。它以一个 promise 和一个 value 作为输入，记作：`[[Resolve]](promise, x) `。 如果 x 是一个 thenable , 它会尝试让 promise 变成与 x 的一样状态 ，前提 x 是一个类似的 promise 对象。否则，它会让 promise 以 x 作为 value 转为 fulfilled 状态。
+
+这种对 thenables 的处理允许不同的 promise 进行互操作，只要它们暴露一个符合 Promises/A+ 的 then 方法。它还允许 Promises/A+ 实现使用合理的 then 方法“同化”不一致的实现。
+
+`[[Resolve]](promise, x)` 执行以下步骤：
+
+- 如果 promise 和 x 引用的是同一个对象，则以一个 TypeError 作为 reason 让 promise 转为 rejeted 状态；
+- 如果 x 也是一个 promise ，则让 promise 接受它的状态：
+
+- - 如果 x 处于 pending 状态，promise 必须保持 pending 状态，直到 x 变成 fulfilled 或者 rejected 状态，promise 才同步改变；
+  - 如果或者当 x 处于 fulfilled 状态， 以同样的 value 让 promise 也变成 fulfilled 状态；
+  - 如果或者当 x 处于 rejected 状态， 以同样的 reason 让 promise 也变成 rejected 状态；
+
+- 如果 x 是一个对象或者函数：
+
+- - 令 then 等于 x.then；
+  - 如果读取 x.then 抛出异常 e ， 以 e 作为 reason 让 promise 变成 rejected 状态；
+  - 如果 then 是一个函数，以 x 作为 this 调用它，传入第一个参数 resolvePromise ， 第二个参数 rejectPromise ：
+
+- - - 如果 resolvePromise 被传入 y 调用， 则执行 `[[Resolve]](promise, y)`；
+    - 如果 rejectedPromise 被传入 r 调用，则用，r 作为 reason 让 promise 变成 rejected 状态；
+    - 如果 resolvePromise 和 rejectPromise 都被调用了，或者被调用多次了。只有第一次调用生效，其余会被忽略；
+    - 如果调用 then 抛出异常 e：
+
+- - - - 如果 resolvepromise 或 rejectPromise 已经被调用过了，则忽略它；
+      - 否则, 以 e 作为 reason 让 promise 变成 rejected 状态；
+
+- - - 如果 then 不是一个函数，以 x 作为 value 让 promise 变成 fulfilled 状态；
+
+- 如果 x 不是对象或函数， 以 x 作为 value 让 promise 变成 fulfilled 状态；
+
+如果一个 promise 被一个循环的 thenable 链中的对象 resolved，而 `[[Resolve]](promise, thenable) `的递归性质又使得其被再次调用，根据上述的算法将会陷入无限递归之中。算法虽不强制要求，但也鼓励实现者检测这样的递归是否存在，并且以 TypeError 作为 reason 拒绝 promise；
+
+## 5. async/await
+
+[caniuse支撑程度](https://caniuse.com/?search=async await)
+
+### 5.1. 介绍
+
+async/await的用处：用同步方式，执行异步操作
+
 ```js
-function *gen(){
-    const num1=yield 1;
-    console.log(num1);
-    const num2=yield 2;
-    console.log(num2);
-    return 3;
-}
-const g=gen();
-console.log(g.next());// {value:1,done:false}
-console.log(g.next(111));//111 {value:2,done:false}
-console.log(g.next(222));//222 {value:3,done:true}
-```
-
-Promise &next一起用
-
-1.yield后能跟promise
-
-2.next可以通过函数传参
-
-```js
-function fn(nums) {
-    return new Promise(resolve => {
-        setTimeout(() => {
-            resolve(nums * 2)
-        }, 1000)
-    })
+function request(num) { // 模拟接口请求
+  return new Promise(resolve => {
+    setTimeout(() => {
+      resolve(num * 2)
+    }, 1000)
+  })
 }
 
-function* gen() {
-    const num1 = yield fn(1);
-    const num2 = yield fn(num1);
-    const num3 = yield fn(num2);
-    return num3
-}
+request(1).then(res1 => {
+  console.log(res1) // 1秒后 输出 2
 
-const g = gen();
-const next1 = g.next();
-next1.value.then(res1 => {
-    console.log(next1); //{value: Promise(status:'fulfilled',value:2), done: false}
-    console.log(res1) //2
-    const next2 = g.next(res1);
-    next2.value.then(res2 => {
-        console.log(next2); //{value: Promise(status:'fulfilled',value:4), done: false}
-        console.log(res2); //4
-        const next3 = g.next(res2);
-        next3.value.then(res3 => {
-            console.log(next3); //{value:Promise(status:'fulfilled',value:8), done: false}
-            console.log(res3); //8
-            console.log(g.next(res3)); //{value:8,done:true}
-        });
-
-    })
+  request(2).then(res2 => {
+    console.log(res2) // 2秒后 输出 4
+  })
 })
 ```
 
-用generator实现async/await
+现在有一个新的要求：先请求完接口1，再拿接口1返回的数据，去当做接口2的请求参数，那我们也可以这么做：
 
- ```js
- function HOC(generatorFn){
-     return asyncFn
- }
+```js
+request(5).then(res1 => {
+  console.log(res1) // 1秒后 输出 10
+
+  request(res1).then(res2 => {
+    console.log(res2) // 2秒后 输出 20
+  })
+})
+```
+
+如果嵌套的多了，这个时候就可以用async/await来解决了：
+
+```js
+async function fn () {
+  const res1 = await request(5)
+  const res2 = await request(res1)
+  console.log(res2) // 2秒后输出 20
+}
+fn()
+```
+
+使用async/await代替上述的内容：
+
+```js
+async function fn () {
+  await request(1)
+  await request(2)
+  // 2秒后执行完
+}
+fn()
+```
+
+```js
+async function fn () {
+  const res1 = await request(5)
+  const res2 = await request(res1)
+  console.log(res2) // 2秒后输出 20
+}
+fn()
+```
+
+在async函数中，await规定了异步操作只能一个一个排队执行，从而达到用同步方式，执行异步操作的效果。
+
+注意：await只能在async函数中使用
+
+刚刚上面的例子await后面都是跟着异步操作Promise，那如果不接Promise？
+
+```js
+function request(num) { // 去掉Promise
+  setTimeout(() => {
+    console.log(num * 2)
+  }, 1000)
+}
+
+async function fn() {
+  await request(1) // 2
+  await request(2) // 4
+  // 1秒后执行完  同时输出
+}
+fn()
+```
+
+可以看出，如果await后面接的不是Promise的话，其实是达不到类似同步的效果的
+
+Q：什么是async？async是一个位于function之前的前缀，只有async函数中，才能使用await。那async执行完是返回是什么？
+
+```js
+async function fn () {}
+console.log(fn) // [AsyncFunction: fn]
+console.log(fn()) // Promise {<fulfilled>: undefined}
+```
+
+可以看出，async函数执行完会自动返回一个状态为fulfilled的Promise，也就是成功状态，但是值却是undefined，那要怎么才能使值不是undefined呢？只要函数有return返回值就行了。
+
+```js
+async function fn (num) {
+  return num
+}
+console.log(fn) // [AsyncFunction: fn]
+console.log(fn(10)) // Promise {<fulfilled>: 10}
+fn(10).then(res => console.log(res)) // 10
+```
+
+#### 5.1.1 总结
+
+1. await只能在async函数中使用，不然会报错；
+2. async函数返回的是一个Promise对象，有无值看有无return值；
+3. await后面最好是接Promise，虽然接其他值也能达到排队效；
+4. async/await作用是用同步方式，执行异步操作
+
+#### 5.1.2 语法糖
+
+Q：async/await是一种语法糖，那么什么是语法糖呢？
+
+A：语法糖是简化代码的一种方式，用其他方式也能达到同样的效果，但写法可能没有这么便利。
+
+ES6的class也是语法糖，因为其实用普通function也能实现同样效果
+
+回归正题，async/await是一种语法糖，用到的是ES6里的迭代函数——generator函数
+
+## 6. generator
+
  
- function *gen(){}
- const asyncFn=generatorToAsync(gen);
- console.log(asyncFn)
- ```
 
+### 6.1 介绍
 
+generator函数跟普通函数在写法上的区别就是，多了一个星号*，并且只有在generator函数中才能使用yield，而yield相当于generator函数执行的中途暂停点，比如下方有3个暂停点。而怎么才能暂停后继续走呢？那就得使用到next方法，next方法执行后会返回一个对象，对象中有value 和 done两个属性
+
+- value：暂停点后面接的值，也就是yield后面接的值；
+
+- done：是否generator函数已走完，没走完为false，走完为true；
+
+```js
+function* gen() {
+  yield 1
+  yield 2
+  yield 3
+}
+const g = gen()
+console.log(g.next()) // { value: 1, done: false }
+console.log(g.next()) // { value: 2, done: false }
+console.log(g.next()) // { value: 3, done: false }
+console.log(g.next()) // { value: undefined, done: true }
+```
+
+可以看到最后一个是undefined，这取决于你generator函数有无返回值
+
+```js
+function* gen() {
+  yield 1
+  yield 2
+  yield 3
+  return 4
+}
+const g = gen()
+console.log(g.next()) // { value: 1, done: false }
+console.log(g.next()) // { value: 2, done: false }
+console.log(g.next()) // { value: 3, done: false }
+console.log(g.next()) // { value: 4, done: true }
+```
+
+#### 6.1.1. yield后接函数
+
+yield后面接函数的话，到了对应暂停点yield，会马上执行此函数，并且该函数的执行返回值，会被当做此暂停点对象的value
+
+```js
+function fn(num) {
+  console.log(num)
+  return num
+}
+function* gen() {
+  yield fn(1)
+  yield fn(2)
+  return 3
+}
+const g = gen()
+console.log(g.next()) 
+// 1
+// { value: 1, done: false }
+console.log(g.next())
+// 2
+//  { value: 2, done: false }
+console.log(g.next()) 
+// { value: 3, done: true }
+```
+
+#### 6.1.2 yield后接promise
+
+```js
+function fn(num) {
+  return new Promise(resolve => {
+    setTimeout(() => {
+      resolve(num)
+    }, 1000)
+  })
+}
+function* gen() {
+  yield fn(1)
+  yield fn(2)
+  return 3
+}
+const g = gen()
+console.log(g.next()) // { value: Promise { <pending> }, done: false }
+console.log(g.next()) // { value: Promise { <pending> }, done: false }
+console.log(g.next()) // { value: 3, done: true }
+```
+
+如果想获取的是两个Promise的结果1 和 2，可以使用Promise的then
+
+```js
+const g = gen()
+const next1 = g.next()
+next1.value.then(res1 => {
+  console.log(next1) // 1秒后输出 { value: Promise { 1 }, done: false }
+  console.log(res1) // 1秒后输出 1
+
+  const next2 = g.next()
+  next2.value.then(res2 => {
+    console.log(next2) // 2秒后输出 { value: Promise { 2 }, done: false }
+    console.log(res2) // 2秒后输出 2
+    console.log(g.next()) // 2秒后输出 { value: 3, done: true }
+  })
+})
+```
+
+#### 6.1.3 next函数传参
+
+generator函数可以用next方法来传参，并且可以通过yield来接收这个参数，注意两点
+
+1. 第一次next传参是没用的，只有从第二次开始next传参才有用；
+2. next传值时，要记住顺序是，先右边yield，后左边接收参数；
+
+```js
+function* gen() {
+  const num1 = yield 1
+  console.log(num1)
+  const num2 = yield 2
+  console.log(num2)
+  return 3
+}
+const g = gen()
+console.log(g.next()) // { value: 1, done: false }
+console.log(g.next(11111))
+// 11111
+//  { value: 2, done: false }
+console.log(g.next(22222)) 
+// 22222
+// { value: 3, done: true }
+```
+
+#### 6.1.4 Promise&next传参
+
+根据上文可以知道：
+
+1. yield后面接Promise；
+2. next函数传参；
+
+所以一起使用时的效果为：
+
+```js
+function fn(nums) {
+  return new Promise(resolve => {
+    setTimeout(() => {
+      resolve(nums * 2)
+    }, 1000)
+  })
+}
+function* gen() {
+  const num1 = yield fn(1)
+  const num2 = yield fn(num1)
+  const num3 = yield fn(num2)
+  return num3
+}
+const g = gen()
+const next1 = g.next()
+next1.value.then(res1 => {
+  console.log(next1) // 1秒后同时输出 { value: Promise { 2 }, done: false }
+  console.log(res1) // 1秒后同时输出 2
+
+  const next2 = g.next(res1) // 传入上次的res1
+  next2.value.then(res2 => {
+    console.log(next2) // 2秒后同时输出 { value: Promise { 4 }, done: false }
+    console.log(res2) // 2秒后同时输出 4
+
+    const next3 = g.next(res2) // 传入上次的res2
+    next3.value.then(res3 => {
+      console.log(next3) // 3秒后同时输出 { value: Promise { 8 }, done: false }
+      console.log(res3) // 3秒后同时输出 8
+
+       // 传入上次的res3
+      console.log(g.next(res3)) // 3秒后同时输出 { value: 8, done: true }
+    })
+  })
+})
+```
+
+### 6.2 实现async/await
+
+上方的generator函数的Promise&next传参，就很像async/await了，区别在于
+
+1. gen函数执行返回值不是Promise，asyncFn执行返回值是Promise；
+2. gen函数需要执行相应的操作，才能等同于asyncFn的排队效果；
+3. gen函数执行的操作是不完善的，因为并不确定有几个yield，不确定会嵌套几次；
+
+针对这种情况，可以通过高阶函数（HOC）封装：
+
+高阶函数：参数是函数，返回值也可以是函数。
+
+```js
+function highorderFn(函数) {
+    // 一系列处理
+    return 函数
+}
+```
+
+根据上述代码，可以封装一个高阶函数，接收一个generator函数，并经过处理，返回一个具有async函数功能的函数：
 
 ```js
 function generatorToAsync(generatorFn) {
-    return function() {
-        const gen = generatorFn.apply(this, arguments);//this指向调用这个的实例
-        return new Promise((resolve, reject) => {
-            function go(key, arg) {
-                let res;
-                try {
-                    res = gen[key](arg);
-                } catch (err) {
-                    reject(err)
-                }
-                console.log(res);
-                const { value, done } = res;
-                if (done) {
-                    return resolve(value)
-                } else {
-                    //value可能是一个值，可能是promise,可能是成功或者失败
-                    return Promise.resolve(value).then(val => go('next', val), err => go('throw', err))
-                }
-            }
-
-            go('next')
-        })
-    }
-}                         
+  // 经过一系列处理
+  
+  return 具有async函数功能的函数
+}
 ```
 
-# 前端模块化开发
-
-## cmd和amd的区别
-
-- amd是依赖前置，cmd依赖就近
-
-- amd：返回return ,cmd：exports出去的
-
-## esm(es module  es6)
-
-在编译的时候，能确定模块的依赖关系，以及导入与导出
-
-Commons amd都是运行时
-
-## ES module和 commonjs区别
-
-1. commonjs 可以动态加载语句，代码发生在运行时。esm是静态编译期间就确定模块的依赖，不可以动态加载语句，只能声明在该文件的最顶部，代码发生在编译时
-
-2. commonjs输出的是值的拷贝，可以修改导出的值,一旦内部再修改这个值，则不会同步到外部。esm输出的是值的引用，内部修改可以同步到外部，而且导入的值，不能进行修改，也就是只读
-
-common module.exports对象的属性
-
-esm更多的作为静态的定义
+#### 6.2.1 返回值promise
 
 ```js
+function* gen() {
+
+}
+
+const asyncFn = generatorToAsync(gen)
+
+console.log(asyncFn()) // 期望这里输出 Promise
+```
+
+这里需要针对`generatorToAsync`进行处理：
+
+```js
+function* gen() {
+
+}
+function generatorToAsync (generatorFn) {
+  return function () {
+    return new Promise((resolve, reject) => {
+
+    })
+  }
+}
+
+const asyncFn = generatorToAsync(gen)
+
+console.log(asyncFn()) // Promise
+```
+
+#### 6.2.2. 结合上述代码
+
+把之前的处理代码，加入generatorToAsync函数中
+
+```js
+function fn(nums) {
+  return new Promise(resolve => {
+    setTimeout(() => {
+      resolve(nums * 2)
+    }, 1000)
+  })
+}
+function* gen() {
+  const num1 = yield fn(1)
+  const num2 = yield fn(num1)
+  const num3 = yield fn(num2)
+  return num3
+}
+function generatorToAsync(generatorFn) {
+  return function () {
+    return new Promise((resolve, reject) => {
+      const g = generatorFn()
+      const next1 = g.next()
+      next1.value.then(res1 => {
+
+        const next2 = g.next(res1) // 传入上次的res1
+        next2.value.then(res2 => {
+
+          const next3 = g.next(res2) // 传入上次的res2
+          next3.value.then(res3 => {
+
+            // 传入上次的res3
+            resolve(g.next(res3).value)
+          })
+        })
+      })
+    })
+  }
+}
+
+const asyncFn = generatorToAsync(gen)
+
+asyncFn().then(res => console.log(res)) // 3秒后输出 8
+```
+
+到这里，就已经实现了async/await的初始功能了
+
+```js
+async function asyncFn() {
+  const num1 = await fn(1)
+  const num2 = await fn(num1)
+  const num3 = await fn(num2)
+  return num3
+}
+asyncFn().then(res => console.log(res)) // 3秒后输出 8
+```
+
+#### 6.2.3. 结合多个await方法
+
+因为async中可以支持若干个await，await的个数是不确定的。同样类比，generator函数中，也可能有2个yield，3个yield，5个yield，所以需要对上述代码进行改造
+
+```js
+function generatorToAsync(generatorFn) {
+  return function() {
+    const gen = generatorFn.apply(this, arguments) // gen有可能传参
+
+    // 返回一个Promise
+    return new Promise((resolve, reject) => {
+
+      function go(key, arg) {
+        let res
+        try {
+          res = gen[key](arg) // 这里有可能会执行返回reject状态的Promise
+        } catch (error) {
+          return reject(error) // 报错的话会走catch，直接reject
+        }
+
+        // 解构获得value和done
+        const { value, done } = res
+        if (done) {
+          // 如果done为true，说明走完了，进行resolve(value)
+          return resolve(value)
+        } else {
+          // 如果done为false，说明没走完，还得继续走
+
+          // value有可能是：常量，Promise，Promise有可能是成功或者失败
+          return Promise.resolve(value).then(val => go('next', val), err => go('throw', err))
+        }
+      }
+
+      go("next") // 第一次执行
+    })
+  }
+}
+
+const asyncFn = generatorToAsync(gen)
+
+asyncFn().then(res => console.log(res))
+```
+
+#### 6.2.4 测试结果
+
+- async/await
+
+```js
+async function asyncFn() {
+  const num1 = await fn(1)
+  console.log(num1) // 2
+  const num2 = await fn(num1)
+  console.log(num2) // 4
+  const num3 = await fn(num2)
+  console.log(num3) // 8
+  return num3
+}
+const asyncRes = asyncFn()
+console.log(asyncRes) // Promise
+asyncRes.then(res => console.log(res)) // 8
+```
+
+- generatorToAsync
+
+```js
+function* gen() {
+  const num1 = yield fn(1)
+  console.log(num1) // 2
+  const num2 = yield fn(num1)
+  console.log(num2) // 4
+  const num3 = yield fn(num2)
+  console.log(num3) // 8
+  return num3
+}
+
+const genToAsync = generatorToAsync(gen)
+const asyncRes = genToAsync()
+console.log(asyncRes) // Promise
+asyncRes.then(res => console.log(res)) // 8
+```
+
+# 前端模块化
+
+https://www.yuque.com/lpldplws/web/xhqomd?singleDoc# 《前端模块化》 密码：xnou
+
+## 1. 课程目标
+
+1. 学习前端模块化发展历程；
+2. 掌握现代前端开发模块化的实现及实战；
+
+## 2. 课程大纲
+
+- 模块化理解；
+- 模块化规范及总结；
+
+## 3. 模块化的理解
+
+在JavaScript发展初期就是为了实现简单的页面交互逻辑，而如今CPU、浏览器性能得到了极大的提升，很多页面逻辑迁移到了客户端（表单验证等），随着web2.0时代的到来，Ajax技术得到广泛应用，jQuery等前端库层出不穷，前端代码日益膨胀，此时在JS方面就会考虑使用模块化规范去管理。模块化已经发展了有十余年了，不同的工具和轮子层出不穷，但总结起来，它们解决的问题主要有三个：
+
+1. 外部模块的管理；
+2. 内部模块的组织；
+3. 模块源码到目标代码的编译和转换；
+
+以下为各个工具或者框架的诞生时间，先了解下时间节奏，方便对内容有所了解：
+
+```js
+ 生态             诞生时间
+ Node.js          2009年   
+ NPM              2010年   
+ requireJS(AMD)   2010年
+ seaJS(CMD)       2011年
+ broswerify       2011年
+ webpack          2012年
+ grunt            2012年 
+ gulp             2013年
+ react            2013年 
+ vue              2014年
+ angular          2016年
+ redux            2015年 
+ vite             2020年
+ snowpack         2020年  
+```
+
+### 3.1 什么是模块？
+
+- 将一个复杂的程序依据一定的规则(规范)封装成几个块(文件)，并进行组合在一起；
+- 块的内部数据与实现是私有的, 只是向外部暴露一些接口(方法)与外部其它模块通信；
+
+### 3.2 模块化的进化过程
+
+#### 3.2.1. 全局function模式
+
+将不同的功能封装成不同的全局函数
+
+- 编码：将不同的功能封装成不同的全局函数
+- 问题：污染全局命名空间, 容易引起命名冲突或数据不安全，而且模块成员之间看不出直接关系
+
+```js
+function m1(){
+  //...
+}
+function m2(){
+  //...
+}
+```
+
+#### 3.2.2 namespace模式
+
+简单对象封装
+
+- 作用：减少了全局变量，解决命名冲突
+- 问题：数据不安全(外部可以直接修改模块内部的数据)
+
+```js
+let myModule = {
+  data: 'www.baidu.com',
+  foo() {
+    console.log(`foo() ${this.data}`)
+  },
+  bar() {
+    console.log(`bar() ${this.data}`)
+  }
+}
+myModule.data = 'other data' //能直接修改模块内部的数据
+myModule.foo() // foo() other data
+```
+
+这样的写法会暴露所有模块成员，内部状态可以被外部改写。
+
+#### 3.3.3. IIFE模式
+
+匿名函数自调用(闭包)
+
+- 作用：数据是私有的, 外部只能通过暴露的方法操作
+- 编码：将数据和行为封装到一个函数内部, 通过给window添加属性来向外暴露接口
+- 问题：如果当前这个模块依赖另一个模块怎么办?
+
+```js
+// index.html文件
+<script type="text/javascript" src="module.js"></script>
+<script type="text/javascript">
+    myModule.foo()
+    myModule.bar()
+    console.log(myModule.data) //undefined 不能访问模块内部数据
+    myModule.data = 'xxxx' //不是修改的模块内部的data
+    myModule.foo() //没有改变
+</script>
+
+// module.js文件
+(function(window) {
+  let data = 'www.xianzao.com'
+  //操作数据的函数
+  function foo() {
+    //用于暴露有函数
+    console.log(`foo() ${data}`)
+  }
+  function bar() {
+    //用于暴露有函数
+    console.log(`bar() ${data}`)
+    otherFun() //内部调用
+  }
+  function otherFun() {
+    //内部私有的函数
+    console.log('otherFun()')
+  }
+  //暴露行为
+  window.myModule = { foo, bar } //ES6写法
+})(window)
+```
+
+最后得到的结果：
+
+```js
+foo() www.xianzao.com
+bar() www.xianzao.com
+otehrFun()
+undefined
+foo() www.xianzao.com
+```
+
+#### 3.3.4 IIFE模式增强
+
+这就是现代模块实现的基石
+
+```js
+// module.js文件
+(function(window, $) {
+  let data = 'www.baidu.com'
+  //操作数据的函数
+  function foo() {
+    //用于暴露有函数
+    console.log(`foo() ${data}`)
+    $('body').css('background', 'red')
+  }
+  function bar() {
+    //用于暴露有函数
+    console.log(`bar() ${data}`)
+    otherFun() //内部调用
+  }
+  function otherFun() {
+    //内部私有的函数
+    console.log('otherFun()')
+  }
+  //暴露行为
+  window.myModule = { foo, bar }
+})(window, jQuery)
+
+ // index.html文件
+<!-- 引入的js必须有一定顺序 -->
+<script type="text/javascript" src="jquery-1.10.1.js"></script>
+<script type="text/javascript" src="module.js"></script>
+<script type="text/javascript">
+  myModule.foo()
+</script>
+```
+
+上例子通过jquery方法将页面的背景颜色改成红色，所以必须先引入jQuery库，就把这个库当作参数传入。这样做除了保证模块的独立性，还使得模块之间的依赖关系变得明显。
+
+### 3.3 模块化的好处
+
+- 避免命名冲突(减少命名空间污染)；
+- 更好的分离, 按需加载；
+- 更高复用性；
+- 高可维护性；
+
+### 3.4. 引入多个<script>后出现出现问题
+
+- 请求过多
+
+首先我们要依赖多个模块，那样就会发送多个请求，导致请求过多；
+
+- 依赖模糊
+
+我们不知道他们的具体依赖关系是什么，也就是说很容易因为不了解他们之间的依赖关系导致加载先后顺序出错；
+
+- 难以维护
+
+以上两种原因就导致了很难维护，很可能出现牵一发而动全身的情况导致项目出现严重的问题。
+模块化固然有多个好处，然而一个页面需要引入多个js文件，就会出现以上这些问题。而这些问题可以通过模块化规范来解决，因此才有了后续的commonjs, AMD, ES6, CMD规范。
+
+## 4. 模块化规范
+
+### 4.1. CommonJS
+
+#### 4.1.1. 概念
+
+Node 应用由模块组成，采用 CommonJS 模块规范。每个文件就是一个模块，有自己的作用域。在一个文件里面定义的变量、函数、类，都是私有的，对其他文件不可见。在服务器端，模块的加载是运行时同步加载的；在浏览器端，模块需要提前编译打包处理。
+
+#### 4.1.2. 特点
+
+- 所有代码都运行在模块作用域，不会污染全局作用域；
+- 模块可以多次加载，但是只会在第一次加载时运行一次，然后运行结果就被缓存了，以后再加载，就直接读取缓存结果。要想让模块再次运行，必须清除缓存；
+- 模块加载的顺序，按照其在代码中出现的顺序；
+
+#### 4.1.3. 基本语法
+
+- 暴露模块：`module.exports = value`或`exports.xxx = value`
+- 引入模块：`require(xxx)`,如果是第三方模块，xxx为模块名；如果是自定义模块，xxx为模块文件路径
+
+此处我们有个疑问：CommonJS暴露的模块到底是什么? CommonJS规范规定，每个模块内部，module变量代表当前模块。这个变量是一个对象，它的exports属性（即module.exports）是对外的接口。加载某个模块，其实是加载该模块的module.exports属性。
+
+```javascript
+// example.js
+var x = 5;
+var addX = function (value) {
+  return value + x;
+};
+module.exports.x = x;
+module.exports.addX = addX;
+```
+
+上面代码通过module.exports输出变量x和函数addX。
+
+```javascript
+var example = require('./example.js');//如果参数字符串以“./”开头，则表示加载的是一个位于相对路径
+console.log(example.x); // 5
+console.log(example.addX(1)); // 6
+```
+
+require命令用于加载模块文件。require命令的基本功能是，读入并执行一个JavaScript文件，然后返回该模块的exports对象。如果没有发现指定模块，会报错。
+
+#### 4.1.4. 模块的加载机制
+
+CommonJS模块的加载机制是，输入的是被输出的值的拷贝。也就是说，一旦输出一个值，模块内部的变化就影响不到这个值。这点与ES6模块化有重大差异（下文会介绍），请看下面这个例子：
+
+```js
+// lib.js
+var counter = 3;
+function incCounter() {
+  counter++;
+}
+module.exports = {
+  counter: counter,
+  incCounter: incCounter,
+};
+```
+
+上面代码输出内部变量counter和改写这个变量的内部方法incCounter。
+
+```js
+// main.js
+var counter = require('./lib').counter;
+var incCounter = require('./lib').incCounter;
+
+console.log(counter);  // 3
+incCounter();
+console.log(counter); // 3
+```
+
+上面代码说明，counter输出以后，lib.js模块内部的变化就影响不到counter了。这是因为counter是一个原始类型的值，会被缓存。除非写成一个函数，才能得到内部变动后的值。
+
+#### 4.1.5 服务器端实现
+
+1. 安装node
+2. npm init
+
+```js
+|-modules
+  |-module1.js
+  |-module2.js
+  |-module3.js
+|-app.js
+|-package.json
+  {
+    "name": "commonJS-node",
+    "version": "1.0.0"
+  }
+
+```
+
+3. 下载第三方模块
+
+```js
+npm install uniq --save // 用于数组去重
+```
+
+4. 定义模块代码
+
+```js
+//module1.js
+module.exports = {
+  msg: 'module1',
+  foo() {
+    console.log(this.msg)
+  }
+}
+
+//module2.js
+module.exports = function() {
+  console.log('module2')
+}
+
+//module3.js
+exports.foo = function() {
+  console.log('foo() module3')
+}
+exports.arr = [1, 2, 3, 3, 2]
+
+// app.js文件
+// 引入第三方库，应该放置在最前面
+let uniq = require('uniq')
+let module1 = require('./modules/module1')
+let module2 = require('./modules/module2')
+let module3 = require('./modules/module3')
+
+module1.foo() //module1
+module2() //module2
+module3.foo() //foo() module3
+console.log(uniq(module3.arr)) //[ 1, 2, 3 ]
+```
+
+5. node app.js
+
+#### 4.1.6. 浏览器端实现
+
+使用Browserify：Browserify 会对代码进行解析，整理出代码中的所有模块依赖关系，然后把相关的模块代码都打包在一起，形成一个完整的JS文件，这个文件中不会存在 require 这类的模块化语法，变成可以在浏览器中运行的普通JS
+
+1. 创建项目结构
+
+```js
+|-js
+  |-dist //打包生成文件的目录
+  |-src //源码所在的目录
+    |-module1.js
+    |-module2.js
+    |-module3.js
+    |-app.js //应用主源文件
+|-index.html //运行于浏览器上
+|-package.json
+  {
+    "name": "browserify-test",
+    "version": "1.0.0"
+  }
+```
+
+2. 下载browserify
+
+- 全局: `npm install browserify -g`
+- 局部: `npm install browserify --save-dev`
+
+3. 定义模块代码
+
+注意：index.html文件要运行在浏览器上，需要借助browserify将app.js文件打包编译，如果直接在index.html引入app.js就会报错！
+
+4. 打包处理js
+
+根目录下运行
+
+```js
+browserify js/src/app.js -o js/dist/bundle.js
+```
+
+5. 页面使用引入
+
+在index.html文件中引入
+
+```js
+<script type="text/javascript" src="js/dist/bundle.js"></script>
+```
+
+### 4.2  AMD（Asynchronous Module Definition）
+
+#### 4.2.1 概念
+
+CommonJS规范加载模块是同步的，也就是说，只有加载完成，才能执行后面的操作。AMD规范则是非同步加载模块，允许指定回调函数。由于Node.js主要用于服务器编程，模块文件一般都已经存在于本地硬盘，所以加载起来比较快，不用考虑非同步加载的方式，所以CommonJS规范比较适用。但是，如果是浏览器环境，要从服务器端加载模块，这时就必须采用非同步模式，因此浏览器端一般采用AMD规范。此外AMD规范比CommonJS规范在浏览器端实现要来着早。
+
+#### 4.2.2 基本语法
+
+定义暴露模块
+
+```js
+//定义没有依赖的模块
+define(function(){
+   return 模块
+})
+
+//定义有依赖的模块
+define(['module1', 'module2'], function(m1, m2){
+   return 模块
+})
+```
+
+引用使用模块：
+
+```js
+require(['module1', 'module2'], function(m1, m2){
+   使用m1/m2
+})
+```
+
+#### 4.2.3 AMD实现
+
+通过比较是否实用AMD，来说明使用AMD实际使用的效果。
+
+##### 4.2.3.1. 未使用AMD规范
+
+```js
+// dataService.js文件
+(function (window) {
+  let msg = 'www.xianzao.com'
+  function getMsg() {
+    return msg.toUpperCase()
+  }
+  window.dataService = {getMsg}
+})(window)
+
+// alerter.js文件
+(function (window, dataService) {
+  let name = 'xianzao'
+  function showMsg() {
+    alert(dataService.getMsg() + ', ' + name)
+  }
+  window.alerter = {showMsg}
+})(window, dataService)
+
+// main.js文件
+(function (alerter) {
+  alerter.showMsg()
+})(alerter)
+
+// index.html文件
+<div><h1>Modular Demo 1: 未使用AMD(require.js)</h1></div>
+<script type="text/javascript" src="js/modules/dataService.js"></script>
+<script type="text/javascript" src="js/modules/alerter.js"></script>
+<script type="text/javascript" src="js/main.js"></script>
+```
+
+最后得到的如下结果：
+
+```js
+'WWW.XIANZAO.COM', 'xianzao'
+```
+
+这种方式缺点很明显：首先会发送多个请求，其次引入的js文件顺序不能搞错，否则会报错
+
+##### 4.2.3.2. 使用require.js
+
+RequireJS是一个工具库，主要用于客户端的模块管理。它的模块管理遵守AMD规范，RequireJS的基本思想是，通过define方法，将代码定义为模块；通过require方法，实现代码的模块加载。
+
+
+接下来介绍AMD规范在浏览器实现的步骤：
+
+1. 下载require.js, 并引入
+
+- 官网: http://www.requirejs.cn/
+- github : https://github.com/requirejs/requirejs
+
+然后将require.js导入项目: `js/libs/require.js`
+
+2. 创建项目结构
+
+```js
+|-js
+  |-libs
+    |-require.js
+  |-modules
+    |-alerter.js
+    |-dataService.js
+  |-main.js
+|-index.html
+```
+
+3. 定义require.js的模块化代码
+
+```js
+// dataService.js文件
+// 定义没有依赖的模块
+define(function() {
+  let msg = 'www.xianzao.com'
+  function getMsg() {
+    return msg.toUpperCase()
+  }
+  return { getMsg } // 暴露模块
+})
+
+//alerter.js文件
+// 定义有依赖的模块
+define(['dataService'], function(dataService) {
+  let name = 'xianzao'
+  function showMsg() {
+    alert(dataService.getMsg() + ', ' + name)
+  }
+  // 暴露模块
+  return { showMsg }
+})
+
+// main.js文件
+(function() {
+  require.config({
+    baseUrl: 'js/', //基本路径 出发点在根目录下
+    paths: {
+      //映射: 模块标识名: 路径
+      alerter: './modules/alerter', //此处不能写成alerter.js,会报错
+      dataService: './modules/dataService'
+    }
+  })
+  require(['alerter'], function(alerter) {
+    alerter.showMsg()
+  })
+})()
+
+// index.html文件
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Modular Demo</title>
+  </head>
+  <body>
+    <!-- 引入require.js并指定js主文件的入口 -->
+    <script data-main="js/main" src="js/libs/require.js"></script>
+  </body>
+</html>
+```
+
+4. 页面引入require.js模块
+
+在index.html引入
+
+```js
+<script data-main="js/main" src="js/libs/require.js"></script>
+```
+
+5. 引入第三方库
+
+```js
+// alerter.js文件
+define(['dataService', 'jquery'], function(dataService, $) {
+  let name = 'Tom'
+  function showMsg() {
+    alert(dataService.getMsg() + ', ' + name)
+  }
+  $('body').css('background', 'green')
+  // 暴露模块
+  return { showMsg }
+})
+```
+
+```js
+// main.js文件
+(function() {
+  require.config({
+    baseUrl: 'js/', //基本路径 出发点在根目录下
+    paths: {
+      //自定义模块
+      alerter: './modules/alerter', //此处不能写成alerter.js,会报错
+      dataService: './modules/dataService',
+      // 第三方库模块
+      jquery: './libs/jquery-1.10.1' //注意：写成jQuery会报错
+    }
+  })
+  require(['alerter'], function(alerter) {
+    alerter.showMsg()
+  })
+})()
+```
+
+上例是在alerter.js文件中引入jQuery第三方库，main.js文件也要有相应的路径配置。
+
+##### 4.2.3.3. 总结
+
+ 通过两者的比较，可以得出AMD模块定义的方法非常清晰，不会污染全局环境，能够清楚地显示依赖关系。AMD模式可以用于浏览器环境，并且允许非同步加载模块，也可以根据需要动态加载模块
+
+### 4.3 CMD(Common Module Definition)
+
+#### 4.3.1概念
+
+CMD规范专门用于浏览器端，模块的加载是异步的，模块使用时才会加载执行。CMD规范整合了CommonJS和AMD规范的特点。在 Sea.js 中，所有 JavaScript 模块都遵循 CMD模块定义规范。
+
+#### 4.3.2 基本语法 
+
+```js
+//定义没有依赖的模块
+define(function(require, exports, module){
+  exports.xxx = value
+  module.exports = value
+})
+```
+
+```js
+//定义有依赖的模块
+define(function(require, exports, module){
+  //引入依赖模块(同步)
+  var module2 = require('./module2')
+  //引入依赖模块(异步)
+    require.async('./module3', function (m3) {
+    })
+  //暴露模块
+  exports.xxx = value
+})
+```
+
+```js
+// 引入使用的模块
+define(function (require) {
+  var m1 = require('./module1')
+  var m4 = require('./module4')
+  m1.show()
+  m4.show()
+})
+```
+
+#### 4.3.3. CMD实现
+
+1. 下载sea.js, 并引入
+
+- 官网: http://seajs.org/
+- github : https://github.com/seajs/seajs
+
+然后将sea.js导入项目：`js/libs/sea.js`
+
+2. 创建项目结构
+
+```js
+|-js
+  |-libs
+    |-sea.js
+  |-modules
+    |-module1.js
+    |-module2.js
+    |-module3.js
+    |-module4.js
+    |-main.js
+|-index.html
+```
+
+3. 定义sea.js的模块化代码
+
+```js
+// module1.js文件
+define(function (require, exports, module) {
+  //内部变量数据
+  var data = 'xianzao.com'
+  //内部函数
+  function show() {
+    console.log('module1 show() ' + data)
+  }
+  //向外暴露
+  exports.show = show
+})
+
+// module2.js文件
+define(function (require, exports, module) {
+  module.exports = {
+    msg: 'I am xianzao'
+  }
+})
+
+// module3.js文件
+define(function(require, exports, module) {
+  const API_KEY = 'abc123'
+  exports.API_KEY = API_KEY
+})
+
+// module4.js文件
+define(function (require, exports, module) {
+  //引入依赖模块(同步)
+  var module2 = require('./module2')
+  function show() {
+    console.log('module4 show() ' + module2.msg)
+  }
+  exports.show = show
+  //引入依赖模块(异步)
+  require.async('./module3', function (m3) {
+    console.log('异步引入依赖模块3  ' + m3.API_KEY)
+  })
+})
+
+// main.js文件
+define(function (require) {
+  var m1 = require('./module1')
+  var m4 = require('./module4')
+  m1.show()
+  m4.show()
+})
+```
+
+4. 在index.html中引入
+
+```js
+<script type="text/javascript" src="js/libs/sea.js"></script>
+<script type="text/javascript">
+  seajs.use('./js/modules/main')
+</script>
+```
+
+最后得到结果如下：
+
+```js
+module1 show(), xianzao
+module4 show() I am xianzao
+异步引入依赖模块3 abc123
+```
+
+#### 4.3.4cmd和amd的区别
+
+```js
+// CMD
+define(function (requie, exports, module) {
+    //依赖就近书写
+    var module1 = require('Module1');
+    var result1 = module1.exec();
+    module.exports = {
+      result1: result1,
+    }
+});
+
+// AMD
+define(['Module1'], function (module1) {
+    var result1 = module1.exec();
+    return {
+      result1: result1,
+    }
+});
+```
+
+从上面的代码比较中我们可以得出AMD规范和CMD规范的区别
+
+1. 对依赖的处理：
+
+- AMD推崇依赖前置，即通过依赖数组的方式提前声明当前模块的依赖；
+- CMD推崇依赖就近，在编程需要用到的时候通过调用require方法动态引入；
+
+2. 在本模块的对外输出：
+
+- AMD推崇通过返回值的方式对外输出；
+- CMD推崇通过给module.exports赋值的方式对外输出
+
+### 4.4 ES6模块化
+
+#### 4.4.1 概念
+
+ES6 模块的设计思想是尽量的静态化，使得编译时就能确定模块的依赖关系，以及输入和输出的变量。`CommonJS` 和 `AMD` 模块，都只能在运行时确定这些东西。比如，CommonJS 模块就是对象，输入时必须查找对象属性。
+
+#### 4.4.2 基本使用
+
+export命令用于规定模块的对外接口，import命令用于输入其他模块提供的功能。
+
+```js
+/** 定义模块 math.js **/
+var basicNum = 0;
+var add = function (a, b) {
+    return a + b;
+};
+export { basicNum, add };
+/** 引用模块 **/
+import { basicNum, add } from './math';
+function test(ele) {
+    ele.textContent = add(99 + basicNum);
+}
+```
+
+如上例所示，使用import命令的时候，用户需要知道所要加载的变量名或函数名，否则无法加载。为了给用户提供方便，让他们不用阅读文档就能加载模块，就要用到export default命令，为模块指定默认输出。
+
+```js
+// export-default.js
+export default function () {
+  console.log('foo');
+}
+
+// import-default.js
+import customName from './export-default';
+customName(); // 'foo'
+```
+
+模块默认输出, 其他模块加载该模块时，import命令可以为该匿名函数指定任意名字。
+
+ES6 模块与 CommonJS 模块的差异
+
+1. CommonJS,可以动态加载语句，代码发生在运行时, 模块输出的是一个值的拷贝,可以修改导出的值,一旦内部再修改这个值，则不会同步到外部。ES6 模块输出的是值的引用,内部修改可以同步到外部，而且导入的值，不能进行修改，也就是只读
+2. Common JS 模块是运行时加载，ES6 模块是静态编译期间就确定模块的依赖，不可以动态加载语句，只能声明在该文件的最顶部，代码发生在编译时编译时输出接口；
+
+第二个差异是因为 CommonJS 加载的是一个对象（即module.exports属性），该对象只有在脚本运行完才会生成。而 ES6 模块不是对象，它的对外接口只是一种静态定义，在代码静态解析阶段就会生成。
+下面重点解释第一个差异，我们还是举上面那个CommonJS模块的加载机制例子:
+
+```js
+// lib.js
+export let counter = 3;
+export function incCounter() {
+  counter++;
+}
+// main.js
+import { counter, incCounter } from './lib';
+console.log(counter); // 3
+incCounter();
+console.log(counter); // 4
+
 //lib.js
 export let cnt=3;
 export function intCnt(){
@@ -5932,422 +7950,944 @@ console.log(cnt);//3
 cnt=10;//不会报错
 ```
 
-## AMD
-
-Asynchronous moule definnition
-
-![amd结构目录](/Volumes/F/zyl-study/web-zhuawa/20221203/amd结构目录.jpg)
-
-```js
-//dataService.js
-define(function(){
-    let msg='zyl';
-    function getMsg(){
-        return msg.toUpperCase();
-    }
-    return {getMsg}
-})
 
 
-//alerter.js
-define(['dataService'],function(dataService){
-    let name='zyl122';
-    function showMsg(){
-        alert(dataService.getMsg()+','+name)
-    }
-    return {showMsg}
-})
+#### 4.4.3 ES6实现
 
-//main.js
-(function(){
-    require.config({
-        baseUrl:'js/',//根级目录
-        paths:{
-            alerter:'./modules/alerter',
-            dataService:'./modules/dataService'
-        }
-    })
-    require(['alerter'],function(alerter){
-        alerter.showMsg();
-    })
-})()
+简单来说就一句话：使用Babel将ES6编译为ES5代码，使用Browserify编译打包js。
 
-
-//index.html
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta http-equiv="X-UA-Compatible" content="IE=edge">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AMD</title>
-</head>
-<body>
-    <script data-main="js/main" src="js/libs/require.js"></script>
-</body>
-</html>
-```
-
-## CMD
-
-Common module definition
-
-Commons +amd ->sea.js
+1. 定义package.json文件
 
 ```js
-define(function(require,exports,module){
-    let module=require('./module');
-    require.async('./module2',function(m){
-        
-    });
-    module.showMsg();
-    exports.XXX=val;
-    
-})
-```
-
-![cmd结构目录](/Volumes/F/zyl-study/web-zhuawa/20221203/cmd结构目录.jpg)
-
-```js
-//module1.js
-define(function(require,exports,module){
-    let data='zyl.com';
-    function show(){
-        console.log('module1 1 show'+data);
-    }
-    exports.show=show;
-})
-
-//module2.js
-define(function(require,exports,module){
- module.exports={
-     msg:'hello zyl'
+ {
+   "name" : "es6-babel-browserify",
+   "version" : "1.0.0"
  }
-})
-
-//module3.js
-define(function(require,exports,module){
- const API_KEY='abc123';
-    exports.API_KEY=API_KEY;
-})
-
-//module4.js
-define(function(require,exports,module){
-    //同步引用
-  var module2=require('./module2');
-    function show(){
-        console.log('module2 show()'+module2.msg)
-    }
-    
-    //异步引用
-    require.async('./module3',function(m3){
-        console.log('module3'+m3.API_KEY)
-     
-    })
-    exports.show=show;
-})
-
-
-//main.js
-define(function(require,exports,module){
- let m1=require('./module1');
-    let m4=require('./module4');
-    m1.show();
-    m4.show();
-})
-
-//index.html
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta http-equiv="X-UA-Compatible" content="IE=edge">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AMD</title>
-</head>
-<body>
-    <script type="text/javascript" src="js/libs/sea.js"></script>
- <script type="text/javascript" >
-     seajs.use('./js/modules/main.js')
-     </script>
-</body>
-</html>
 ```
 
+2. 安装babel-cli, babel-preset-es2015和browserify
 
+```bash
+npm install babel-cli browserify -g
+npm install babel-preset-es2015 --save-dev
+```
 
-# 浏览器事件&请求
-
-
-
-stopPropagation:停止事件在dom层上的事件传播，包括捕获和冒泡
-
-preventDefault:停止点击a标签跳转url
-
-## 手写ajax
+3. 定义.babelrc文件
 
 ```js
-const ajax = option => {
-    //0.将对象转换成字符串
-    const objToString = data => {
-        data.t = new Date().getTime();
-        let res = [];
-        for (let key in data) {
-            res.push(encodeURIComponent(key) + "=" + encodeURIComponent(data[key]));
-        }
-        return res.join('&')
-    }
+  {
+    "presets": ["es2015"]
+  }
+```
 
-    let str = objToString(option.data || {});
+4. 定义模块代码
 
-    //1.创建一个异步对象xmlHttp
-    let xmlHttp, timer;
-    if (window.XMLHttpRequest) {
-        xmlHttp = new XMLHttpRequest();
-    } else if (xmlHttp) {
-        //code for IE6,IE5
-        xmlHttp = new ActiveXObject('Microsoft-xmlHttp');
-    }
+```js
+//module1.js文件
+// 分别暴露
+export function foo() {
+  console.log('foo() module1')
+}
+export function bar() {
+  console.log('bar() module1')
+}
 
-    //2.设置请求方式和请求地址
-    if (option.type.toLowerCase() === 'get') {
-        xmlHttp.open(option.type, option.urtl + '?t=' + str, true);
-        //3.发送请求
-        xmlHttp.send();
+//module2.js文件
+// 统一暴露
+function fun1() {
+  console.log('fun1() module2')
+}
+function fun2() {
+  console.log('fun2() module2')
+}
+export { fun1, fun2 }
+
+//module3.js文件
+// 默认暴露 可以暴露任意数据类项，暴露什么数据，接收到就是什么数据
+export default () => {
+  console.log('默认暴露')
+}
+
+// app.js文件
+import { foo, bar } from './module1'
+import { fun1, fun2 } from './module2'
+import module3 from './module3'
+foo()
+bar()
+fun1()
+fun2()
+module3()
+```
+
+5. 编译并在index.html中引入
+
+- 使用Babel将ES6编译为ES5代码(但包含CommonJS语法) :` babel js/src -d js/lib`
+- 使用Browserify编译js : `browserify js/lib/app.js -o js/lib/bundle.js`
+
+然后在index.html文件中引入
+
+```js
+ <script type="text/javascript" src="js/lib/bundle.js"></script> 
+```
+
+最后得到如下结果：
+
+```js
+foo() module1
+bar() module1
+fun1() module2
+fun2() module2
+默认暴露
+```
+
+6. 引入第三方库
+
+首先安装依赖`npm install jquery@1`，然后在app.js文件中引入
+
+```js
+//app.js文件
+import { foo, bar } from './module1'
+import { fun1, fun2 } from './module2'
+import module3 from './module3'
+import $ from 'jquery'
+
+foo()
+bar()
+fun1()
+fun2()
+module3()
+$('body').css('background', 'green')
+```
+
+### 4.5 UMD(Universal Module Defintion)
+
+是一种javascript通用模块定义规范，让你的模块能在javascript所有运行环境中发挥作用。
+
+意味着要同时满足CommonJS, AMD, CMD的标准，以下为实现：
+
+```js
+(function(root, factory) {
+    if (typeof module === 'object' && typeof module.exports === 'object') {
+        console.log('是commonjs模块规范，nodejs环境')
+        module.exports = factory();
+    } else if (typeof define === 'function' && define.amd) {
+        console.log('是AMD模块规范，如require.js')
+        define(factory)
+    } else if (typeof define === 'function' && define.cmd) {
+        console.log('是CMD模块规范，如sea.js')
+        define(function(require, exports, module) {
+            module.exports = factory()
+        })
     } else {
-        xmlHttp.open(option.type, option.url, true);
-        //在post请求中，必须在open和send之间添加HTTP请求头：setREquestHeader(header,value)
-        xmlHttp.setRequestHeader('Content-type', "appliaction/x-www-form-urlencoded");
-        xmlHttp.send(str)
+        console.log('没有模块环境，直接挂载在全局对象上')
+        root.umdModule = factory();
     }
-
-    //监听状态的变化
-    xmlHttp.onreadystatechange = function() {
-        clearInterval(timer);
+}(this, function() {
+    return {
+        name: '我是一个umd模块'
     }
-    if (xmlHttp.readyState === 4) {
-        if ((xmlHttp.status >= 200 && xmlHttp.status < 300) || xmlHttp.status == 304) {
-            //处理返回的结果
-            option.success(xmlHttp.responseText);
-        } else {
-            option.error(xmlHttp.responseText)
-        }
-    }
-
-
-    if (option.timeout) {
-        timer = setInterval(function() {
-            xmlHttp.abort();
-            clearInterval(timer)
-        }, option.timeout)
-    }
-
-}
+}))
 ```
 
-# JS垃圾回收与内存泄漏
+## 5. 总结
 
-## GC策略
+1. CommonJS规范主要用于服务端编程，加载模块是同步的，这并不适合在浏览器环境，因为同步意味着阻塞加载，浏览器资源是异步加载的，因此有了AMD CMD解决方案；
+2. AMD规范在浏览器环境中异步加载模块，而且可以并行加载多个模块。不过，AMD规范开发成本高，代码的阅读和书写比较困难，模块定义方式的语义不顺畅；
+3. CMD规范与AMD规范很相似，都用于浏览器编程，依赖就近，延迟执行，可以很容易在Node.js中运行；
+4. ES6 在语言标准的层面上，实现了模块功能，而且实现得相当简单，完全可以取代 CommonJS 和 AMD 规范，成为浏览器和服务器通用的模块解决方案；
+5. UMD为同时满足CommonJS, AMD, CMD标准的实现
 
-可达性：通过某种方式能够访问或者说引用的内存地址，具有可达性的数据，不会被垃圾回收
-
-GC：js引擎周期性的寻找不具有可达性的内存空间进行释放
-
-周期性原因：开销太大
-
-### 1.标记清除 mark-sweep
-
-- 标记：针对所有的AO活动对象(被引用到的内存地址)进行标记
-- 清除：把没有标记的非AO活动对象 进行清除
-
-```js
-let name='zyl';
-let obj={
-    name:'zyl1'
-}
-```
-
-1.针对所有变量设置一个二进制的tag
-
-2.设置两个列表：进入当前上下文的变量列表与离开当前上下文的变量列表
-
-根对象开始遍历内存，对所有用到的对象进行标记
-
-1.打标，初始默认设置为垃圾设置为 0
-
-2.从根结点遍历，不是垃圾设置为1
-
-3.清理所有为0的垃圾，销毁内存空间
-
-4.标记为1会被重置为0
-
-优缺点：
-
-1.实现方式简单，二进制 tag
-
-- first-fit:直接返回找到的第一个大于等于新建内存块大小的内存
-
-- best-fit：遍历所有的空闲内存，返回最小的符合大小的区块
-
-- worst-fit:遍历所有空闲内存，返回最大的，分为size+以及另一块空的内存
-
-缺点：
-
-- 内存碎片化
-
-- 分配速度o(n)
-
-## 标记整理算法：mark-compact
-
-## 引用计数
-
-reference counting
-
-对象是不是不再需要 ->没有其它对象引用到它
-
-1.声明了一个变量且将一个引用类型赋值给改变量，cnt+1
-
-2.如果同一个值被赋值给别的变量+1
-
-3.被其他值覆盖，引用次数 -1
-
-4.直到为0，GC
-
-V8对GC做了优化
-
-分代式垃圾回收
-
-新生代：小的，新的，存在时间短 1-8M
-
-老生代
-
-## 新生代的垃圾回收
-
-- 当新生代中内存被多次复制后，会移动到老生代
-
-- 当空闲区使用空间超过25%
-
-## 老生代的垃圾回收
-
-全停顿 stop-the-world GC
-
-parallel并行回收
-
-增量标记
-
-三色标记 如何针对GC暂停和恢复
-
-## 内存泄漏
-
-```js
-function fn1(){
-    let test=new Array(1000).fill('zyl');
-    return function(){
-        return test
-    }
-}
-
-let fn1Child=fn1();
-fn1Child();
-fn1Child=null;//不写这段代码，会出现内存泄漏
-```
-
-隐式全局变量不会主动垃圾回收
-
-```js
-function fn(){
-     test1=new Array(1000).fill('zyl');
-     this.test1=new Array(1000).fill('zyl');
-}
-test1=null;
-test2=null;
-```
-
-```js
-let obj={
-    id:1,
-}
-let user={
-    info:obj
-}
-let  set=new Set([obj]);
-let map=new Map([[obj,'zyl']]);
-obj=null;
-console.log(user.info)//{id:1}
-```
-
-```js
-let obj={
-    id:1,
-}
-let user={
-    info:obj
-}
-let  set=new WeakSet([obj]);
-let map=new WeakMap([[obj,'zyl']]);
-obj=null;
-console.log(user.info)//null
-```
-
-# js运行机制
-
-## 进程
+# **阿里前端面试官带你深度模拟前端专家面试**
 
 https://www.yuque.com/lpldplws/atomml/wa93b6?singleDoc# 《阿里前端面试官带你深度模拟前端专家面试》 密码：xord
 
-1.进程：cpu资源分配的最小单位
+## 1. 模拟面试环节
 
-- 独立运行，运行中的程序
-- 有自己的资源空间
+### 1.1. 常见的简历内容
 
-2.线程
+- 熟练使用Antd UI库构建项目 ；
+- 熟练使用ajax、axios等技术；
+- 熟练使用各种前端库，如Bootstrap，jQuery等 ；
+- 熟练使用Charles对App页面进行调试；
+- 熟悉ES6，掌握Promise、async、await的使用；
+- 熟悉Vue的使用，掌握vue-router、vue cli等；
+- 熟悉React的使用，掌握Redux、Mobx、React-Router的使用；
+- 掌握前端开发工具，如webpack ；
+- 了解MVC，MVVM设计模式 ；
+- 对原型链、闭包、面向对象有一定认识 ；了解Node.js，可配合后端开发人员进行开发；
+- 关注前端发展趋势；
 
-- cpu调度的最小单元
+### 1.2 建立内容
 
-3.协程 fiber requestIdleCallback
+ 
 
-调度和切换 线程消耗更少
+目标：P7
 
-- 多进程
-- 多线程
+技术栈：
 
-## 为什么js是单线程？
+- 熟练：JS、CSS、TS；
 
-操作dom ->单线程
+- 熟练：Vue2/3、Vue-SSR、React
 
-worker线程 web worker不能操作dom
+- 熟练：跨端（Uni-app）；
 
-## chrome浏览器
+- 熟悉：Node、网络；
 
-1.browser进程
+- 了解：Vue、React技术栈原理、RN；
 
-- 中控 --控制浏览器各个窗口
+- 了解：跨端小程序原理；
 
-2.第三方插件进程
+- 了解：linux、docker、sql；
 
-3.GPU 3D进程
+项目：
 
-4.renderer 渲染进程
+1. 项目1：RN
 
-4.1 GUI渲染线程：
+2. 项目2：C端
 
-- parser Html Css Dom CSSOM ->render tree
+- 封装CLI，基于Vue-cli4，支持CDN、ajax、hybrid；
 
-- repaint 重绘
-- reflow 回流/重排 resize
+- IM SDK开发；
 
-4.2 js引擎线程 fiber
+- 技术栈：Vue3、TS、Rollup、Babel、Vite、websocket；
 
-- v8引擎 执行js脚本程序 解析js，运行代码
+3. 项目3：跨端
 
-GUI和js引擎是互斥的，相同的时间下，只能运行一个
+- uni-app开发；
 
-```js
-<script src="./script.js" async></script>
-<scipt src="./script.js" defer></script>
+- 项目性能优化；
+
+- 技术栈：Vue、Uni-app、Webpack、TS；
+
+4. 项目4：B端
+
+- 规范组件；
+
+## 2.面试问题
+
+ 
+
+### 2.1面试问题
+
+ 
+
+1. 基础：
+
+- 从用户输入网址到客户端展现，中间发生了什么过程？
+
+2. 框架：
+
+- Vue、React实现diff的区别？
+
+- Vue 和 Uni-app在生成多端代码时的异同点？
+
+- 组件库的设计思路？
+
+- 跨端小程序的实现思路？
+
+3. 项目问题：
+
+- 项目1：
+  - RN遇到最难的问题是什么？
+  - 如何针对RN进行性能优化？
+  - 为什么不用flutter？
+  - 既然有跨端应用，为什么不转uni-app?
+
+- 项目2：
+  - CLI实现的功能？
+  - 详细介绍一下IM-SDK？
+
+- 项目3：
+  - uni-app项目优化方案？
+
+- 项目4：
+  - 如何规范组件？
+  - 组内如何推动？
+
+4. 常见问题：
+
+- 做过技术复杂度最高的项目是什么；
+
+- 前端前沿知识有哪些了解；
+
+ 
+
+## 3.面试常见问题&面试注意事项
+
+### 3.1 面试常见问题
+
+ 
+
+#### 3.1.1 从用户输入网址到客户端展现，中间发生了什么过程？ 
+
+目的在于是否有对性能优化的实践
+
+1. 输入网址 --- 告诉浏览器你要去哪里
+
+2. 浏览器查找DNS --- 网络世界是IP地址的世界，DNS就是ip地址的别名。从本地DNS到最顶级DNS一步一步的网上爬，直到命中需要访问的IP地址
+
+- DNS预解析 --- 使用CDN缓存，加快解析CDN寻找到目标地址（dns-prefetch）；
+
+3. 客户端和服务器建立连接 --- 建立TCP的安全通道，3次握手
+
+- CDN加速 --- 使用内容分发网络，让用户更快的获取到所要内容；
+
+- 启用压缩 --- 在http协议中，使用类似Gzip压缩的方案（对服务器资源不足的时候进行权衡）；
+
+- 使用HTTP/2协议 --- http2.0针对1.0优化了很多东西，包括异步连接复用，头压缩等等，使传输更快；
+
+4. 浏览器发送http请求 --- 默认长连接（复用一个tcp通道，短连接：每次连接完就销毁）
+
+- 减少http请求 --- 每个请求从创建到销毁都会消耗很多资源和时间，减少请求就可以相对来说更快展示内容；
+  - 压缩合并js文件以及css文件
+  - 针对图片，可将图片进行合并然后下载，通过css Sprites切割展示（控制大小，太大的话反而适得其反）
+
+- 使用http缓存 --- 缓存原则：越多越好，越久越好。让客户端发送更少请求，直接从本地获取，加快性能；
+
+- 减少cookie请求 --- 针对非必要数据（静态资源）请求，进行跨域隔离，减少传输内容大小；
+
+- 预加载请求 --- 针对一些业务中场景可预加载的内容，提前加载，在之后的用户操作中更少的请求，更快的响应；
+
+- 选择get和post --- 在http定义的时候，get本质上就是获取数据，post是发送数据的。get可以在一个TCP报文完成请求，但是post先发header，再发送数据。so，考虑好请求选型；
+
+- 缓存方案选型 --- 递进式缓存更新（防止一次性丢失大量缓存，导致负载骤多）；
+
+5. 服务器响应请求 --- tomcat、IIS等服务器通过本地映射文件关系找到地址或者通过数据库查找到数据，处理完成返回给浏览器
+
+- 后端框架选型 --- 更快的响应，前端更快的操作；
+
+- 数据库选型和优化 --- 更快的响应，前端更快的操作；
+
+6. 浏览器接受响应 --- 浏览器根据报文头里面的数据进行不同的响应处理
+
+- 解耦第三方依赖 --- 越多的第三方的不确定因素，会导致web的不稳定性和不确定性；
+
+- 避免404资源 --- 请求资源不到浪费了从请求到接受的所有资源；
+
+7. 浏览器渲染顺序
+
+- HTML解析开始构建dom树；
+
+- 外部脚本和样式表加载完毕
+  - 尽快加载css，首先将CSSOM对象渲染出来，然后进行页面渲染，否则导致页面闪屏，用户体验差
+  - css选择器是从右往左解析的，so类似#test a {color: #444},css解析器会查找所有a标签的祖先节点，所以效率不是那么高；
+  - 在css的媒介查询中，最好不要直接和任何css规则直接相关。最好写到link标签中，告诉浏览器，只有在这个媒介下，加载指定这个css；
+
+- 脚本在文档内解析并执行
+  - 按需加载脚本，例如现在的webpack就可以打包和按需加载js脚本；
+  - 将脚本标记为异步，不阻塞页面渲染，获得最佳启动，保证无关主要的脚本不会阻塞页；
+  - 慎重选型框架和类库，避免只是用类库和框架的一个功能或者函数，而引用整个文件；
+
+- HTML DOM完全构造起来
+  - DOM 的多个读操作（或多个写操作），应该放在一起。原则：统一读、统一写；
+
+- 图片和外部内容加载
+  - 对多媒体内容进行适当优化，包括恰当使用文件格式，文件处理、渐进式渲染等；
+  - 避免空的src，空的src仍然会发送请求到服务器；
+  - 避免在html内容中缩放图片，如果你需要使用小图，则直接使用小图；
+
+-  网页完成加载
+  - 服务端渲染，特别针对首屏加载很重要的网站，可以考虑这个方案。后端渲染结束，前端接管展示；
+
+总结一下可以做到性能优化的点：
+
+![img](https://camo.githubusercontent.com/5956b4f3cdd26e099f73ec3bdbe73020b43224326bf1d7c6a3aff81abb996afb/68747470733a2f2f70392d6a75656a696e2e62797465696d672e636f6d2f746f732d636e2d692d6b3375316662706663702f64363137353866356630336334616231623539653635646464373264326136667e74706c762d6b3375316662706663702d77617465726d61726b2e696d6167653f)
+
+
+
+ 
+
+#### 3.1.2 前端工程化有哪些实践？ 
+
+1. 技术选型：主要指基于什么原因，选择哪种前端框架：React、Vue、Angular（对微应用的理解）；
+
+2. 规范统一：
+
+- git hooks、git commit配置；
+
+- eslint配置；
+
+- 项目结构规范：CLI；
+
+- UI规范：组件库的选择、开发与使用；
+
+3. 测试：Jest的使用，与其他框架的对比；
+
+4. 构建工具：webpack、rollup、vite的选择；
+
+5. 部署：
+
+- 使用Jenkins构建前端项目并部署到服务器；
+
+- 如何使用github action 或者gitLab action关联项目；
+
+6. 性能监控：
+
+- 前端监控的理解与实践，performance的使用；
+
+- 数据上报的方式；
+
+- 如何上传错误的sourcemap；
+
+- 无埋点；
+
+7. 性能优化:
+
+- 加载时性能优化：lighthouse、HTTP、CDN缓存、SSR；
+
+- 运行时性能优化：重绘重排、长列表渲染；
+
+8. 重构：为什么要重构，如何重构，重构的思想；
+
+9. 微前端：针对巨石项目如何支持；
+
+10. serverless：什么时候使用serverless；
+
+#### 3.1.3 前端前沿知识有哪些了解？ 
+
+ 
+
+1. 微前端；
+
+2. low code、no code；
+
+3. 前端工程化搭建；
+
+4. 自动化部署；
+
+5. 前端性能检测；
+
+6. 跨端；
+
+7. 前端组件化；
+
+8. 前端稳定性建设；
+
+9. 在线文档；
+
+### 3.2面试注意事项
+
+#### 3.2.1面试类型
+
+1. 中小厂 / 国企：八股文 + 项目
+
+- 直接是八股文的原题，最多变式（手写防抖、节流；手写call、apply；手写Promise.all、Promise.allSettled）；
+
+- 对项目经验要求度不高，对具体实现细节考察比较少，主要考察对基础的理解程度；
+
+2. 大厂：技术深度广度挖掘：八股文 + 项目 + 算法
+
+- 以八股文作为切入点，扩展至类似技术栈的具体实现，可能会涉及到框架的具体实现，看候选人对技术基础的理解程度：P6居多；
+
+- 以项目具体经验作为切入点，根据项目经验延伸至前端项目的具体落地，结合市场上比较优秀的框架对比，主要考察技术面的广度和深度，以及是否能够解决行业内某一具体细分的问题，如工程化，脚手架，CI/CD等：P7居多；
+
+#### 3.2.2 面试流程
+
+ 
+
+- 中小厂：一般为3轮：技术面2轮+HR面1轮；
+
+- 国企：一般为4轮：线上笔试1轮+技术面2轮+HR面1轮；
+
+- 大厂：一般为4~5轮：技术面3轮+（交叉面1轮）+HR面1轮；
+
+#### 3.2.3 技术深度广度拓展 
+
+ 
+
+![img](https://risingstars.js.org/favicon.ico)
+
+[2021 年 JavaScript 明星项目](https://risingstars.js.org/2021/zh)
+
+
+
+- 前端框架：React、Vue、Svelte、Angular；
+
+- Node框架：Next、Nest、Nuxt；
+
+- 构建工具：Vite、esbuild、webpack、rollup；
+
+- CSS in JavaScript：Styled component、twind、CSS module；
+
+- 测试框架：Storybook、Jest；
+
+- 移动端开发：React Native；
+
+- 状态管理：Zustand、Redux、Vuex、MobX；
+
+#### 3.2.4. 大厂职级详解 
+
+ 
+
+| 要求\级别 | 主要目标                 | 核心能力                 | 要求                                                         |
+| --------- | ------------------------ | ------------------------ | ------------------------------------------------------------ |
+| P5        | 从学生转变为“打工人”     | 在别人知道下完成任务     | 技术：岗位基本技术&团队常用技术 业务：熟悉业务功能的处理逻辑 管理：熟悉项目流程 |
+| P6        | 成为独立自主的“项目能手” | 独立负责端到端的项目任务 | 技术：熟练掌握端到端的工作流技术 业务：熟悉某业务的所有功能 管理：项目子任务推进 |
+| P7        | 成为让人信服的“团队专家” | 指挥单个团队达到目标     | 技术：精通团队相关技术 业务：关注业务的整体情况 管理：指挥10人以内的小团队 |
+| P8        | 成为“跨团队指挥”         | 指挥多个团队达成目标     | 技术：精通领域相关技术 业务：熟悉多个业务或精通端到端业务 管理：核心是抓重点 |
+
+ 
+
+#### 3.2.5. 前端Job Model 
+
+| 类型                 | 体系职能                                                     |
+| -------------------- | ------------------------------------------------------------ |
+| 技术-前端-开发       | 负责人机交互层的界面开发，实现交互功能                       |
+| 技术-前端-架构       | 熟悉业务领域与前端技术发展，负责前端类库框架、研发流程等基础体系的设计并推动实现，负责业务领域的前端技术选型并推动落地 |
+| 技术-前端-数据可视化 | 负责常规统计图表、业务洞察分析、地理空间数据分析等相关引擎、服务、产品及生态建设 |
+| 技术-前端-Node       | 基于Node进行web服务开发或工具开发                            |
+| 技术-前端-图像互动   | 负责互动/游戏化业务，2D&3D图像渲染等研发工作                 |
+| 前端体验             | 1. 体验度量：通过设计体验模型来度量产品体验功能 2. 体验优化：体验分析，如核心链路分析、体验验收&用户反馈等 |
+| 前端工程化           | 1. 基础前端工程服务平台、前端上层链路研发平台、开发支撑平台 2. 前端研发工具，如WebIDE etc |
+| 跨端技术             | 1. 跨软硬件设备，IoT、跨操作系统、跨App、跨渲染容器（最常见，如webView，weex，rn etc） 2. 跨端生态 |
+| 中后台技术           | 1. 基础UI组件，研发工具 2. low Code、no Code逻辑编排 etc     |
+| 前端智能化           | 1. D2C（Design to Code 设计稿转代码） 2. 分析用户特征，推荐UI排版，千人千面 |
+| Serverless           | 1. 含义：Serverless = Server + less = 少/无服务器 2. FaaS：Function as a service 代码+相关依赖+配置 |
+| 数据可视化           | 1. 基础前端工程服务平台、前端上层链路研发平台、开发支撑平台 2. 前端研发工具，如WebIDE etc |
+| 多媒体技术           | 1. 音视频基础、流媒体播放、视频剪辑等 2. 多端（web、Hybrid、小程序）直播间 |
+
+[2022-爪哇前端大厂工程师训练营.pdf(4.1 MB)](https://www.yuque.com/office/yuque/0/2022/pdf/2340337/1665577595901-fd8baad9-7274-4d85-b51f-21ff5c973357.pdf?from=https%3A%2F%2Fwww.yuque.com%2Flpldplws%2Fweb%2Fwa93b6%3FsingleDoc)
+
+# js运行机制
+
+https://www.yuque.com/lpldplws/atomml/xnudhigbps5in504?singleDoc# 《JavaScript的运行机制》 密码：zglx
+
+## 1. 课程目标
+
+1. 了解进程与线程的基础概念，明确在浏览器中的进程与线程机制；
+2. 了解浏览器与Node中的事件循环；
+
+## 2. 课程大纲
+
+1. 进程与线程；
+2. 事件循环；
+
+## 3. 进程与线程
+
+### 3.1. 什么是进程
+
+CPU是计算机的核心，承担所有的计算任务。
+
+官网说法，进程是CPU资源分配的最小单位。
+
+字面意思就是进行中的程序，我将它理解为一个可以独立运行且拥有自己的资源空间的任务程序，进程包括运行中的程序和程序所使用到的内存和系统资源。
+
+CPU可以有很多进程，我们的电脑每打开一个软件就会产生一个或多个进程，为什么电脑运行的软件多就会卡，是因为CPU给每个进程分配资源空间，但是一个CPU一共就那么多资源，分出去越多，越卡，每个进程之间是相互独立的，CPU在运行一个进程时，其他的进程处于非运行状态，CPU使用 时间片轮转调度算法 来实现同时运行多个进程。
+
+### 3.2. 什么是线程
+
+线程是CPU调度的最小单位。
+
+线程是建立在进程的基础上的一次程序运行单位，通俗点解释线程就是程序中的一个执行流，一个进程可以有多个线程。
+
+一个进程中只有一个执行流称作单线程，即程序执行时，所走的程序路径按照连续顺序排下来，前面的必须处理好，后面的才会执行。
+
+一个进程中有多个执行流称作多线程，即在一个程序中可以同时运行多个不同的线程来执行不同的任务， 也就是说允许单个程序创建多个并行执行的线程来完成各自的任务。
+
+### 3.3. 进程和线程的区别
+
+进程是操作系统分配资源的最小单位，线程是程序执行的最小单位。
+
+一个进程由一个或多个线程组成，线程可以理解为是一个进程中代码的不同执行路线。
+
+进程之间相互独立，但同一进程下的各个线程间共享程序的内存空间(包括代码段、数据集、堆等)及一些进程级的资源(如打开文件和信号)。
+
+调度和切换：线程上下文切换比进程上下文切换要快得多。
+
+### 3.4. 多进程和多线程
+
+- 多进程：多进程指的是在同一个时间里，同一个计算机系统中如果允许两个或两个以上的进程处于运行状态。多进程带来的好处是明显的，比如大家可以在网易云听歌的同时打开编辑器敲代码，编辑器和网易云的进程之间不会相互干扰；
+- 多线程：多线程是指程序中包含多个执行流，即在一个程序中可以同时运行多个不同的线程来执行不同的任务，也就是说允许单个程序创建多个并行执行的线程来完成各自的任务；
+
+### 3.5. JS为什么是单线程
+
+JS的单线程，与它的用途有关。
+
+作为浏览器脚本语言，JavaScript的主要用途是与用户互动，以及操作DOM。这决定了它只能是单线程，否则会带来很复杂的同步问题。比如，假定JavaScript同时有两个线程，一个线程在某个DOM节点上添加内容，另一个线程删除了这个节点，这时浏览器应该以哪个线程为准？
+
+还有人说js还有Worker线程，对的，为了利用多核CPU的计算能力，HTML5提出Web Worker标准，允许JavaScript脚本创建多个线程，但是子线程是完 全受主线程控制的，而且不得操作DOM。
+
+所以，这个标准并没有改变JavaScript是单线程的本质。
+
+### 3.6. 浏览器
+
+拿Chrome来说，我们每打开一个Tab页就会产生一个进程。
+
+#### 3.6.1. 浏览器包含哪些进程
+
+1. Browser进程
+
+1. - 浏览器的主进程(负责协调、主控)，该进程只有一个；
+
+2. - 负责浏览器界面显示，与用户交互。如前进，后退等；
+
+3. - 负责各个页面的管理，创建和销毁其他进程；
+
+4. - 将渲染(Renderer)进程得到的内存中的Bitmap(位图)，绘制到用户界面上；
+
+5. - 网络资源的管理，下载等；
+
+2. 第三方插件进程
+
+1. - 每种类型的插件对应一个进程，当使用该插件时才创建；
+
+3. GPU进程
+
+1. - 该进程也只有一个，用于3D绘制等等；
+
+4. 渲染进程
+
+1. - 即通常所说的浏览器内核(Renderer进程，内部是多线程)；
+
+2. - 每个Tab页面都有一个渲染进程，互不影响；
+
+3. - 主要作用为页面渲染，脚本执行，事件处理等；
+
+#### 3.6.2. 为什么浏览器要多进程
+
+假设浏览器是单进程，那么某个Tab页崩溃了，就影响了整个浏览器，体验有多差？同理如果插件崩溃了也会影响整个浏览器。
+
+浏览器进程有很多，每个进程又有很多线程，都会占用内存
+
+#### 3.6.3. 渲染进程
+
+页面的渲染，JS的执行，事件的循环，都在渲染进程内执行，所以我们要重点了解渲染进程
+
+渲染进程是多线程的，看渲染进程的一些常用较为主要的线程：
+
+##### 3.6.3.1. GUI渲染线程
+
+1. 负责渲染浏览器界面，解析HTML，CSS，构建DOM树和RenderObject树，布局和绘制等；
+
+1. - 解析html代码(HTML代码本质是字符串)转化为浏览器认识的节点，生成DOM树，也就是DOM Tree；
+
+2. - 解析css，生成CSSOM(CSS规则树)；
+
+3. - 把DOM Tree 和CSSOM结合，生成Rendering Tree(渲染树)；
+
+2. 当我们修改了一些元素的颜色或者背景色，页面就会重绘(Repaint)；
+
+3. 当我们修改元素的尺寸，页面就会回流(Reflow)；
+
+4. 当页面需要Repaing和Reflow时GUI线程执行，绘制页面；
+5. 回流(Reflow)比重绘(Repaint)的成本要高，我们要尽量避免Reflow和Repaint；
+6. GUI渲染线程与JS引擎线程是互斥的：
+
+1. - 当JS引擎执行时GUI线程会被挂起(相当于被冻结了)；
+
+2. - GUI更新会被保存在一个队列中等到JS引擎空闲时立即被执行；
+
+##### 3.6.3.2. JS引擎线程
+
+1. JS引擎线程就是JS内核，负责处理Javascript脚本程序(例如V8引擎)；
+2. JS引擎线程负责解析Javascript脚本，运行代码；
+3. JS引擎一直等待着任务队列中任务的到来，然后加以处理：
+
+1. - 浏览器同时只能有一个JS引擎线程在运行JS程序，所以js是单线程运行的；
+
+2. - 一个Tab页(renderer进程)中无论什么时候都只有一个JS线程在运行JS程序；
+
+4. GUI渲染线程与JS引擎线程是互斥的，js引擎线程会阻塞GUI渲染线程 
+
+1. - 就是我们常遇到的JS执行时间过长，造成页面的渲染不连贯，导致页面渲染加载阻塞(就是加载慢)；
+
+2. - 例如浏览器渲染的时候遇到<script>标签，就会停止GUI的渲染，然后js引擎线程开始工作，执行里面的js代码，等js执行完毕，js引擎线程停止工作，GUI继续渲染下面的内容。所以如果js执行时间太长就会造成页面卡顿的情况；（所以有了`defer` 和 `async`标签）
+
+##### 3.6.3.3. 事件触发线程
+
+1. 属于浏览器而不是JS引擎，用来控制事件循环，并且管理着一个事件队列(task queue)；
+2. 当js执行碰到事件绑定和一些异步操作(如setTimeOut，也可来自浏览器内核的其他线程，如鼠标点击、AJAX异步请求等)，会走事件触发线程将对应的事件添加到对应的线程中(比如定时器操作，便把定时器事件添加到定时器线程)，等异步事件有了结果，便把他们的回调操作添加到事件队列，等待js引擎线程空闲时来处理；
+3. 当对应的事件符合触发条件被触发时，该线程会把事件添加到待处理队列的队尾，等待JS引擎的处理；
+4. 因为JS是单线程，所以这些待处理队列中的事件都得排队等待JS引擎处理；
+
+##### 3.6.3.4. 定时触发器线程
+
+1. setInterval与setTimeout所在线程；
+2. 浏览器定时计数器并不是由JavaScript引擎计数的(因为JavaScript引擎是单线程的，如果处于阻塞线程状态就会影响记计时的准确)；
+3. 通过单独线程来计时并触发定时(计时完毕后，添加到事件触发线程的事件队列中，等待JS引擎空闲后执行)，这个线程就是定时触发器线程，也叫定时器线程；
+4. W3C在HTML标准中规定，规定要求setTimeout中低于4ms的时间间隔算为4ms；
+
+#### 3.6.3.5. 异步http请求线程
+
+1. 在XMLHttpRequest在连接后是通过浏览器新开一个线程请求；
+2. 将检测到状态变更时，如果设置有回调函数，异步线程就产生状态变更事件，将这个回调再放入事件队列中再由JavaScript引擎执行；
+3. 简单说就是当执行到一个http异步请求时，就把异步请求事件添加到异步请求线程，等收到响应(准确来说应该是http状态变化)，再把回调函数添加到事件队列，等待js引擎线程来执行；
+
+## 4. 事件循环(Event Loop)基础
+
+JS分为同步任务和异步任务。同步任务都在主线程(这里的主线程就是JS引擎线程)上执行，会形成一个执行栈。
+
+主线程之外，事件触发线程管理着一个任务队列，只要异步任务有了运行结果，就在任务队列之中放一个事件回调。一旦执行栈中的所有同步任务执行完毕(也就是JS引擎线程空闲了)，系统就会读取任务队列，将可运行的异步任务(任务队列中的事件回调，只要任务队列中有事件回调，就说明可以执行)添加到执行栈中，开始执行
+
+我们来看一段简单的代码：
+
+```javascript
+let setTimeoutCallBack = function() {
+  console.log('我是定时器回调');
+};
+let httpCallback = function() {
+  console.log('我是http请求回调');
+}
+
+// 同步任务
+console.log('我是同步任务1');
+
+// 异步定时任务
+setTimeout(setTimeoutCallBack,1000);
+
+// 异步http请求任务
+ajax.get('/info',httpCallback);
+
+// 同步任务
+console.log('我是同步任务2');
 ```
 
-### async和defer的区别？
+以上代码的执行过程：
+
+1. JS是按照顺序从上往下依次执行的，可以先理解为这段代码时的执行环境就是主线程，也就是也就是当前执行栈；
+2. 首先，执行`console.log('我是同步任务1')`；
+3. 接着，执行到`setTimeout`时，会移交给定时器线程，通知定时器线程 1s 后将 `setTimeoutCallBack` 这个回调交给事件触发线程处理，在 1s 后事件触发线程会收到 `setTimeoutCallBack` 这个回调并把它加入到事件触发线程所管理的事件队列中等待执行；
+4. 接着，执行http请求，会移交给异步http请求线程发送网络请求，请求成功后将 `httpCallback` 这个回调交由事件触发线程处理，事件触发线程收到 httpCallback 这个回调后把它加入到事件触发线程所管理的事件队列中等待执行；
+5. 再接着执行`console.log('我是同步任务2')`；
+6. 至此主线程执行栈中执行完毕，JS引擎线程已经空闲，开始向事件触发线程发起询问，询问事件触发线程的事件队列中是否有需要执行的回调函数，如果有将事件队列中的回调事件加入执行栈中，开始执行回调，如果事件队列中没有回调，JS引擎线程会一直发起询问，直到有为止；
+
+可以发现：
+
+1. 定时触发线程只管理定时器且只关注定时不关心结果，定时结束就把回调扔给事件触发线程；
+2. 异步http请求线程只管理http请求同样不关心结果，请求结束把回调扔给事件触发线程；
+3. 事件触发线程只关心异步回调入事件队列；
+4. JS引擎线程只会执行执行栈中的事件，执行栈中的代码执行完毕，就会读取事件队列中的事件并添加到执行栈中继续执行；
+5. 反复执行，就是我们所谓的事件循环(Event Loop)；
+
+![img](https://cdn.nlark.com/yuque/0/2022/png/2340337/1671096823790-ac382b71-e3e7-4796-9e30-903d7ff8662e.png)
+
+1. 执行栈开始顺序执行；
+2. 判断是否为同步，异步则进入异步线程，最终事件回调给事件触发线程的任务队列等待执行，同步继续执行；
+3. 执行栈空，询问任务队列中是否有事件回调；
+4. 任务队列中有事件回调则把回调加入执行栈末尾继续从第一步开始执行；
+5. 任务队列中没有事件回调则不停发起询问；
+
+# 5. 宏任务& 微任务
+
+宏任务 -> GUI渲染 -> 宏任务 -> ... 复制代码
+
+## 5.1. 宏任务(`macrotask`)
+
+在ECMAScript中，`macrotask`也被称为task。
+
+我们可以将每次执行栈执行的代码当做是一个宏任务(包括每次从事件队列中获取一个事件回调并放到执行栈中执行)， 每一个宏任务会从头到尾执行完毕，不会执行其他、
+
+由于JS引擎线程和GUI渲染线程是互斥的关系，浏览器为了能够使宏任务和DOM任务有序的进行，会在一个宏任务执行结果后，在下一个宏任务执行前，GUI渲染线程开始工作，对页面进行渲染：
+
+```javascript
+宏任务 -> GUI渲染 -> 宏任务 -> ...
+```
+
+常见的宏任务：
+
+1. 主代码块；
+2. setTimeout；
+3. setInterval；
+4. setImmediate ()  -Node；
+5. requestAnimationFrame () -浏览器
+
+### 5.2. 微任务(`microtask`)
+
+ES6新引入了Promise标准，同时浏览器实现上多了一个`microtask`微任务概念，在ECMAScript中，`microtask`也被称为jobs。
+
+我们已经知道宏任务结束后，会执行渲染，然后执行下一个宏任务， 而微任务可以理解成在当前宏任务执行后立即执行的任务。
+
+当一个宏任务执行完，会在渲染前，将执行期间所产生的所有微任务都执行完：
+
+```javascript
+宏任务 -> 微任务 -> GUI渲染 -> 宏任务 -> ...
+```
+
+常见微任务
+
+1. process.nextTick () -Node；
+2. Promise.then()；
+3. catch；
+4. finally；
+5. Object.observe；
+6. MutationObserver；
+
+### 5.3. 区分宏任务&微任务
+
+打开新的空白窗口，在console中输入以下代码
+
+```javascript
+window.open();
+
+document.body.style = 'background:black';
+document.body.style = 'background:red';
+document.body.style = 'background:blue';
+document.body.style = 'background:pink';
+```
+
+背景直接渲染了粉红色，根据上文里讲浏览器会先执行完一个宏任务，再执行当前执行栈的所有微任务，然后移交GUI渲染，上面四行代码均属于同一次宏任务，全部执行完才会执行渲染，渲染时GUI线程会将所有UI改动优化合并，所以视觉上，只会看到页面变成粉红色。
+
+```javascript
+document.body.style = 'background:blue';
+setTimeout(()=>{
+    document.body.style = 'background:black'
+},200)
+```
+
+页面会先卡一下蓝色，再变成黑色背景。之所以会卡一下蓝色，是因为以上代码属于两次宏任务，第一次宏任务执行的代码是将背景变成蓝色，然后触发渲染，将页面变成蓝色，再触发第二次宏任务将背景变成黑色。
+
+```javascript
+document.body.style = 'background:blue'
+console.log(1);
+Promise.resolve().then(()=>{
+    console.log(2);
+    document.body.style = 'background:pink'
+});
+console.log(3);
+```
+
+输出 1 3 2 , 是因为 promise 对象的 then 方法的回调函数是异步执行，所以 2 最后输出
+
+页面的背景色直接变成粉色，没有经过蓝色的阶段，是因为，我们在宏任务中将背景设置为蓝色，但在进行渲染前执行了微任务， 在微任务中将背景变成了粉色，然后才执行的渲染。
+
+### 5.4. 注意点
+
+1. 浏览器会先执行一个宏任务，紧接着执行当前执行栈产生的微任务，再进行渲染，然后再执行下一个宏任务；
+2. 微任务和宏任务不在一个任务队列，不在一个任务队列：
+
+1. - `setTimeout`是一个宏任务，它的事件回调在宏任务队列，`Promise.then()`是一个微任务，它的事件回调在微任务队列，二者并不是一个任务队列；
+   - 以Chrome 为例，有关渲染的都是在渲染进程中执行，渲染进程中的任务（DOM树构建，js解析…等等）需要主线程执行的任务都会在主线程中执行，而浏览器维护了一套事件循环机制，主线程上的任务都会放到消息队列中执行，主线程会循环消息队列，并从头部取出任务进行执行，如果执行过程中产生其他任务需要主线程执行的，渲染进程中的其他线程会把该任务塞入到消息队列的尾部，消息队列中的任务都是宏任务；
+   - 微任务是如何产生的呢？当执行到script脚本的时候，js引擎会为全局创建一个执行上下文，在该执行上下文中维护了一个微任务队列，当遇到微任务，就会把微任务回调放在微队列中，当所有的js代码执行完毕，在退出全局上下文之前引擎会去检查该队列，有回调就执行，没有就退出执行上下文，这也就是为什么微任务要早于宏任务，也是大家常说的，每个宏任务都有一个微任务队列（由于定时器是浏览器的API，所以定时器是宏任务，在js中遇到定时器会也是放入到浏览器的队列中）；
+
+![img](https://cdn.nlark.com/yuque/0/2022/png/2340337/1671096823921-6ff3ee75-9409-4152-9337-de64a59d5493.png)
+
+1. 首先执行一个宏任务，执行结束后判断是否存在微任务；
+2. 有微任务先执行所有的微任务，再渲染，没有微任务则直接渲染；
+3. 然后再接着执行下一个宏任务；
+
+## 6. 完整的Event Loop
+
+![img](https://cdn.nlark.com/yuque/0/2022/png/2340337/1671096824044-e65976eb-709e-4f37-aaf9-2c498e89fae5.png)
+
+1. 整体的script(作为第一个宏任务)开始执行的时候，会把所有代码分为同步任务、异步任务两部分，同步任务会直接进入主线程依次执行，异步任务会再分为宏任务和微任务；
+2. 宏任务进入到`Event Table`中，并在里面注册回调函数，每当指定的事件完成时，`Event Table`会将这个函数移到`Event Queue`中；
+3. 微任务也会进入到另一个`Event Table`中，并在里面注册回调函数，每当指定的事件完成时，`Event Table`会将这个函数移到`Event Queue`中；
+4. 当主线程内的任务执行完毕，主线程为空时，会检查微任务的`Event Queue`，如果有任务，就全部执行，如果没有就执行下一个宏任务；
+5. 上述过程会不断重复，这就是Event Loop；
+
+## 7. Promise&async/aweait
+
+### 7.1. Promise
+
+`new Promise(() => {}).then() `中，前面的 new Promise() 这一部分是一个构造函数，这是一个同步任务，后面的 .then() 才是一个异步微任务：
+
+```javascript
+new Promise((resolve) => {
+	console.log(1)
+  resolve()
+}).then(()=>{
+	console.log(2)
+})
+console.log(3)
+// 上面代码输出1 3 2
+```
+
+### 7.2. async/await 函数
+
+async/await本质上还是基于Promise的一些封装，而Promise是属于微任务的一种
+
+所以在使用await关键字与Promise.then效果类似，await 以前的代码，相当于与 new Promise 的同步代码，await 以后的代码相当于 Promise.then的异步
+
+```javascript
+setTimeout(() => console.log(4))
+
+async function test() {
+  console.log(1)
+  await Promise.resolve()
+  console.log(3)
+}
+
+test()
+
+console.log(2)
+// 输出1 2 3 4
+```
+
+### 7.3. demo
+
+```javascript
+function test() {
+  console.log(1)
+  setTimeout(function () { 	// timer1
+    console.log(2)
+  }, 1000)
+}
+
+test();
+
+setTimeout(function () { 		// timer2
+  console.log(3)
+})
+
+new Promise(function (resolve) {
+  console.log(4)
+  setTimeout(function () { 	// timer3
+    console.log(5)
+  }, 100)
+  resolve()
+}).then(function () {
+  setTimeout(function () { 	// timer4
+    console.log(6)
+  }, 0)
+  console.log(7)
+})
+
+console.log(8)
+
+// 输出1，4，8，7，3，6，5，2
+```
+
+1. JS是顺序从上而下执行；
+2. 执行到test()，test方法为同步，直接执行`console.log(1)`打印1；
+3. test方法中`setTimeout`为异步宏任务，回调我们把它记做timer1放入宏任务队列；
+4. test方法下面有一个`setTimeout`为异步宏任务，回调我们把它记做timer2放入宏任务队列；
+5. 执行promise，`new Promise`是同步任务，直接执行，打印4；
+6. `new Promise`里面的`setTimeout`是异步宏任务，回调我们记做timer3放到宏任务队列；
+7. `Promise.then`是微任务，放到微任务队列；
+8. console.log(8)是同步任务，直接执行，打印8；
+9. 主线程任务执行完毕，检查微任务队列中有`Promise.then`；
+10. 开始执行微任务，发现有`setTimeout`是异步宏任务，记做timer4放到宏任务队列；
+11. 微任务队列中的`console.log(7)`是同步任务，直接执行，打印7；
+12. 微任务执行完毕，第一次循环结束；
+13. 检查宏任务队列，里面有timer1、timer2、timer3、timer4，四个定时器宏任务，按照定时器延迟时间得到可以执行的顺序，即Event Queue：timer2、timer4、timer3、timer1，依次拿出放入执行栈末尾执行；
+14. 执行timer2，`console.log(3)`为同步任务，直接执行，打印3；
+15. 检查没有微任务，第二次Event Loop结束；
+16. 执行timer4，`console.log(6)`为同步任务，直接执行，打印6；
+17. 检查没有微任务，第三次Event Loop结束；
+18. 执行timer3，`console.log(5)`同步任务，直接执行，打印5；
+19. 检查没有微任务，第四次Event Loop结束；
+20. 执行timer1，`console.log(2)`同步任务，直接执行，打印2；
+21. 检查没有微任务，也没有宏任务，第五次Event Loop结束；
+
+## 8. NodeJS中的运行机制
+
+虽然NodeJS中的JavaScript运行环境也是V8，也是单线程，但是，还是有一些与浏览器中的表现是不一样的。
+
+其实nodejs与浏览器的区别，就是nodejs的宏任务分好几种类型，而这好几种又有不同的任务队列，而不同的任务队列又有顺序区别，而微任务是穿插在每一种宏任务之间的。
+
+在node环境下，process.nextTick的优先级高于Promise，可以简单理解为在宏任务结束后会先执行微任务队列中的nextTickQueue部分，然后才会执行微任务中的Promise部分。
+
+![img](https://cdn.nlark.com/yuque/0/2022/png/2340337/1671096823466-47c77129-f237-4e37-aaa2-429adc11f6d4.png)
+
+NodeJS的Event Loop：
+
+1. Node会先执行所有类型为 timers 的 `MacroTask`，然后执行所有的 `MicroTask`(`NextTick`例外)；
+2. 进入 poll 阶段，执行几乎所有 `MacroTask`，然后执行所有的 `MicroTask`；
+3. 再执行所有类型为 check 的 `MacroTask`，然后执行所有的 `MicroTask`；
+4. 再执行所有类型为 `close callbacks` 的 `MacroTask`，然后执行所有的 `MicroTask`；
+5. 至此，完成一个 Tick，回到 timers 阶段，重复执行；
+
+## 9.async和defer的区别？
 
 - defer属性告诉浏览器不要等待脚本，浏览器回继续处理HTML,构建DOM。该脚本‘在后台’加载，然后在DOM完全构建完成后再运行。defer脚本总是在DOM准备好时执行，但在DOMContentLoaded事件之前。
 
@@ -6419,23 +8959,23 @@ defer和async有一个共同点：下载此类脚本都不会阻止页面呈现(
 - async执行与文档顺序无关，先加载哪个就先执行哪个；defer会按按照文档的中的顺序执行
 - async脚本加载完成后立即执行，可以在DOM尚未完全下载完成就加载和执行；而defer脚本需要等到文档所有元素解析完成之后才执行
 
-4.3 事件的触发线程
+1. 事件的触发线程
 
 - setTimeout ajax ->回调事件
 
-4.4 定时器的线程
+2. 定时器的线程
 
 - setTimeout setInterval
 
-4.5 异步http请求的线程
+3. 异步http请求的线程
 
-## event loop
+## 10. event loop
 
 1.同步任务： js引擎的线程中，执行栈
 
 2.异步任务：可以执行的异步任务 事件的触发线程 任务队列
 
-## 宏任务和微任务
+## 11.宏任务和微任务
 
 ### 宏任务
 
@@ -6461,6 +9001,8 @@ macrotask ->microtask ->GUI ->macrotask
 - Object.observe
 - MutationObserver
 - process.nextTick()
+
+
 
 # ts
 
@@ -7043,7 +9585,9 @@ class utils{
 }
 ```
 
-# Vue.js基础
+# Vue基础用法
+
+https://www.yuque.com/lpldplws/web/dn72m7?singleDoc# 《Vue基础用法》 密码：xrw9
 
 面试题：
 
@@ -7089,39 +9633,6 @@ bD: 实例vm尚未被销毁 - 清空events,reset,store,clear
 d：实例vm已经被销毁 - 首尾
 
 react是mvvm，都是操作虚拟dom
-
-## computed和watch区别
-
-相同点：
-
-- 基于vue的依赖收集机制
-- 都是被依赖的变化触发，进行改变进而进行处理计算
-
-不同点：
-
-- 入和出
-
-  computed:  多入单出 - 多个值的变化，组成一个最终产物的变化
-
-  watch: 单入多出 - 单个值的变化，从而影响一系列的状态变更
-
-- 性能
-
-  computed: 会自动diff依赖，若依赖没有变化，会改从缓存中读取当前的计算值
-
-  watch：无论监听值变化与否，都会执行回调
-
-- 写法上
-
-  computed: 必须有return
-
-  watch: 由数据变化触发了回调中内容
-
-- 时机上
-
-  computed: 从首次生成赋值，就开始计算运行了
-
-  watch: 首次不会运行，除非immediate:true
 
 ## 条件
 
@@ -7260,6 +9771,1016 @@ onUpdated()=>u
 onBeforeUnMount()=>bD
 
 onUnMount()=>d
+
+## 1. 课程目标
+
+1. 入门Vue，了解常见的用法；
+2. 掌握面试中Vue的基础问题；
+3. 掌握Vue学习路线；
+
+## 2. 课程大纲
+
+1. Vue.js简介
+2. Vue.js模板及指令
+3. 生命周期
+4. Vue.js computed 和 watch
+
+## 3. 主要内容
+
+注意：主要以Vue2为主，Vue3的内容后续讲解
+
+课程时间安排：
+
+- 前四节课：课程内容+Vue2核心源码解析
+- 后续课：课程+Vue3核心源码解析
+
+官网地址：https://v2.cn.vuejs.org/
+
+### 3.1. Vue.js简介
+
+Vue (读音 /vjuː/，类似于 view) 是一套用于构建用户界面的渐进式框架。与其它大型框架不同的是，Vue 被设计为可以自底向上逐层应用。Vue 的核心库只关注视图层，不仅易于上手，还便于与第三方库或既有项目整合。另一方面，当与[现代化的工具链](https://v2.cn.vuejs.org/v2/guide/single-file-components.html)以及各种[支持类库](https://github.com/vuejs/awesome-vue#libraries--plugins)结合使用时，Vue 也完全能够为复杂的单页应用提供驱动。
+
+- 语义化模板
+
+- - header
+  - footer
+  - template
+
+- MVC
+
+![img](https://cdn.nlark.com/yuque/0/2022/png/2340337/1647071835190-02b721bb-406d-452f-adb9-3a1af1daf22e.png)
+
+```javascript
+// model
+var myapp = {}; // 创建这个应用对象
+
+myapp.Model = function() {
+  var val = 0;
+
+  this.add = function(v) {
+    if (val < 100) val += v;
+  };
+
+  this.sub = function(v) {
+    if (val > 0) val -= v;
+  };
+
+  this.getVal = function() {
+    return val;
+  };
+
+  ／* 观察者模式 *／
+  var self = this, 
+      views = [];
+
+  this.register = function(view) {
+    views.push(view);
+  };
+
+  this.notify = function() {
+    for(var i = 0; i < views.length; i++) {
+        views[i].render(self);
+    }
+  };
+};
+
+// view
+myapp.View = function(controller) {
+  var $num = $('#num'),
+      $incBtn = $('#increase'),
+      $decBtn = $('#decrease');
+
+  this.render = function(model) {
+      $num.text(model.getVal() + 'rmb');
+  };
+
+  /*  绑定事件  */
+  $incBtn.click(controller.increase);
+  $decBtn.click(controller.decrease);
+};
+
+// controller
+myapp.Controller = function() {
+  var model = null,
+      view = null;
+
+  this.init = function() {
+    /* 初始化Model和View */
+    model = new myapp.Model();
+    view = new myapp.View(this);
+
+    /* View向Model注册，当Model更新就会去通知View啦 */
+    model.register(view);
+    model.notify();
+  };
+
+  /* 让Model更新数值并通知View更新视图 */
+  this.increase = function() {
+    model.add(1);
+    model.notify();
+  };
+
+  this.decrease = function() {
+    model.sub(1);
+    model.notify();
+  };
+};
+
+// init
+(function() {
+  var controller = new myapp.Controller();
+  controller.init();
+})();
+```
+
+- MVVM
+
+![img](https://cdn.nlark.com/yuque/0/2022/png/2340337/1647072104508-55c6d7e4-d8c5-4f39-afab-def587496cae.png)
+
+```javascript
+// model
+var data = {
+    val: 0
+};
+
+// view
+<div id="myapp">
+    <div>
+        <span>{{ val }}rmb</span>
+    </div>
+    <div>
+        <button v-on:click="sub(1)">-</button>
+        <button v-on:click="add(1)">+</button>
+    </div>
+</div>
+
+// controller
+new Vue({
+  el: '#myapp',
+  data: data,
+  methods: {
+    add(v) {
+        if(this.val < 100) {
+            this.val += v;
+        }
+    },
+    sub(v) {
+        if(this.val > 0) {
+            this.val -= v;
+        }
+    }
+  }
+});
+
+// MVVM
+// 1. 数据会绑定在viewModel层并自动将数据渲染到页面中
+// 2. 视图变化时，会通知viewModel层更新数据
+
+// Vue是不是MVVM？React呢？
+// 严格来讲都不是
+// React：ui = render (data) 单向数据流
+// Vue:   ref 直接操作DOM，跳过了ViewModel
+```
+
+### 3.2. Vue.js模板及指令
+
+#### 3.2.1. Vue.js实例
+
+每个 Vue 应用都是通过用 Vue 函数创建一个新的 Vue 实例开始的：
+
+```js
+var vm = new Vue({
+  // 选项
+})
+```
+
+在Vue2里，虽然没有完全遵循 MVVM，但是 Vue 的设计也受到了它的启发。因此在文档中经常会使用 vm (ViewModel 的缩写) 这个变量名表示 Vue 实例。
+
+当一个 Vue 实例被创建时，它将 data 对象中的所有的 property 加入到 Vue 的响应式系统中。当这些 property 的值发生改变时，视图将会产生“响应”，即匹配更新为新的值。
+
+```js
+// 我们的数据对象
+var data = { a: 1 }
+
+// 该对象被加入到一个 Vue 实例中
+var vm = new Vue({
+  data: data
+})
+
+// 获得这个实例上的 property
+// 返回源数据中对应的字段
+vm.a == data.a // => true
+
+// 设置 property 也会影响到原始数据
+vm.a = 2
+data.a // => 2
+
+// ……反之亦然
+data.a = 3
+vm.a // => 3
+```
+
+当这些数据改变时，视图会进行重渲染。值得注意的是只有当实例被创建时就已经存在于 data 中的 property 才是响应式的。也就是说如果你添加一个新的 property，比如：
+
+```
+vm.b = 'hi'
+```
+
+那么对 b 的改动将不会触发任何视图的更新。如果你知道你会在晚些时候需要一个 property，但是一开始它为空或不存在，那么你仅需要设置一些初始值。比如：
+
+```js
+data: {
+  newTodoText: '',
+  visitCount: 0,
+  hideCompletedTodos: false,
+  todos: [],
+  error: null
+}
+```
+
+这里唯一的例外是使用 Object.freeze()，这会阻止修改现有的 property，也意味着响应系统无法再追踪变化。
+
+```js
+var obj = {
+  foo: 'bar'
+}
+
+Object.freeze(obj)
+
+new Vue({
+  el: '#app',
+  data: obj
+})
+```
+
+除了数据 property，Vue 实例还暴露了一些有用的实例 property 与方法。它们都有前缀 $，以便与用户定义的 property 区分开来。例如：
+
+```j s
+var data = { a: 1 }
+var vm = new Vue({
+  el: '#example',
+  data: data
+})
+
+vm.$data === data // => true
+vm.$el === document.getElementById('example') // => true
+
+// $watch 是一个实例方法
+vm.$watch('a', function (newValue, oldValue) {
+  // 这个回调将在 `vm.a` 改变后调用
+})
+```
+
+注意：具体的监听派发更新过程后续源码解析时讲解，此处会用即可
+
+#### 3.2.2. Vue.js模板
+
+模板引擎编译源码部分讲解，此处需要理解会用即可
+
+Vue.js 使用了基于 HTML 的模板语法，允许开发者声明式地将 DOM 绑定至底层 Vue 实例的数据。所有 Vue.js 的模板都是合法的 HTML，所以能被遵循规范的浏览器和 HTML 解析器解析。
+
+在底层的实现上，Vue 将模板编译成虚拟 DOM 渲染函数。结合响应系统，Vue 能够智能地计算出最少需要重新渲染多少组件，并把 DOM 操作次数减到最少。
+
+##### 3.2.2.1. 文本
+
+数据绑定最常见的形式就是使用“Mustache”语法 (双大括号) 的文本插值：
+
+```
+<span>Message: {{ msg }}</span>
+```
+
+Mustache 标签将会被替代为对应数据对象上 msg property 的值。无论何时，绑定的数据对象上 msg property 发生了改变，插值处的内容都会更新。
+
+通过使用 v-once 指令，你也能执行一次性地插值，当数据改变时，插值处的内容不会更新。但请留心这会影响到该节点上的其它数据绑定：
+
+```
+<span v-once>这个将不会改变: {{ msg }}</span>
+```
+
+##### 3.2.2.2. 原始HTML
+
+双大括号会将数据解释为普通文本，而非 HTML 代码。为了输出真正的 HTML，你需要使用 v-html指令：
+
+```j s
+<p>Using mustaches: {{ rawHtml }}</p>
+<p>Using v-html directive: <span v-html="rawHtml"></span></p>
+```
+
+Using mustaches: <span style="color: red">This should be red.</span>
+
+Using v-html directive: This should be red.
+
+这个 span 的内容将会被替换成为 property 值 rawHtml，直接作为 HTML——会忽略解析 property 值中的数据绑定。
+
+注意：动态渲染的任意 HTML 可能会非常危险，因为它很容易导致 XSS 攻击。请只对可信内容使用 HTML 插值，绝不要对用户提供的内容使用插值。
+
+##### 3.2.2.3. 属性
+
+Mustache 语法不能作用在 HTML attribute 上，遇到这种情况应该使用 v-bind指令：
+
+```
+<div v-bind:id="dynamicId"></div>
+```
+
+##### 3.2.2.4. 使用 JavaScript 表达式
+
+迄今为止，在我们的模板中，我们一直都只绑定简单的 property 键值。但实际上，对于所有的数据绑定，Vue.js 都提供了完全的 JavaScript 表达式支持。
+
+```j s
+{{ number + 1 }}
+
+{{ ok ? 'YES' : 'NO' }}
+
+{{ message.split('').reverse().join('') }}
+
+<div v-bind:id="'list-' + id"></div>
+```
+
+这些表达式会在所属 Vue 实例的数据作用域下作为 JavaScript 被解析。有个限制就是，每个绑定都只能包含单个表达式，所以下面的例子都不会生效。
+
+```js
+<!-- 这是语句，不是表达式 -->
+{{ var a = 1 }}
+
+<!-- 流控制也不会生效，请使用三元表达式 -->
+{{ if (ok) { return message } }}
+```
+
+#### 3.2.3. Vue.js指令
+
+指令 (Directives) 是带有 v- 前缀的特殊 attribute。指令的职责是，当表达式的值改变时，将其产生的连带影响，响应式地作用于 DOM。
+
+```
+<p v-if="seen">现在你看到我了</p>
+```
+
+这里，v-if 指令将根据表达式 seen 的值的真假来插入/移除 <p> 元素。
+
+##### 3.2.3.1. 参数
+
+一些指令能够接收一个“参数”，在指令名称之后以冒号表示。例如，v-bind 指令可以用于响应式地更新 HTML attribute：
+
+```
+<a v-bind:href="url">...</a>
+```
+
+在这里 href 是参数，告知 v-bind 指令将该元素的 href attribute 与表达式 url 的值绑定。
+
+另一个例子是 v-on 指令，它用于监听 DOM 事件：
+
+```
+<a v-on:click="doSomething">...</a>
+```
+
+##### 3.2.3.2. 动态参数
+
+从 2.6.0 开始，可以用方括号括起来的 JavaScript 表达式作为一个指令的参数：
+
+```js
+<!--
+注意，参数表达式的写法存在一些约束，如之后的“对动态参数表达式的约束”章节所述。
+-->
+<a v-bind:[attributeName]="url"> ... </a>
+```
+
+这里的 attributeName 会被作为一个 JavaScript 表达式进行动态求值，求得的值将会作为最终的参数来使用。例如，如果你的 Vue 实例有一个 data property attributeName，其值为 "href"，那么这个绑定将等价于 v-bind:href。
+
+同样地，你可以使用动态参数为一个动态的事件名绑定处理函数：
+
+```
+<a v-on:[eventName]="doSomething"> ... </a>
+```
+
+在这个示例中，当 eventName 的值为 "focus" 时，v-on:[eventName] 将等价于 v-on:focus。
+
+对动态参数的值的约束
+
+动态参数预期会求出一个字符串，异常情况下值为 null。这个特殊的 null 值可以被显性地用于移除绑定。任何其它非字符串类型的值都将会触发一个警告。
+
+对动态参数表达式的约束
+
+动态参数表达式有一些语法约束，因为某些字符，如空格和引号，放在 HTML attribute 名里是无效的。例如：
+
+```js
+<!-- 这会触发一个编译警告 -->
+<a v-bind:['foo' + bar]="value"> ... </a>
+```
+
+##### 3.2.3.3. [修饰符](https://v2.cn.vuejs.org/v2/api/#v-on)
+
+修饰符 (modifier) 是以半角句号 . 指明的特殊后缀，用于指出一个指令应该以特殊方式绑定。例如，.prevent 修饰符告诉 v-on 指令对于触发的事件调用 event.preventDefault()：
+
+```
+<form v-on:submit.prevent="onSubmit">...</form>
+```
+
+##### 3.2.3.4. 缩写
+
+v- 前缀作为一种视觉提示，用来识别模板中 Vue 特定的 attribute。
+
+- v-bind缩写
+
+```js
+<!-- 完整语法 --> 
+<a v-bind:href="url">...</a> 
+
+<!-- 缩写 -->
+<a :href="url">...</a> 
+
+<!-- 动态参数的缩写 (2.6.0+) --> 
+<a :[key]="url"> ... </a>
+```
+
+- v-on缩写
+
+```j s
+<!-- 完整语法 -->
+<a v-on:click="doSomething">...</a>
+
+<!-- 缩写 -->
+<a @click="doSomething">...</a>
+
+<!-- 动态参数的缩写 (2.6.0+) -->
+<a @[event]="doSomething"> ... </a>
+```
+
+##### 3.2.3.5. 自定义指令
+
+除了核心功能默认内置的指令 ( v-model 和 v-show )，Vue 也允许注册自定义指令。在 Vue2.0 中，代码复用和抽象的主要形式是组件。然而，有的情况下，你仍然需要对普通 DOM 元素进行底层操作，这时候就会用到自定义指令。
+
+Vue 自定义指令有全局注册和局部注册两种方式。全局注册指令的方式，通过 `Vue.directive( id, [definition] )` 方式注册全局指令。如果想注册局部指令，组件中也接受一个directives的选项。
+
+```javascript
+// 注册一个全局自定义指令 `v-focus`
+Vue.directive('focus', {
+  // 当被绑定的元素插入到 DOM 中时……
+  inserted: function (el) {
+    // 聚焦元素
+    el.focus()
+  }
+})
+
+// 注册一个局部自定义指令 `v-focus`
+directives: {
+  focus: {
+    // 指令的定义
+    inserted: function (el) {
+      el.focus()
+    }
+  }
+}
+```
+
+然后我们可以在模板中任何元素上使用`v-focus` property，如下：
+
+```javascript
+<input v-focus>
+```
+
+当我们需要批量注册自定义指令时，写很多个``Vue.directive( id, [definition] ) 会导致代码冗余，所以我们可以利用Vue.use()` 的特性，完成批量注册。
+
+批量注册指令，新建 `directives/directive.js` 文件
+
+```javascript
+// 导入指令定义文件
+import debounce from './debounce'
+import throttle from './throttle'
+// 集成一起
+const directives = {
+  debounce,
+  throttle,
+}
+//批量注册
+export default {
+  install(Vue) {
+    Object.keys(directives).forEach((key) => {
+      Vue.directive(key, directives[key])
+    })
+  },
+}
+```
+
+在 main.js 引入，并Vue.use() 调用完成批量注册。
+
+```javascript
+import Vue from 'vue'
+import Directives from './directives/directive.js'
+Vue.use(Directives)
+```
+
+一个指令定义对象可以提供如下几个钩子函数 (均为可选)：
+
+- bind: 只调用一次，指令第一次绑定到元素时调用，可以定义一个在绑定时执行一次的初始化动作，此时获取父节点为null。
+- inserted: 被绑定元素插入父节点时调用（仅保证父节点存在，但不一定已被插入文档中），此时可以获取到父节点。
+- update: 所在组件的 VNode 更新时调用，但是可能发生在其子 VNode 更新之前。指令的值可能发生了改变，也可能没有。但是你可以通过比较更新前后的值来忽略不必要的模板更新
+- componentUpdated: 指令所在组件的 VNode 及其子 VNode 全部更新后调用。
+- unbind: 只调用一次， 指令与元素解绑时调用。
+
+接下来我们来看一下钩子函数的参数 (即 el、binding、vnode 和 oldVnode)。
+
+指令钩子函数会被传入以下参数：
+
+- el：指令所绑定的元素，可以用来直接操作 DOM。
+- binding：一个对象，包含以下 property： 
+
+- - name：指令名，不包括 v- 前缀。
+  - value：指令的绑定值，例如：v-my-directive="1 + 1" 中，绑定值为 2。
+  - oldValue：指令绑定的前一个值，仅在 update 和 componentUpdated 钩子中可用。无论值是否改变都可用。
+  - expression：字符串形式的指令表达式。例如 v-my-directive="1 + 1" 中，表达式为 "1 + 1"。
+  - arg：传给指令的参数，可选。例如 v-my-directive:foo 中，参数为 "foo"。
+  - modifiers：一个包含修饰符的对象。例如：v-my-directive.foo.bar 中，修饰符对象为 { foo: true, bar: true }。
+
+- vnode：Vue 编译生成的虚拟节点。
+- oldVnode：上一个虚拟节点，仅在 update 和 componentUpdated 钩子中可用。
+
+###### 3.2.3.5.1. v-longpress
+
+```javascript
+// directive
+const longpress = {
+  bind: function (el, {value:{fn,time}}) {
+    //没绑定函数直接返回
+    if (typeof fn !== 'function') return
+    // 定义定时器变量
+    el._timer = null
+    // 创建计时器（ n秒后执行函数 ）
+    el._start = (e) => {
+      //e.type表示触发的事件类型如mousedown,touchstart等
+      //pc端: e.button表示是哪个键按下0为鼠标左键，1为中键，2为右键
+      //移动端: e.touches表示同时按下的键为个数
+      if (  (e.type === 'mousedown' && e.button && e.button !== 0) || 
+            (e.type === 'touchstart' && e.touches && e.touches.length > 1)
+      ) return;
+      //定时长按n秒后执行事件
+      if (el._timer === null) {
+        el._timer = setTimeout(() => {
+          fn()
+        }, time)
+        //取消浏览器默认事件，如右键弹窗
+        el.addEventListener('contextmenu', function(e) {
+          e.preventDefault();
+        })
+      }
+    }
+    // 如果两秒内松手，则取消计时器
+    el._cancel = (e) => {
+      if (el._timer !== null) {
+        clearTimeout(el._timer)
+        el._timer = null
+      }
+    }
+    // 添加计时监听
+    el.addEventListener('mousedown', el._start)
+    el.addEventListener('touchstart', el._start)
+    // 添加取消监听
+    el.addEventListener('click', el._cancel)
+    el.addEventListener('mouseout', el._cancel)
+    el.addEventListener('touchend', el._cancel)
+    el.addEventListener('touchcancel', el._cancel)
+  },
+  // 指令与元素解绑时，移除事件绑定
+  unbind(el) {
+    // 移除计时监听
+    el.removeEventListener('mousedown', el._start)
+    el.removeEventListener('touchstart', el._start)
+    // 移除取消监听
+    el.removeEventListener('click', el._cancel)
+    el.removeEventListener('mouseout', el._cancel)
+    el.removeEventListener('touchend', el._cancel)
+    el.removeEventListener('touchcancel', el._cancel)
+  },
+}
+
+export default longpress
+
+// 引用
+<template>
+  <button v-longpress="{fn: longpress,time:2000}">长按</button>
+</template>
+
+<script>
+export default {
+  methods: {
+    longpress () {
+      console.log('长按指令生效')
+    }
+  }
+}
+</script>
+```
+
+###### 3.2.3.5.2. v-debounce
+
+```javascript
+const debounce = {
+  inserted: function (el, {value:{fn, event, time}}) {
+    //没绑定函数直接返回
+    if (typeof fn !== 'function') return
+    el._timer = null
+    //监听点击事件，限定事件内如果再次点击则清空定时器并重新定时
+    el.addEventListener(event, () => {
+      if (el._timer !== null) {
+        clearTimeout(el._timer)
+        el._timer = null
+      }
+      el._timer = setTimeout(() => {
+        fn()
+      }, time)
+    })
+  },
+}
+
+export default debounce
+
+// 引用
+<template>
+  <input v-debounce="{fn: debounce, event: 'input', time: 5000}" />
+</template>
+
+<script>
+export default {
+  methods: {
+    debounce(){
+      console.log('debounce 防抖')
+    },
+  }
+}
+</script>
+```
+
+###### 3.2.3.5.3. v-throttle
+
+```javascript
+const throttle = {
+    bind:function (el,{value:{fn,time}}) {
+        if (typeof fn !== 'function') return
+        el._flag = true;//开关默认为开
+        el._timer = null
+        el.handler = function () {
+            if (!el._flag) return;
+            //执行之后开关关闭
+            el._flag && fn()
+            el._flag = false
+            if (el._timer !== null) {
+                clearTimeout(el._timer)
+                el._timer = null
+            }
+            el._timer = setTimeout(() => {
+                el._flag = true;//三秒后开关开启
+            }, time);
+        }
+        el.addEventListener('click',el.handler)
+    },
+    unbind:function (el,binding) {
+        el.removeEventListener('click',el.handler)
+    }
+}
+
+export default throttle
+
+// 引用
+<template>
+ <button v-throttle="{fn: throttle,time:3000}">throttle节流</button>
+</template>
+
+<script>
+export default {
+  methods: {
+    throttle () {
+      console.log('throttle 节流 只触发一次')
+    }
+  }
+}
+</script>
+```
+
+### 3.3. Vue.js生命周期
+
+#### 3.3.1. 生命周期内容
+
+| 生命周期      | 描述                               |
+| ------------- | ---------------------------------- |
+| beforeCreate  | 组件实例被创建之初                 |
+| created       | 组件实例已经完全创建               |
+| beforeMount   | 组件挂载之前                       |
+| mounted       | 组件挂载到实例上去之后             |
+| beforeUpdate  | 组件数据发生变化，更新之前         |
+| updated       | 组件数据更新之后                   |
+| beforeDestroy | 组件实例销毁之前                   |
+| destroyed     | 组件实例销毁之后                   |
+| activated     | keep-alive 缓存的组件激活时        |
+| deactivated   | keep-alive 缓存的组件停用时调用    |
+| errorCaptured | 捕获一个来自子孙组件的错误时被调用 |
+
+#### 3.3.2. 生命周期功能
+
+后续源码课程会讲解生命周期的实现
+
+1. beforeCreate -> created
+
+- - 初始化vue实例，进行数据观测
+
+2. created
+
+- - 完成数据观测，属性与方法的运算，watch、event事件回调的配置
+  - 可调用methods中的方法，访问和修改data数据触发响应式渲染dom，可通过computed和watch完成数据计算
+  - 此时vm.$el 并没有被创建
+
+3. created -> beforeMount
+
+- - 判断是否存在el选项，若不存在则停止编译，直到调用vm.$mount(el)才会继续编译
+  - vm.el获取到的是挂载DOM的
+
+4. beforeMount
+
+- - 在此阶段可获取到vm.el
+  - 此阶段vm.el虽已完成DOM初始化，但并未挂载在el选项上
+
+5. beforeMount -> mounted
+
+- - 此阶段vm.el完成挂载，vm.$el生成的DOM替换了el选项所对应的DOM
+
+6. mounted
+
+- - vm.el已完成DOM的挂载与渲染，此刻打印vm.$el，发现之前的挂载点及内容已被替换成新的DOM
+
+7. beforeUpdate
+
+- - 更新的数据必须是被渲染在模板上的（el、template、render之一）
+  - 此时view层还未更新
+  - 若在beforeUpdate中再次修改数据，不会再次触发更新方法
+
+8. updated
+
+- - 完成view层的更新
+  - 若在updated中再次修改数据，会再次触发更新方法（beforeUpdate、updated）
+
+9. beforeDestroy
+
+- - 实例被销毁前调用，此时实例属性与方法仍可访问
+
+10. destroyed
+
+- - 完全销毁一个实例。可清理它与其它实例的连接，解绑它的全部指令及事件监听器
+  - 并不能清除DOM，仅仅销毁实例
+
+使用场景分析
+
+| 生命周期      | 描述                                                         |
+| ------------- | ------------------------------------------------------------ |
+| beforeCreate  | 执行时组件实例还未创建，通常用于插件开发中执行一些初始化任务 |
+| created       | 组件初始化完毕，各种数据可以使用，常用于异步数据获取         |
+| beforeMount   | 未执行渲染、更新，dom未创建                                  |
+| mounted       | 初始化结束，dom已创建，可用于获取访问数据和dom元素           |
+| beforeUpdate  | 更新前，可用于获取更新前各种状态                             |
+| updated       | 更新后，所有状态已是最新                                     |
+| beforeDestroy | 销毁前，可用于一些定时器或订阅的取消                         |
+| destroyed     | 组件已销毁，作用同上                                         |
+
+### 3.4. Vue.js computed 和 watch
+
+#### 3.4.1. computed
+
+```js
+<div id="example">
+  {{ message.split('').reverse().join('') }}
+</div>
+```
+
+在这个地方，模板不再是简单的声明式逻辑。你必须看一段时间才能意识到，这里是想要显示变量 message 的翻转字符串。当你想要在模板中的多处包含此翻转字符串时，就会更加难以处理。
+
+所以，对于任何复杂逻辑，你都应当使用计算属性。
+
+```j s
+<div id="example">
+  <p>Original message: "{{ message }}"</p>
+  <p>Computed reversed message: "{{ reversedMessage }}"</p>
+</div>
+```
+
+```js
+var vm = new Vue({
+  el: '#example',
+  data: {
+    message: 'Hello'
+  },
+  computed: {
+    // 计算属性的 getter
+    reversedMessage: function () {
+      // `this` 指向 vm 实例
+      return this.message.split('').reverse().join('')
+    }
+  }
+})
+```
+
+结果：
+
+- Original message: "Hello"
+- Computed reversed message: "olleH"
+
+##### 3.4.1.1. computed 和 method
+
+你可能已经注意到我们可以通过在表达式中调用方法来达到同样的效果：
+
+```js
+<p>Reversed message: "{{ reversedMessage() }}"</p>
+```
+
+```js
+// 在组件中
+methods: {
+  reversedMessage: function () {
+    return this.message.split('').reverse().join('')
+  }
+}
+```
+
+我们可以将同一函数定义为一个方法而不是一个计算属性。两种方式的最终结果确实是完全相同的。
+
+不同的是计算属性是基于它们的响应式依赖进行缓存的。只在相关响应式依赖发生改变时它们才会重新求值。这就意味着只要 message 还没有发生改变，多次访问 reversedMessage 计算属性会立即返回之前的计算结果，而不必再次执行函数。
+
+这也同样意味着下面的计算属性将不再更新，因为 Date.now() 不是响应式依赖：
+
+```js
+computed: {
+  now: function () {
+    return Date.now()
+  }
+}
+```
+
+相比之下，每当触发重新渲染时，调用方法将总会再次执行函数。
+
+我们为什么需要缓存？假设我们有一个性能开销比较大的计算属性 A，它需要遍历一个巨大的数组并做大量的计算。然后我们可能有其他的计算属性依赖于 A。如果没有缓存，我们将不可避免的多次执行 A 的 getter！如果你不希望有缓存，请用方法来替代。
+
+##### 3.4.1.2. computed vs watch
+
+Vue 提供了一种更通用的方式来观察和响应 Vue 实例上的数据变动：侦听属性。当你有一些数据需要随着其它数据变动而变动时，你很容易滥用 watch。然而，通常更好的做法是使用计算属性而不是命令式的 watch 回调。细想一下这个例子：
+
+```js
+<div id="demo">{{ fullName }}</div>
+```
+
+```
+var vm = new Vue({
+  el: '#demo',
+  data: {
+    firstName: 'Foo',
+    lastName: 'Bar',
+    fullName: 'Foo Bar'
+  },
+  watch: {
+    firstName: function (val) {
+      this.fullName = val + ' ' + this.lastName
+    },
+    lastName: function (val) {
+      this.fullName = this.firstName + ' ' + val
+    }
+  }
+})
+```
+
+上面代码是命令式且重复的。将它与计算属性的版本进行比较：
+
+```js
+var vm = new Vue({
+  el: '#demo',
+  data: {
+    firstName: 'Foo',
+    lastName: 'Bar'
+  },
+  computed: {
+    fullName: function () {
+      return this.firstName + ' ' + this.lastName
+    }
+  }
+})
+```
+
+##### 3.4.1.3. computed的 setter
+
+计算属性默认只有 getter，不过在需要时你也可以提供一个 setter：
+
+```js
+// ...
+computed: {
+  fullName: {
+    // getter
+    get: function () {
+      return this.firstName + ' ' + this.lastName
+    },
+    // setter
+    set: function (newValue) {
+      var names = newValue.split(' ')
+      this.firstName = names[0]
+      this.lastName = names[names.length - 1]
+    }
+  }
+}
+// ...
+```
+
+现在再运行 `vm.fullName = 'John Doe'` 时，setter 会被调用，vm.firstName 和 vm.lastName 也会相应地被更新。
+
+#### 3.4.2. watch
+
+虽然计算属性在大多数情况下更合适，但有时也需要一个自定义的侦听器。
+
+```j s
+<div id="watch-example">
+  <p>
+    Ask a yes/no question:
+  	<input v-model="question">
+  </p>
+  <p>{{ answer }}</p>
+</div>
+```
+
+```js
+<!-- 因为 AJAX 库和通用工具的生态已经相当丰富，Vue 核心代码没有重复 -->
+<!-- 提供这些功能以保持精简。这也可以让你自由选择自己更熟悉的工具。 -->
+<script src="https://cdn.jsdelivr.net/npm/axios@0.12.0/dist/axios.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/lodash@4.13.1/lodash.min.js"></script>
+<script>
+  
+var watchExampleVM = new Vue({
+  el: '#watch-example',
+  data: {
+    question: '',
+    answer: 'I cannot give you an answer until you ask a question!'
+  },
+  watch: {
+    // 如果 `question` 发生改变，这个函数就会运行
+    question: function (newQuestion, oldQuestion) {
+      this.answer = 'Waiting for you to stop typing...'
+      this.debouncedGetAnswer()
+    }
+  },
+  created: function () {
+    // `_.debounce` 是一个通过 Lodash 限制操作频率的函数。
+    // 在这个例子中，我们希望限制访问 yesno.wtf/api 的频率
+    // AJAX 请求直到用户输入完毕才会发出。想要了解更多关于
+    // `_.debounce` 函数 (及其近亲 `_.throttle`) 的知识，
+    // 请参考：https://lodash.com/docs#debounce
+    this.debouncedGetAnswer = _.debounce(this.getAnswer, 500)
+  },
+  methods: {
+    getAnswer: function () {
+      if (this.question.indexOf('?') === -1) {
+        this.answer = 'Questions usually contain a question mark. ;-)'
+        return
+      }
+      this.answer = 'Thinking...'
+      var vm = this
+      axios.get('https://yesno.wtf/api')
+        .then(function (response) {
+          vm.answer = _.capitalize(response.data.answer)
+        })
+        .catch(function (error) {
+          vm.answer = 'Error! Could not reach the API. ' + error
+        })
+    }
+  }
+})
+  </script>
+```
+
+在这个示例中，使用 watch 选项允许我们执行异步操作 (访问一个 API)，限制我们执行该操作的频率，并在我们得到最终结果前，设置中间状态。这些都是计算属性无法做到的。
+
+#### 3.4.3. 异同点
+
+##### 3.4.3.1. 相同点
+
+1. 基于vue的依赖收集机制；
+
+2. 都是被依赖的变化触发，进行改变进而进行处理计算；
+
+##### 3.4.3.2. 不同点
+
+1. 入和出
+
+computed：多入单出 —— 多个值变化，组成一个值的变化；
+
+watch：单入多出 —— 单个值的变化，进而影响一系列的状态变更；
+
+2. 性能
+
+computed：会自动diff依赖，若依赖没有变化，会改从缓存中读取当前计算值；
+
+watch：无论监听值变化与否，都会执行回调；
+
+3. 写法上
+
+computed: 必须有return返回值；
+
+watch: 不一定；
+
+4. 时机上
+
+computed：从首次生成赋值，就开始计算运行了；
+
+watch: 首次不会运行，除非——immediate：true；
 
 # vue高级用法
 
@@ -33670,41 +37191,33 @@ react理念
 1. cpu卡顿：大量计算操作
 2. IO 卡顿: 网络请求导致的卡顿
 
-JSX和 fiber的区别
+- JSX和 fiber的区别
 
 JSX是渲染在页面的一种视图数据结构
 
-Fiber 是双缓存的结构
-
-Effect手机用户来作为更新机制的判断逻辑
+Fiber 是双缓存的结构，是用户来作为更新机制的判断逻辑
 
 Jsx->js->VDOM->fiber
 
-1. render：fiber是如何被创建，并且传给renderer ，同步
+1. render：fiber是如何被创建，并且传给renderer ，异步,对应着scheduler和reconciler
 
-2. commit:接收effect,全部指向，进行对应的更新，异步
+2. commit:接收effect,全部指向，进行对应的更新，同步,对应着render
 
 ### render
 
 - beginWork：开始接收第一个fiber节点，并找到所有的fiber节点
-- completework: 收录effect，并且维护一个effect队列
+- completeWork: 收录effect，并且维护一个effect队列
 
 ### commit
 
  effect队列，去执行对应的vdom的操作
 
-1. effectlist: 维护的fiber节点的单向链表
+1. effectList: 维护的fiber节点的单向链表
 2. updateQueue: 里面每个fiber所含有的更新的内容
 
 - before mutation：DOM更新之前
 - mutation：DOM更新中的阶段
 - layout：DOM更新后的阶段
-
-18的filber和16的有什么区别吗
-
-16.8
-
-
 
 
 
