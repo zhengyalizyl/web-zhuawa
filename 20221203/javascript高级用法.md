@@ -10784,43 +10784,1938 @@ watch: 首次不会运行，除非——immediate：true；
 
 # vue高级用法
 
-## mixin
+https://www.yuque.com/lpldplws/web/ck0csfxciuzol315?singleDoc# 《Vue高级用法》 密码：tczl
 
-mixin灵活 提供可复用的功能
+## 1. 课程目标
 
-抽离公共代码，哪里需要搬哪里
+1. 深入学习Vue mixin、插件及过滤器；
+2. 简单掌握Vue的设计思路，为后续Vue源码作铺垫；
 
-vue mixin与vuex区别？
+## 2. 课程大纲
 
-vuex抽离公共状态的管理，vuex如果有一个组件改变数据，其他引入的部分也会改变
+1. Vue mixin；
+2. Vue 插件；
+3. Vue过滤器；
+4. Vue的设计思路；
 
-mixin数据方法都是独立的，组件间互相不影响
+## 3. Vue mixin
 
-mixin方式？
+官方给出了解释：
 
-- 局部混入
-  - mixin会和组件一起执行，但是mixin优先级更高
-  - mixin的data、生命周期、methods也会跟组件一起混合使用
+混入 (mixin) 提供了一种非常灵活的方式，来分发 Vue 组件中的可复用功能。
 
-- 全局混入
+这段话在理解上很简单，无非就是将每个组件中共同功能抽离出来，而所有共同功能所有组成的一个对象就会被作为一个 Mixin 处理。
 
-## vue选项式合并的思路
+通俗点将，就是将组件的公共逻辑或者配置提取出来，哪个组件需要用到时，直接将提取的这部分混入到组件内部即可。这样既可以减少代码冗余度，也可以让后期维护起来更加容易。
 
-实例化过程中的选项
+这里需要注意的是：提取的是逻辑或配置，而不是HTML代码和CSS代码。其实大家也可以换一种想法，mixin就是组件中的组件，Vue组件化让我们的代码复用性更高，那么组件与组件之间还有重复部分，我们使用Mixin在抽离一遍。
 
-https://www.yuque.com/lpldplws/web/hadz6f?singleDoc# 《Vue2源码解析（1/2）》 密码：mq90
+### 3.1. Vue mixin 和 Vuex的区别
 
-https://www.yuque.com/lpldplws/web/xx3ygi?singleDoc# 《Vue2源码解析（2/2）》 密码：ya0n
+上文中提到，Mixin就是一个抽离公共部分的作用。在Vue中，Vuex状态管理似乎也是做的这一件事，它也是将组件之间可能共享的数据抽离出来。两者看似一样，实则还是有细微的区别，区别如下：
 
-https://www.yuque.com/lpldplws/web/gdw840?singleDoc# 《Vue3新特性&源码解析（1/3）》 密码：mmo8
+1. Vuex公共状态管理，如果在一个组件中更改了Vuex中的某个数据，那么其它所有引用了Vuex中该数据的组件也会跟着变化；
+2. Mixin中的数据和方法都是独立的，组件之间使用后是互相不影响的；
 
-https://www.yuque.com/lpldplws/web/gmptis?singleDoc# 《Vue3新特性&源码解析（2/3）》 密码：qke4
+### 3.2. mixin的使用
 
-https://www.yuque.com/lpldplws/web/ty5nga?singleDoc# 《Vue3新特性&源码解析（3/3）》 密码：apwp
+初始化vite模板后，在src下创建一个mixin的文件夹，初始化代码。
 
-https://www.yuque.com/lpldplws/web/myfkf4?singleDoc# 《配套习题》 密码：oir9
+```javascript
+export const mixins = {
+	data() {
+		return {};
+	},
+	computed: {},
+	created() {},
+	mounted() {},
+	methods: {},
+};
+```
 
-https://www.yuque.com/lpldplws/web/sp3cao?singleDoc# 《配套习题》 密码：kv13
+我们可以看到，mixin此时包含了组件的基础逻辑。然后进行更新。
+
+```javascript
+export const mixins = {
+	data() {
+		return {
+			msg: 'xianzao',
+		};
+	},
+	computed: {},
+	created() {
+		console.log('我是mixin中的created生命周期函数');
+	},
+	mounted() {
+		console.log('我是mixin中的mounted生命周期函数');
+	},
+	methods: {
+		clickMe() {
+			console.log('我是mixin中的点击事件');
+		},
+	},
+};
+```
+
+#### 3.2.1. 局部混入
+
+根据不同的业务场景，我们将mixin可以分为两种：局部混入和全局混入。顾名思义，局部混入和组件的按需加载有点类似，就是需要用到mixin中的代码时，我们再在组件章引入它。全局混入的话，则代表我在项目的任何组件中都可以使用mixin。
+
+组件中引入mixin也非常简单，我们稍微改造下`App.vue`组件。
+
+```javascript
+<template>
+	<div id="app">
+		<img alt="Vue logo" src="./assets/vue.svg" />
+		<button @click="clickMe">点击我</button>
+	</div>
+</template>
+
+<script>
+import { mixins } from './mixin/index';
+export default {
+	name: 'App',
+	mixins: [mixins],
+	components: {},
+	created() {
+		console.log('组件调用mixin数据', this.msg);
+	},
+	mounted() {
+		console.log('我是组件的mounted生命周期函数');
+	},
+};
+</script>
+```
+
+上段代码中引入mixin的方法也非常简单，直接使用vue提供给我们的mixins属性：mixins:[mixins]。
+
+通过上面的代码和效果我们可以得出以下几点：
+
+1. mixin中的生命周期函数会和组件的生命周期函数一起合并执行；
+2. mixin中的data数据在组件中也可以使用；
+3. mixin中的方法在组件内部可以直接调用；
+4. 生命周期函数合并后执行顺序：先执行mixin中的，后执行组件的；
+
+Q：如果一个组件中改动了mixin中的数据，另一个引用了mixin的组件会受影响吗？
+
+A：答案是不会的。
+
+在component中新建Demo组件
+
+```javascript
+// src/components/demo.vue
+<template>
+  <div>mixin中的数据：{{ msg }}</div>
+</template>
+<script>
+import { mixins } from "../mixin/index";
+export default {
+  mixins: [mixins],
+};
+</script>
+```
+
+在App中引入，发现：
+
+```javascript
+<template>
+	<div id="app">
+		<img alt="Vue logo" src="./assets/vue.svg" />
+		<button @click="clickMe">点击我</button>
+		<button @click="changeMsg">更改mixin数据</button>
+		<Demo></Demo>
+	</div>
+</template>
+
+<script>
+import { mixins } from './mixin/index';
+import Demo from './components/Demo.vue';
+export default {
+	name: 'App',
+	mixins: [mixins],
+	components: { Demo },
+	created() {
+		console.log('组件调用minxi数据', this.msg);
+	},
+	mounted() {
+		console.log('我是组件的mounted生命周期函数');
+	},
+	methods: {
+		changeMsg() {
+			this.msg = 'updated xianzao';
+			console.log('更改后的msg:', this.msg);
+		},
+	},
+};
+</script>
+```
+
+1. 我们在demo组件中引入了mixin，且使用了mixin中的msg数据；
+2. 在App.vue中同样引入了mixin，且设置了点击事件更改msg；
+3. 点击按钮，更改msg，查看demo组件中显示是否有变化；
+
+可以看到我们在App.vue组件中更改了msg后，demo组件显示没有任何变化，所以不同组件中的mixin是相互独立的。
+
+#### 3.2.2. 全局混入
+
+修改main
+
+```javascript
+import { createApp } from 'vue';
+import './style.css';
+import App from './App.vue';
+import { mixins } from './mixin/index';
+
+const app = createApp(App);
+
+app.mixin(mixins);
+
+app.mount('#app');
+```
+
+在App.js中去掉mixin部分：
+
+```javascript
+<template>
+	<div id="app">
+		<img alt="Vue logo" src="./assets/vue.svg" />
+		<button @click="clickMe">点击我</button>
+		<button @click="changeMsg">更改mixin数据</button>
+		<Demo></Demo>
+	</div>
+</template>
+
+<script>
+import Demo from './components/Demo.vue';
+export default {
+	name: 'App',
+	components: { Demo },
+	created() {
+		console.log('组件调用minxi数据', this.msg);
+	},
+	mounted() {
+		console.log('我是组件的mounted生命周期函数');
+	},
+	methods: {
+		changeMsg() {
+			this.msg = 'updated xianzao';
+			console.log('更改后的msg:', this.msg);
+		},
+	},
+};
+</script>
+```
+
+可以发现效果上和局部混入没有任何区别，这就是全局混入的特点。
+
+请谨慎使用全局混入，因为它会影响每个单独创建的 Vue 实例 (包括第三方组件)。
+
+#### 3.2.3. 选项合并
+
+如果mixin中定义的属性或方法的名称与组件中定义的名称有冲突，怎么办？
+
+这里的冲突主要分为以下几种情况：
+
+1. 生命周期函数：先执行mixin中生命周期函数中的代码，然后在执行组件内部的代码；
+2. data数据冲突：组件中的data数据会覆盖mixin中数据
+
+```javascript
+var mixin = {
+  data: function () {
+    return {
+      message: 'hello',
+      foo: 'abc'
+    }
+  }
+}
+
+new Vue({
+  mixins: [mixin],
+  data: function () {
+    return {
+      message: 'goodbye',
+      bar: 'def'
+    }
+  },
+  created: function () {
+    console.log(this.$data)
+    // => { message: "goodbye", foo: "abc", bar: "def" }
+  }
+})
+```
+
+1. 方法冲突：选择组件本身的方法
+
+```javascript
+var mixin = {
+  methods: {
+    foo: function () {
+      console.log('foo')
+    },
+    conflicting: function () {
+      console.log('from mixin')
+    }
+  }
+}
+
+var vm = new Vue({
+  mixins: [mixin],
+  methods: {
+    bar: function () {
+      console.log('bar')
+    },
+    conflicting: function () {
+      console.log('from self')
+    }
+  }
+})
+
+vm.foo() // => "foo"
+vm.bar() // => "bar"
+vm.conflicting() // => "from self"
+```
+
+### 3.3. mixin优缺点
+
+优点：
+
+1. 提高代码复用；
+2. 无需传递状态；
+3. 维护方便，只需要修改一个地方即可；
+
+缺点：
+
+1. 命名冲突；
+2. 滥用的话后期很难维护；
+3. 不好追溯源，排查问题稍显麻烦；
+4. 不能轻易的重复代码；
+
+### 3.4. Vue中的选项式合并策略
+
+在Vue的初始化过程中，最开始的阶段就是选项合并阶段。它通过调用mergeOptions函数将两个选项配置合并成一个选项配置。这里的选项options的形式实际上就是我们平时开发时在Vue中写的对象配置，形式如下：
+
+```javascript
+ { 
+   components: {}, 
+   filters: {},
+   data() { return {} }, 
+   computed: {}, 
+   created: {}, 
+   methods: {},
+   ... 
+ }
+```
+
+因此，选项合并实际可以简单的看作是两个上面的对象合并成一个对象。
+
+由于`mergeOptions`是实现实例化(`new Vue(options)`)、继承(`Vue.extend`)和混入(`Vue.mixin`)三大功能的核心函数，所以分析它的实现是理解Vue实例化过程和继承的必经之路。 下面我们将从以下几个方面来全面了解Vue中的选项合并：
+
+1. 实例化过程中的选项，了解我们需要合并的选项是怎样的；
+2. `mergeOptions`的实现，了解各个合并策略；
+3. 继承(`Vue.extend`和`extends`:{})的选项合并；
+4. 混入(`Vue.mixin`和`mixins`:[])的选项合并；
+5. 为什么实例化过程中有时用`initInternalComponent`而不是`mergeOptions`；
+
+#### 3.4.1. 实例化过程中的选项
+
+Vue的实例化过程调用的是`core/instance/init.js`文件中的`_init`方法。（先了解，后面源码课会讲）
+
+```javascript
+ Vue.prototype._init = function (options?: Object) {
+   const vm: Component = this
+ 
+   ...
+ 
+   vm.$options = mergeOptions(
+     resolveConstructorOptions(vm.constructor),
+     options || {},
+     vm
+   )
+ 
+   ...
+ }
+```
+
+实例化的过程中第一个重要的处理就是选项的合并，这里第二个参数比较容易理解，就是我们平时写的Vue的配置项。第一个参数则是通过`resolveConstructorOptions(vm.constructor)`生成，找到`resolveConstructorOptions`方法，代码如下：
+
+```javascript
+ // * 返回构造函数的 options
+ export function resolveConstructorOptions (Ctor: Class<Component>) {
+   // * 如果不是继承，options 就是原构造函数的 options
+   // * 如果是继承时，options 为合并 superOptions 和 extendOptions 的 options
+   // * 此外，这里的 options 还包含了全局注册的 组件/指令/过滤器
+   let options = Ctor.options
+   // * Ctor.super 存在说明是调用了 extend 方法进行继承生成的构造函数
+   // * 详见 /src/core/global-api/extend.js 文件
+   // * - superOptions 是父类 options
+   // * - extendOptions 是当前类传入的 options (如果与 sealedOptions不同，需要合并)
+   // * - options = mergeOptions(superOptions, extendOptions)
+   // * - sealedOptions 保存的是当前类继承时 合并后的 options(是extend的时候赋值的)
+   if (Ctor.super) {
+     const superOptions = resolveConstructorOptions(Ctor.super)
+     const cachedSuperOptions = Ctor.superOptions
+     // * 如果 superOptions 变动了，需要处理新的 options
+     if (superOptions !== cachedSuperOptions) {
+       Ctor.superOptions = superOptions
+       // * sealedOptions 是 seal 的时候赋值的，
+       // * 这里的变动可能是 options 在 extend 后继续被赋值
+       // * 复现：https://jsfiddle.net/vvxLyLvq/2/
+       // * 所以需要找出变动了的属性，然后更新到 extendOptions 上
+       // * 这里的 extend 只是对象的合并
+       const modifiedOptions = resolveModifiedOptions(Ctor)
+       if (modifiedOptions) {
+         extend(Ctor.extendOptions, modifiedOptions)
+       }
+       // * 由于 options 变化了，重新合并一次
+       options = Ctor.options = mergeOptions(superOptions, Ctor.extendOptions)
+       if (options.name) {
+         // * 将自身的构造函数也存到了 components 对象中
+         options.components[options.name] = Ctor
+       }
+     }
+   }
+   return options
+ }
+```
+
+这里传入的是当前构造函数，那么`Ctor.options`指的是Vue构造函数的`options`。这里我们先了解，Vue。options的内容大致如下：
+
+```javascript
+ // Vue.options 内容
+ {
+   components: {
+     KeepAlive,
+     Transition,
+     TransitionGroup
+   },
+   filters: {},
+   directives: {
+     model,
+     show
+   },
+   _base: Vue
+ }
+```
+
+再看下一句`Ctor.super`的判断，super这个字段是在`core/global-api/extend.js`文件中的extend方法调用时添加的。如果`Ctor.super`存在，说明Ctor是通过继承而来的子构造函数。但是，如果在extend后，我们又在父构造函数的options上添加新的属性，这个时候子构造函数是无法继承新的属性的。因此，这里需要通过`Ctor.super`向上寻找，找出所有父构造函数更新的options属性，并更新到子构造函数上，这样就能解决`Vue.options`被更改的问题了。 有兴趣的话，可以看一下Vue的[issues#4976](https://github.com/vuejs/vue/issues/4976)。
+
+最后，经过`resolveConstructorOptions`处理后，最终得到的同样是一个Vue的配置选项，下一步则是需要将这两个配置选项进行合并了。
+
+#### 3.4.2. mergeOptions的实现
+
+##### 3.4.2.1. 选项校验和规范化
+
+`mergeOptions`函数的定义是在`/src/core/util/options.js`文件当中，部分代码如下：
+
+```javascript
+ export function mergeOptions (
+   parent: Object,// 选项
+   child: Object, // 选项
+   vm?: Component // Vue 实例
+ ): Object {
+   // * 1. 校验选项中的 components 里的名称是否合法。
+   if (process.env.NODE_ENV !== 'production') {
+     checkComponents(child)
+   }
+   
+   // * ['type1'], { type2: { type: String, default: '' } } 两种形式
+   // * 2. 都转换成后一种形式
+   normalizeProps(child, vm)
+   
+   // * ['injectKey1'], { injectKey2: { from: 'xxx', default: 'yyy' } } 两种形式
+   // * 3. 都转换成后一种形式
+   normalizeInject(child, vm)
+   
+   // * directive 有两种形式 function() {} 或者是 { bind, update, ... }
+   // * 4. 都转换成后一种形式
+   normalizeDirectives(child)
+ 
+   // * 合并策略
+   ...
+ }
+```
+
+在正式合并之前，会优先校验components里的组件名称是否合法，如果不合法会进行提示。
+
+```javascript
+function checkComponents (options: Object) {
+   for (const key in options.components) {
+     validateComponentName(key)
+   }
+ }
+ 
+ // 校验组件名称是否合法
+ export function validateComponentName (name: string) {
+   // 1. 判断组件名是否合法，如数字开头的则不合法
+   if (!new RegExp(`^[a-zA-Z][\-\.0-9_${unicodeRegExp.source}]*$`).test(name)) {
+     warn(
+       'Invalid component name: "' + name + '". Component names ' +
+       'should conform to valid custom element name in html5 specification.'
+     )
+   }
+   // 2. 判断组件是否是自身定义的组件名，如 slot 等。
+   // 3. 判断组件是否是 html 中的标签名，如 div 等
+   if (isBuiltInTag(name) || config.isReservedTag(name)) {
+     warn(
+       'Do not use built-in or reserved HTML elements as component ' +
+       'id: ' + name
+     )
+   }
+ }
+```
+
+除此之外， Vue还做了以下几点处理。通过选项形式的转换，将多种写法的选项转换成统一形式：
+
+1. `normalizeProps`方法：处理props，将数组形式定义的props转换成对象形式。
+2. `normalizeInject`方法：处理inject，将数组形式定义的inject转换成对象形式。
+3. `normalizeDirectives`方法：处理directives，将指令数组里函数形式定义的directive转换成对象形式。
+
+处理前和处理后对比结果如下：
+
+```javascript
+ // ===> 处理前 <===
+ {
+   props: ['user-name'],
+   inject: ['id'],
+   directives: [function add() {}]
+ }
+ 
+ // ===> 处理后 <====
+ {
+   // 对象形式
+   props: {
+     userName: { // 转换成驼峰命名
+       type: null
+     }
+   },
+   // 对象形式
+   inject: {
+     id: {
+       from: 'id'
+     }
+   },
+   directives: [{
+     // 对象形式
+     bind: function add() {}
+     update: function add() {}
+   }]
+ }
+```
+
+在校验完成之后，接下里就是正式的合并流程了，Vue针对每个规定的配置选项都有定义好的合并策略，例如`data`,`component`,`mounted`,`methods`等。如果Vue父子选项配置具有相应的选项，那么直接按照相应的合并策略进行合并。合并的入口如下：
+
+```javascript
+ export function mergeOptions (
+   parent: Object,
+   child: Object,
+   vm?: Component
+ ): Object {
+   ...
+   // * 合并策略
+   const options = {}
+   let key
+   for (key in parent) {
+     mergeField(key)
+   }
+   for (key in child) {
+     if (!hasOwn(parent, key)) {
+       mergeField(key)
+     }
+   }
+   function mergeField (key) {
+     // 根据 key 获取相应的合并策略
+     const strat = strats[key] || defaultStrat
+     // 用相应的合并策略进行合并
+     options[key] = strat(parent[key], child[key], vm, key)
+   }
+   return options
+ }
+```
+
+以上通过两个for循环，遍历`parent`和`child`的key（key这里指的是`data`/`methods`/`created`等），然后依次调用`mergeField`方法。`mergeField`则是通过key在strats中找到对应的合并策略，然后用该合并策略进行相应合并。如果找不到合并策略，则使用默认合并策略`defaultStrat`。
+
+这里的strats已经在该文件中定义，现在重点来看一下Vue中strats是如何定义合并策略的。
+
+##### 3.4.2.2. data合并
+
+```javascript
+ strats.data = function (
+   parentVal: any,
+   childVal: any,
+   vm?: Component
+ ): ?Function {
+   if (!vm) {
+     if (childVal && typeof childVal !== 'function') {
+       process.env.NODE_ENV !== 'production' && warn(
+         'The "data" option should be a function ' +
+         'that returns a per-instance value in component ' +
+         'definitions.',
+         vm
+       )
+       return parentVal
+     }
+     return mergeDataOrFn(parentVal, childVal)
+   }
+ 
+   return mergeDataOrFn(parentVal, childVal, vm)
+ }
+```
+
+可以看出当vm不存在时，如果`childVal`即`data`不为函数形式，那么在非开发环境下就会报错，这也是为什么我们平时在写组件data时需要写成函数形式的原因。
+
+但是这里的vm在什么情况下不存在呢？我们可以全局搜索一下`mergeOptions(`，看看哪些位置调用了该方法：
+
+![img](https://cdn.nlark.com/yuque/0/2023/png/2340337/1673512997783-64242c76-aff2-45de-95aa-eaec810cb022.png)
+
+
+
+ 可以看出，在`extend`，`mixin`中，由于处理构造函数阶段时，是没有实例的，所以也就不会传vm。这里我们主要讨论`extend`。
+
+接下来我们全局搜索一下`extend`在哪些地方被调用了。
+
+![img](https://cdn.nlark.com/yuque/0/2023/png/2340337/1673513049847-5d0ef41c-d979-4ba4-b307-c5a92ccddeef.png)
+
+可以看到，extend方法主要在两个位置被调用。
+
+第一个位置在 `src/core/global-api/assets.js`文件。
+
+```javascript
+ ASSET_TYPES.forEach(type => {
+   Vue[type] = function (
+     id: string,
+     definition: Function | Object
+   ): Function | Object | void {
+       ...
+       if (type === 'component' && isPlainObject(definition)) {
+         definition.name = definition.name || id
+         // * 通过继承，返回新的构造函数（相当于 子组件 的构造函数）
+         definition = this.options._base.extend(definition)
+       }
+       ...
+       // * component / directive / filter 
+       // * 将注册的内容全部添加到 Vue 构造函数的 options 上
+       this.options[type + 's'][id] = definition
+       return definition
+   }
+ })
+```
+
+通过遍历`ASSET_TYPES`，在Vue构造函数上添加了component静态属性，即当我们使用`Vue.component`的时候，实际上会执行这里的`this.options._base.extend(definition)`，即调用了extend方法来将传入的组件选项合并后返回新的构造函数。
+
+第二个位置在`src/core/vdom/create-component.js`文件：
+
+```javascript
+ export function createComponent (
+   Ctor: Class<Component> | Function | Object | void,
+   data: ?VNodeData,
+   context: Component,
+   children: ?Array<VNode>,
+   tag?: string
+ ): VNode | Array<VNode> | void {
+   ...
+   // * 这里的 Ctor 有几种形式
+   // * 1. 全局形式定义的 component，那么 Ctor 是构造函数形式
+   // * 2. 局部定义的 component，那么是 对象形式。会对对象形式进行 extend 处理
+   const baseCtor = context.$options._base
+ 
+   // 对象形式。会对对象形式进行 extend 处理
+   if (isObject(Ctor)) {
+     Ctor = baseCtor.extend(Ctor)
+   }
+   ...
+   return vnode
+ }
+```
+
+传入的Ctor一种情况是全局定义的组件，此时Ctor通过extend创建，传入的是构造函数形式。另外一种情况则是局部注册的组件，传入的是选项配置形式，此时会执行`baseCtor.extend(Ctor)`，同样会通过extend来创建构造函数。
+
+因此，无论是全局注册的组件还是局部组件，最终都会调用extend方法，而extend方法在合并选项的时候会校验传入的data是否是函数形式，这也就是为什么在定义组件时data必须是以函数形式定义。
+
+好了，了解完了data在组件中为什么要为函数形式后，我们继续看data的后续合并过程。`mergeDataOrFn`函数执行时最终调用的都是`mergeData`函数：
+
+```javascript
+ function mergeData (to: Object, from: ?Object): Object {
+   if (!from) return to
+   let key, toVal, fromVal
+ 
+   const keys = hasSymbol
+     ? Reflect.ownKeys(from)
+     : Object.keys(from)
+ 
+   for (let i = 0; i < keys.length; i++) {
+     key = keys[i]
+     // key 为 __ob__ 则跳过 
+     if (key === '__ob__') continue
+     toVal = to[key]
+     fromVal = from[key]
+     // * 自身不存在这个key，那么使用将 from 的 key 和 value 添加到 to 上
+     // * 如果 to 原本是响应式的，那么新增的 key 值也需要是响应式的
+     if (!hasOwn(to, key)) {
+       set(to, key, fromVal)
+     } else if (
+       toVal !== fromVal &&
+       isPlainObject(toVal) &&
+       isPlainObject(fromVal)
+     ) {
+       // * 如果都是对象，继续合并
+       mergeData(toVal, fromVal)
+     }
+   }
+   return to
+ }
+```
+
+这里的`mergeData`比较简单，实际上就是递归将两个对象合并。需要注意的是，在合并的过程中，如果data是响应式的，那么合并后添加的属性也需要是响应式的。
+
+##### 3.4.2.3. 生命周期合并
+
+生命周期的钩子是在`src/shared/constant.js`中定义：
+
+```javascript
+ export const LIFECYCLE_HOOKS = [
+ 'beforeCreate',
+ 'created',
+ 'beforeMount',
+ 'mounted',
+ 'beforeUpdate',
+ 'updated',
+ 'beforeDestroy',
+ 'destroyed',
+ 'activated',
+ 'deactivated',
+ 'errorCaptured',
+ 'serverPrefetch'
+]
+```
+
+`mergeHook`是生命周期钩子合并的策略，其核心是将父选项和子选项的对应生命周期合并成数组形式，如果存在相同的生命周期执行函数，那么会进行去重处理。
+
+```javascript
+function mergeHook (
+   parentVal: ?Array<Function>,
+   childVal: ?Function | ?Array<Function>
+ ): ?Array<Function> {
+   const res = childVal
+     ? parentVal
+       // 都存在时，拼接数组
+       ? parentVal.concat(childVal)
+       : Array.isArray(childVal)
+         // parent 不存在时
+         ? childVal
+         : [childVal]
+     // child 不存在，使用 parent
+     : parentVal
+   return res
+     ? dedupeHooks(res)
+     : res
+ }
+ 
+ // hooks 去重
+ function dedupeHooks (hooks) {
+   const res = []
+   for (let i = 0; i < hooks.length; i++) {
+     if (res.indexOf(hooks[i]) === -1) {
+       res.push(hooks[i])
+     }
+   }
+   return res
+ }
+ 
+ LIFECYCLE_HOOKS.forEach(hook => {
+   strats[hook] = mergeHook
+ })
+```
+
+结合具体例子看看实际合并的结果：
+
+```javascript
+ const extend = {
+     created() {
+       console.log('extends')
+     }
+   }
+   const mixins = {
+     created() {
+       console.log('mixins')
+     }
+   }
+ 
+   // 父构造函数
+   const Parent = Vue.extend({
+     created() {
+       console.log('parent created')
+     },
+     mixins: [mixins],
+     extends: extend,
+   })
+
+   // 子构造函数
+   const Child = Parent.extend({
+     created() {
+       console.log('child')
+     },
+     mixins: [mixins],
+     extends: {
+       created() {
+         console.log('child extends')
+       }
+     }
+   })
+
+   new Child()
+   // extends
+   // mixins
+   // parent created
+   // child extends
+   // child
+```
+
+由于mixins里的created在合并时去重了，所以只会打印一遍mixins。另外可以看出，生命周期在执行时，`parent`和`extends/mixins`里的生命周期都是优先于child生命周期执行的。 
+
+##### 3.4.2.4. components/filters/directives合并
+
+```javascript
+ function mergeAssets (
+   parentVal: ?Object,
+   childVal: ?Object,
+   vm?: Component,
+   key: string
+ ): Object {
+   const res = Object.create(parentVal || null)
+   if (childVal) {
+     process.env.NODE_ENV !== 'production' && assertObjectType(key, childVal, vm)
+     return extend(res, childVal)
+   } else {
+     return res
+   }
+ }
+ 
+ ASSET_TYPES.forEach(function (type) {
+   strats[type + 's'] = mergeAssets
+ })
+```
+
+`Object.create()`方法创建一个新对象，使用现有的对象来提供新创建的对象的__proto__。
+
+这合并资源选项的时候，首先会创建一个原型指向父选项的空对象，再将子选项赋值给空对象。注意这里的父选项是通过原型链访问，而子选项是直接添加到对象上的。例如:
+
+```javascript
+Vue.component('test', {})
+ const vm = new Vue({
+   components: {
+     test: 'test'
+   }
+ })
+console.log('vm.$options ==> ', vm.$options);
+// 合并后，父类的 options 通过 __proto__ 访问
+{ 
+ components: {
+   test: "test",
+   __proto__: {
+     KeepAlive: { ... },
+     Transition: { ... },
+     TransitionGroup: { ... },
+     test: ...
+   }
+ },
+ directives: {},
+ filters: {},
+ _base: ...
+}
+```
+
+这里的__proto__指向的就是选项的components。
+
+##### 3.4.2.5. watch合并
+
+watch的策略是：
+
+1. 当子选项不存在时，使用父选项；
+2. 当父选项不存在时，使用子选项；
+3. 当父选项和子选项都存在时，如果他们具有相同的观测字段，那么将其合并成数组形式；
+
+```javascript
+strats.watch = function (
+ parentVal: ?Object,
+ childVal: ?Object,
+ vm?: Component,
+ key: string
+): ?Object {
+ ...
+ // 子类不存在，使用父类
+ if (!childVal) return Object.create(parentVal || null)
+ ...
+ // 父类不存在，使用子类
+ if (!parentVal) return childVal
+ const ret = {}
+ extend(ret, parentVal)
+ for (const key in childVal) {
+   let parent = ret[key]
+   const child = childVal[key]
+   // 如果父类存在，改写成数组形式
+   if (parent && !Array.isArray(parent)) {
+     parent = [parent]
+   }
+   // 拼接父类和子类
+   ret[key] = parent
+     ? parent.concat(child)
+     : Array.isArray(child) ? child : [child]
+ }
+ return ret
+}
+```
+
+##### 3.4.2.6. props,methods,inject,computed合并
+
+这一类的选项合并比较简单：
+
+- 当父选项不存在时，使用子选项；
+- 当子选项不存在时，使用父选项；
+- 当两者都存在时，使用子选项覆盖父选项。
+
+```javascript
+strats.props =
+ strats.methods =
+ strats.inject =
+ strats.computed = function (
+   parentVal: ?Object,
+   childVal: ?Object,
+   vm?: Component,
+   key: string
+ ): ?Object {
+   if (childVal && process.env.NODE_ENV !== 'production') {
+     assertObjectType(key, childVal, vm)
+   }
+   if (!parentVal) return childVal
+   // 创建空对象
+   const ret = Object.create(null)
+   extend(ret, parentVal)
+   if (childVal) extend(ret, childVal)
+   return ret
+ }
+```
+
+##### 3.4.2.7. 总结
+
+到这里我们就已经对所有的合并策略都有所了解了。总结一下就是
+
+1. `data`、`provide`、`props`、`methods`、`inject`、`computed`、`components`、`filters`、`directives`基本都是在父子选项同时存在的情况下，子覆盖父；
+2. 生命周期在父子选项同时存在的情况下，会合并成数组形式，且去重；
+3. watch在父子选项同时存在的情况下，会合并成数组形式，不去重；
+
+#### 3.4.3. Vue.extend的实现
+
+`Vue.extend`的定义是在`core/gloabl-api/extend.js`文件里面，主要用于通过选项配参数生成新的构造函数。这里的参数`extendOptions`就是我们在定义组件时传入的配置选项。
+
+```javascript
+ Vue.extend = function (extendOptions: Object): Function {
+   extendOptions = extendOptions || {}
+   const Super = this
+   const SuperId = Super.cid
+   const cachedCtors = extendOptions._Ctor || (extendOptions._Ctor = {})
+   // * 1. 查看配置选项中是否缓存有构造函数
+   if (cachedCtors[SuperId]) {
+     return cachedCtors[SuperId]
+   }
+
+   // * 2. 校验组件名称
+   const name = extendOptions.name || Super.options.name
+   if (process.env.NODE_ENV !== 'production' && name) {
+     validateComponentName(name)
+   }
+
+   // * 3. 继承
+   const Sub = function VueComponent (options) {
+     this._init(options)
+   }
+   Sub.prototype = Object.create(Super.prototype)
+   Sub.prototype.constructor = Sub
+   Sub.cid = cid++
+ 
+   ...
+ }
+```
+
+前半段主要做了三件事：
+
+1. 检验是否通过该选项配置生成过相应构造函数，如果生成过，那么直接使用生成的构造函数即可。这里相当于做了一层优化；
+2. 校验组件名称是否合法；
+3. 通过原型实现继承，生成新的构造函数
+
+接下来就是选项合并：
+
+```javascript
+ // * 4. 合并选项
+ Sub.options = mergeOptions(
+   Super.options,
+   extendOptions
+ )
+```
+
+参数`Super.options`就是`Vue.options`，前面已经提过两次，这里不再赘述了。这里合并后相当于将`Vue.options`扩充了，并将扩充后的结果保存到`Sub.options`上（即新的构造函数options上），所以在通过该构造函数实例化的时候，拥有`extendOptions`配置的相关功能。
+
+最后，会在新生成的构造函数上添加一些静态方法和属性。注意这里的`superOptioins`/`extendOptions`/`sealedOptioins`都在`resolveConstructorOptions`方法寻找options中使用到。
+
+```javascript
+ // * 5. 添加 super
+ Sub['super'] = Super
+   
+ ...
+
+ // * 6. 添加一些方法
+ // allow further extension/mixin/plugin usage
+ Sub.extend = Super.extend
+ Sub.mixin = Super.mixin
+ Sub.use = Super.use
+ ASSET_TYPES.forEach(function (type) {
+   Sub[type] = Super[type]
+ })
+ if (name) {
+   Sub.options.components[name] = Sub
+ }
+
+ // * 7. 添加一些属性
+ // * 父选项
+ Sub.superOptions = Super.options
+ // * 传入的配置选项
+ Sub.extendOptions = extendOptions
+ // * 合并后的配置相许那个
+ Sub.sealedOptions = extend({}, Sub.options)
+```
+
+最后总结来讲，`Vue.extend`方法实际上就是通过原型继承，并将`Vue.options`与`extendOptions`合并，从而实现一个新的构造函数。
+
+#### 3.4.4. Vue.mixin的实现
+
+Vue.mixin方法的实现更是简单，打开`core/global-api/mixin.js`
+
+```javascript
+Vue.mixin = function (mixin: Object) {
+ this.options = mergeOptions(this.options, mixin)
+ return this
+}
+```
+
+实际上就是将两个选项配置进行合并。
+
+## 4. Vue插件
+
+### 4.1. 官方介绍
+
+官网中提到，插件通常用来为 Vue 添加全局功能。插件的功能范围没有严格的限制——一般有下面几种：
+
+1. 添加全局方法或者 property。如：[vue-custom-element](https://github.com/karol-f/vue-custom-element)；
+2. 添加全局资源：指令/过滤器/过渡等。如 [vue-touch](https://github.com/vuejs/vue-touch)；
+3. 通过全局混入来添加一些组件选项。如 [vue-router](https://github.com/vuejs/vue-router)；
+4. 添加 Vue 实例方法，通过把它们添加到 Vue.prototype 上实现；
+5. 一个库，提供自己的 API，同时提供上面提到的一个或多个功能。如 [vue-router](https://github.com/vuejs/vue-router)；
+
+通过全局方法 `Vue.use()` 使用插件。它需要在你调用 `new Vue()` 启动应用之前完成：
+
+```javascript
+// 调用 `MyPlugin.install(Vue)`
+Vue.use(MyPlugin)
+
+new Vue({
+  // ...组件选项
+})
+```
+
+也可以传入一个可选的选项对象：
+
+```javascript
+Vue.use(MyPlugin, { someOption: true })
+```
+
+Vue.use 会自动阻止多次注册相同插件，届时即使多次调用也只会注册一次该插件。
+
+Vue.js 官方提供的一些插件 (例如 vue-router) 在检测到 Vue 是可访问的全局变量时会自动调用 `Vue.use()`。然而在像 CommonJS 这样的模块环境中，你应该始终显式地调用 `Vue.use()`：
+
+```javascript
+var Vue = require('vue')
+var VueRouter = require('vue-router')
+
+// 不要忘了调用此方法
+Vue.use(VueRouter)
+```
+
+开发插件
+
+Vue.js 的插件应该暴露一个 install 方法。这个方法的第一个参数是 Vue 构造器，第二个参数是一个可选的选项对象：
+
+```javascript
+MyPlugin.install = function (Vue, options) {
+  // 1. 添加全局方法或 property
+  Vue.myGlobalMethod = function () {
+    // 逻辑...
+  }
+
+  // 2. 添加全局资源
+  Vue.directive('my-directive', {
+    bind (el, binding, vnode, oldVnode) {
+      // 逻辑...
+    }
+    ...
+  })
+
+  // 3. 注入组件选项
+  Vue.mixin({
+    created: function () {
+      // 逻辑...
+    }
+    ...
+  })
+
+  // 4. 添加实例方法
+  Vue.prototype.$myMethod = function (methodOptions) {
+    // 逻辑...
+  }
+}
+```
+
+### 4.2. 原理解析
+
+Vue插件概括出来就是
+
+1. 通过`Vue.use(MyPlugin)`使用，本质上是调用`MyPlugin.install(Vue)`；
+2. 使用插件必须在new Vue()启动应用之前完成，实例化之前就要配置好；
+3. 如果使用Vue.use多次注册相同插件，那只会注册成功一次；
+
+
+
+`Vue.use`定义在`src/core/global-api`中，源码如下：
+
+```javascript
+Vue.use = function (plugin) {   
+  // 忽略已注册插件
+  if (plugin.installed) {
+    return
+  }
+  
+  // 集合转数组，并去除第一个参数
+  var args = toArray(arguments, 1);
+  
+  // 把this（即Vue）添加到数组的第一个参数中
+  args.unshift(this);
+  
+  // 调用install方法
+  if (typeof plugin.install === 'function') {
+    plugin.install.apply(plugin, args);
+  } else if (typeof plugin === 'function') {
+    plugin.apply(null, args);
+  }
+  
+  // 注册成功
+  plugin.installed = true;
+  return this;
+};
+```
+
+Vue.use接受一个对象参数plugin，首先判断是否已注册，如果多次注册相同插件那么只会注册成功一次，在注册成功后设置`plugin.installed = true`。
+
+然后执行`toArray(arguments, 1)`方法，arguments是一个表示所有参数的类数组对象，需要转换成数组之后才能使用数组的方法。
+
+```javascript
+function toArray (list, start) {
+  start = start || 0;
+  var i = list.length - start;
+  var ret = new Array(i);
+  // 循环去除 前start元素
+  while (i--) {
+    ret[i] = list[i + start];
+  }
+  return ret
+}
+```
+
+上面进行了一次转换，假设list是[1, 2, 3, 4]，start是1，首先创建一个包含3个元素的数组，依次执行`ret[2] = list[ 2 + 1]`、`ret[1] = list[ 1 + 1]`、`ret[0] = list[ 0 + 1]`，实际上就是去除arguments的第一个参数然后把剩余的类数组赋值给新的数组，其实就是去除plugin参数，因为调用plugin.install的时候不需要这个参数。
+
+转换成数组之后调用`args.unshift(this)`，把Vue对象添加到args的第一个参数中，这样就可以在调用`plugin.install`方法的时候把Vue对象传递过去。
+
+### 4.3. 实现一个插件
+
+要求创建一个告诉Vue组件处理自定义rules规则选项的插件，这个rules需要一个对象，该对象指定组件中的数据的验证规则。
+
+```javascript
+const vm = new Vue({
+  data: { foo: 10 },
+  rules: {
+    foo: {
+      validate: value => value > 1,
+      message: 'foo must be greater than one'
+    }
+  }
+})
+
+vm.foo = 0 // 输出 foo must be greater than one
+```
+
+1. 先不考虑插件，在已有的VueAPI中是没有rules这个公共方法的，如果要简单实现的话可以通过钩子函数来，即在`created`里面验证逻辑。
+
+```javascript
+const vm = new Vue({
+    data: { foo: 10 },
+    rules: {
+        foo: {
+          validate: value => value > 1,
+          message: 'foo must be greater than one'
+        }
+    },
+    created: function () {
+      
+        // 验证逻辑
+        const rules = this.$options.rules
+        if (rules) {
+          Object.keys(rules).forEach(key => {
+          
+            // 取得所有规则
+            const { validate, message } = rules[key]
+            
+            // 监听，键是变量，值是函数
+            this.$watch(key, newValue => {
+            
+              // 验证规则
+              const valid = validate(newValue)
+              if (!valid) {
+                console.log(message)
+              }
+            })
+          })
+        }
+      }
+    
+})
+```
+
+可以通过`this.$options.rules`获取到自定义的rules对象，然后对所有规则遍历，使用自定义的`validate(newValue)`验证规则。
+
+2. 实现这个rules插件，为了在Vue中直接使用，可以通过`Vue.mixin`注入到Vue组件中，这样所有的Vue实例都可以使用。
+
+按照插件的开发流程，应该有一个公开方法`install`，在`install`里面使用全局的mixin方法添加一些组件选项，`mixin`方法包含一个`created`钩子函数，在钩子函数中验证`this.$options.rules`。
+
+```javascript
+import Vue from 'vue'
+
+// 定义插件
+const RulesPlugin = {
+
+  // 插件应该有一个公开方法install
+  // 第一个参数是Vue 构造器
+  // 第二个参数是一个可选的选项对象
+  install (Vue) {
+  
+    // 注入组件
+    Vue.mixin({
+    
+      // 钩子函数
+      created: function () {
+      
+        // 验证逻辑
+        const rules = this.$options.rules
+        if (rules) {
+          Object.keys(rules).forEach(key => {
+          
+            // 取得所有规则
+            const { validate, message } = rules[key]
+            
+            // 监听，键是变量，值是函数
+            this.$watch(key, newValue => {
+            
+              // 验证规则
+              const valid = validate(newValue)
+              if (!valid) {
+                console.log(message)
+              }
+            })
+          })
+        }
+      }
+    })
+  }
+}
+
+// 调用插件，实际上就是调用插件的install方法
+// 即RulesPlugin.install(Vue)
+Vue.use(RulesPlugin)
+```
+
+## 5. Vue过滤器
+
+### 5.1. filter介绍
+
+过滤器（filter）实质不改变原始数据，只是对数据进行加工处理后返回过滤后的数据再进行调用处理，我们也可以理解其为一个纯函数。
+
+Vue 允许你自定义过滤器，可被用于一些常见的文本格式化。
+
+在Vue3中已经废弃filter
+
+### 5.2. 如何使用？
+
+vue中的过滤器可以用在两个地方：双花括号插值和 v-bind 表达式，过滤器应该被添加在 JavaScript表达式的尾部，由“管道”符号指示：
+
+```javascript
+<!-- 在双花括号中 -->
+{{ message | capitalize }}
+
+<!-- 在 `v-bind` 中 -->
+<div v-bind:id="rawId | formatId"></div>
+```
+
+### 5.3. 定义filter
+
+在组件的选项中定义本地的过滤器：
+
+```javascript
+filters: {
+  capitalize: function (value) {
+    if (!value) return ''
+    value = value.toString()
+    return value.charAt(0).toUpperCase() + value.slice(1)
+  }
+}
+```
+
+定义全局过滤器
+
+```vue
+Vue.filter('capitalize', function (value) {
+  if (!value) return ''
+  value = value.toString()
+  return value.charAt(0).toUpperCase() + value.slice(1)
+})
+
+new Vue({
+  // ...
+})
+```
+
+注意： 当全局过滤器和局部过滤器重名时，会采用局部过滤器
+
+过滤器可以串联：
+
+```javascript
+{{ message | filterA | filterB }}
+```
+
+在这个例子中，filterA被定义为接收单个参数的过滤器函数，表达式message的值将作为参数传入到函数中。然后继续调用同样被定义为接收单个参数的过滤器函数filterB，将filterA的结果传递到filterB中。
+
+过滤器是JavaScript函数，因此可以接收参数：
+
+```javascript
+{{ message | filterA('arg1', arg2) }}
+```
+
+其中message的值作为第一个参数，普通字符串'arg1'作为第二个参数，表达式arg2的值作为第三个参数
+
+```javascript
+<div id="app">
+    <p>{{ msg | msgFormat('xianzao','--')}}</p>
+</div>
+
+<script>
+    // 定义一个 Vue 全局的过滤器，名字叫做  msgFormat
+    Vue.filter('msgFormat', function(msg, arg, arg2) {
+        // 字符串的  replace 方法，第一个参数，除了可写一个 字符串之外，还可以定义一个正则
+        return msg.replace(/单纯/g, arg+arg2)
+    })
+</script>
+```
+
+### 5.4. 使用场景
+
+平时开发中，需要用到过滤器的地方有很多，比如单位转换、数字打点、文本格式化、时间格式化之类的等
+
+比如我们要实现将30000 => 30,000，这时候我们就需要使用过滤器。
+
+```javascript
+Vue.filter('toThousandFilter', function (value) {
+     if (!value) return ''
+     value = value.toString()
+     return replace(str.indexOf('.') > -1 ? /(\d)(?=(\d{3})+\.)/g : /(\d)(?=(?:\d{3})+$)/g, '$1,')
+})
+```
+
+### 5.5. filter原理
+
+使用过滤器
+
+```javascript
+{{ message | capitalize }}
+```
+
+在模板编译阶段过滤器表达式将会被编译为过滤器函数，主要是用过`parseFilters`，我们放到最后讲
+
+```javascript
+_s(_f('filterFormat')(message))
+```
+
+首先分析一下`_f`：
+
+_f 函数全名是：`resolveFilter`，这个函数的作用是从`this.$options.filters`中找出注册的过滤器并返回
+
+```javascript
+// 变为
+this.$options.filters['filterFormat'](message) // message为参数
+```
+
+关于`resolveFilter`
+
+```javascript
+import { indentity,resolveAsset } from 'core/util/index' 
+
+export function resolveFilter(id){
+    return resolveAsset(this.$options,'filters',id,true) || identity
+}
+```
+
+内部直接调用`resolveAsset`，将`option`对象，类型，过滤器id，以及一个触发警告的标志作为参数传递，如果找到，则返回过滤器；
+
+`resolveAsset`的代码如下：
+
+```javascript
+export function resolveAsset(options,type,id,warnMissing){ // 因为我们找的是过滤器，所以在 resolveFilter函数中调用时 type 的值直接给的 'filters',实际这个函数还可以拿到其他很多东西
+    if(typeof id !== 'string'){ // 判断传递的过滤器id 是不是字符串，不是则直接返回
+        return 
+    }
+    const assets = options[type]  // 将我们注册的所有过滤器保存在变量中
+    // 接下来的逻辑便是判断id是否在assets中存在，即进行匹配
+    if(hasOwn(assets,id)) return assets[id] // 如找到，直接返回过滤器
+    // 没有找到，代码继续执行
+    const camelizedId  = camelize(id) // 万一你是驼峰的呢
+    if(hasOwn(assets,camelizedId)) return assets[camelizedId]
+    // 没找到，继续执行
+    const PascalCaseId = capitalize(camelizedId) // 万一你是首字母大写的驼峰呢
+    if(hasOwn(assets,PascalCaseId)) return assets[PascalCaseId]
+    // 如果还是没找到，则检查原型链(即访问属性)
+    const result = assets[id] || assets[camelizedId] || assets[PascalCaseId]
+    // 如果依然没找到，则在非生产环境的控制台打印警告
+    if(process.env.NODE_ENV !== 'production' && warnMissing && !result){
+        warn('Failed to resolve ' + type.slice(0,-1) + ': ' + id, options)
+    }
+    // 无论是否找到，都返回查找结果
+    return result
+}
+```
+
+下面再来分析一下`_s`：
+
+`_s` 函数的全称是 `toString`,过滤器处理后的结果会当作参数传递给 `toString`函数，最终 toString函数执行后的结果会保存到`Vnode`中的text属性中，渲染到视图中
+
+```javascript
+function toString(value){
+    return value == null
+    ? ''
+    : typeof value === 'object'
+      ? JSON.stringify(value,null,2)// JSON.stringify()第三个参数可用来控制字符串里面的间距
+      : String(value)
+}
+```
+
+最后，在分析下`parseFilters`，在模板编译阶段使用该函数阶段将模板过滤器解析为过滤器函数调用表达式
+
+```javascript
+function parseFilters (filter) {
+    let filters = filter.split('|')
+    let expression = filters.shift().trim() // shift()删除数组第一个元素并将其返回，该方法会更改原数组
+    let i
+    if (filters) {
+        for(i = 0;i < filters.length;i++){
+            experssion = warpFilter(expression,filters[i].trim()) // 这里传进去的expression实际上是管道符号前面的字符串，即过滤器的第一个参数
+        }
+    }
+    return expression
+}
+// warpFilter函数实现
+function warpFilter(exp,filter){
+    // 首先判断过滤器是否有其他参数
+    const i = filter.indexof('(')
+    if(i<0){ // 不含其他参数，直接进行过滤器表达式字符串的拼接
+        return `_f("${filter}")(${exp})`
+    }else{
+        const name = filter.slice(0,i) // 过滤器名称
+        const args = filter.slice(i+1) // 参数，但还多了 ‘)’
+        return `_f('${name}')(${exp},${args}` // 注意这一步少给了一个 ')'
+    }
+}
+```
+
+总结一下：
+
+1. 在编译阶段通过parseFilters将过滤器编译成函数调用（串联过滤器则是一个嵌套的函数调用，前一个过滤器执行的结果是后一个过滤器函数的参数）；
+2. 编译后通过调用resolveFilter函数找到对应过滤器并返回结果；
+3. 执行结果作为参数传递给toString函数，而toString执行后，其结果会保存在Vnode的text属性中，渲染到视图；
+
+## 6. Vue的设计思路
+
+在Vue项目中，所有核心的代码都是在src目录下完成，为了更好的了解Vue的底层实现，我们首先来了解一下src目录下代码的组织情况，从全局入手，在脑海里留下简单的印象，方便后续的学习。
+
+```javascript
+ .
+ ├── compiler  // 编译模块：将 template 编译成为可以生成 vnode 的 render 函数
+ │   ├── codeframe.js
+ │   ├── codegen             // 代码生成文件：根据 ast 树可生成 vnode 的 render代码
+ │   ├── create-compiler.js  // 创建编译器的工厂函数
+ │   ├── directives          // 指令解析：v-on, v-bind, v-model
+ │   ├── error-detector.js   
+ │   ├── helpers.js          // 编译相关方法，如属性获取等方法
+ │   ├── index.js            // 入口文件
+ │   ├── optimizer.js        // 编译优化：将 ast 树进行优化
+ │   ├── parser                      // html 解析文件：将 template 解析成 ast 树🌲
+ │   └── to-function.js      // 创建编译器的工厂函数
+ ├── core     // 构造函数核心模块：构建Vue构造函数，添加原型方法，实现完成渲染流程的_init方法
+ │   ├── components  // 自带的全局组件，如 keep-alive
+ │   ├── config.js   // 配置相关
+ │   ├── global-api  // 全局api，如 Vue.use, extend, mixin, component等方法
+ │   ├── index.js    // 入口文件，在 Vue 上挂载全局方法并导出 Vue
+ │   ├── instance    // 构造函数起始位置
+ │   ├── observer    // 响应式原理
+ │   ├── util        // 一些工具方法，包含 mergeOptions, nextTick 等方法的实现
+ │   └── vdom        // 虚拟 dom
+ ├── platforms // 平台相关，包含不同平台的不同构建入口，这里主要研究web端
+ │   ├── weex
+ │   └── web
+ │       ├── compiler   // 与平台相关的编译
+ │       ├── entry-compiler.js // vue-template-compiler 包的入口文件
+ │       ├── entry-runtime-with-compiler.js // 构建入口，包含编译器
+ │       ├── entry-runtime.js  // 构建入口，不包含编译器，不支持 template 转换 render
+ │       ├── entry-server-basic-renderer.js
+ │       ├── entry-server-renderer.js
+ │       ├── runtime   // 与平台相关的构建
+ │       ├── server
+ │       └── util
+ │
+ ├── server    // 服务端渲染相关
+ ├── sfc       // 包含单文件组件(.vue文件)的解析逻辑，用于vue-template-compiler包
+ └── shared    // 代码库通用代码
+     ├── constants.js
+     └── util.js
+```
+
+### 6.1. Vue的真实面目
+
+要想真正的了解Vue是怎样的，首先我们需要找到Vue是咋哪里被定义的。我们先找到package.json文件下的scripts配置。scripts里存放的都是运行命令的别名形式，通过命令可以轻松找到对应命令执行文件的路径。
+
+```json
+ "scripts": {
+     "dev": "rollup -w -c scripts/config.js --environment TARGET:full-dev"
+  }
+```
+
+这里当运行dev命令实际上是运行`scripts/config.js`文件，让我们找到`scripts/config.js`文件。
+
+通过运行命令参数我们可以知道`process.env.TARGET`的值为`full-dev`，因此可以在builds里找到对应的配置文件，如下：
+
+```javascript
+ const builds = {
+   'full-dev': {
+       entry: resolve('web/entry-runtime-with-compiler.js'),
+       dest: resolve('dist/vue.js'),
+       format: 'umd',
+       env: 'development',
+       alias: { he: './entity-decoder' },
+       banner
+    }
+   ...
+ }
+ 
+ module.exports = genConfig(process.env.TARGET)
+```
+
+通过entry，我们找到`web/entry-runtime-with-compiler.js`文件：
+
+```javascript
+import Vue from './runtime/index'
+
+const mount = Vue.prototype.$mount
+Vue.prototype.$mount = function (
+  el?: string | Element,
+  hydrating?: boolean
+): Component {
+  ...
+}
+Vue.compile = compileToFunctions
+
+export default Vue
+```
+
+这是Vue的起始入口。接着根据Vue的引入路径，找到`./runtime/index`文件：
+
+```javascript
+ import Vue from 'core/index'
+ ...
+ Vue.prototype.__patch__ = inBrowser ? patch : noop
+ Vue.prototype.$mount = function (
+   el?: string | Element,
+   hydrating?: boolean
+ ): Component {
+   ...
+ }
+ export default Vue
+```
+
+这里还不是Vue真正的起始点，继续查找`core/index`文件：
+
+```javascript
+ import Vue from './instance/index'
+ initGlobalAPI(Vue)
+ ...
+ Vue.version = '__VERSION__'
+ export default Vue
+```
+
+继续查找`./instance/index`文件：
+
+```javascript
+ import { initMixin } from './init'
+ import { stateMixin } from './state'
+ import { renderMixin } from './render'
+ import { eventsMixin } from './events'
+ import { lifecycleMixin } from './lifecycle'
+ import { warn } from '../util/index'
+ 
+ // Vue 构造函数
+ function Vue (options) {
+   if (process.env.NODE_ENV !== 'production' &&
+     !(this instanceof Vue)
+   ) {
+     warn('Vue is a constructor and should be called with the `new` keyword')
+   }
+   this._init(options)
+ }
+ 
+ // 向原型上添加方法属性
+ initMixin(Vue)
+ stateMixin(Vue)
+ eventsMixin(Vue)
+ lifecycleMixin(Vue)
+ renderMixin(Vue)
+ 
+ export default Vue
+```
+
+到这里就找到了Vue的真正定义的位置！
+
+可以看出Vue其实就是一个构造函数：
+
+1. 原型方法属性：通过 5 个 init 方法，向Vue的原型上添加方法；
+2. 静态方法属性：在导入Vue构造函数的过程中，向Vue构造函数上添加静态方法，也有向原型上添加方法；
+3. 实例化：在实例化的过程中，执行_init方法，完成整个Vue初始化到渲染的逻辑；
+
+Vue的原型方法（通过5个init方法添加）：
+
+#### 6.1.1. initMixin
+
+```javascript
+ export function initMixin (Vue: Class<Component>) {
+   Vue.prototype._init = function (options?: Object) {
+     // init 实现内容，由于这里仅做概览，所以具体实现均已省略
+     ... 
+   }
+ }
+```
+
+从上面Vue构造函数我们可以知道，这个方法在实例化时有被调用，它主要的作用是实现：选项的合并，数据初始化（如响应式处理），以及触发编译和渲染的流程，所以十分重要。这里也只是先做一个了解，后续源码课讲解。
+
+#### 6.1.2. stateMixin
+
+stateMixin主要实现了`data`,`props`的代理功能，即当我们访问$data时，实际访问的是`_data`。另外在非生产环境下，会对`$data`,`$props`进行 set处理，每次设置新的值时都会打印提示，所以实际上`$data`,`$props`都是只读属性。
+
+```javascript
+ export function stateMixin (Vue: Class<Component>) {
+   const dataDef = {}
+   dataDef.get = function () { return this._data }
+   const propsDef = {}
+   propsDef.get = function () { return this._props }
+   // 只读属性
+   if (process.env.NODE_ENV !== 'production') {
+     dataDef.set = function () {
+       warn(
+         'Avoid replacing instance root $data. ' +
+         'Use nested data properties instead.',
+         this
+       )
+     }
+     propsDef.set = function () {
+       warn(`$props is readonly.`, this)
+     }
+   }
+   Object.defineProperty(Vue.prototype, '$data', dataDef)
+   Object.defineProperty(Vue.prototype, '$props', propsDef)
+   Vue.prototype.$set = set
+   Vue.prototype.$delete = del
+   Vue.prototype.$watch = function () { ... }
+ }
+```
+
+#### 6.1.3. eventsMixin
+
+和node里EventEmitter类似，eventsMixin实现了四个方法：`$on`,`$off`,`$once`,`$emit`，用于监听，触发，销毁事件：
+
+```javascript
+ export function eventsMixin (Vue: Class<Component>) {
+   const hookRE = /^hook:/
+   Vue.prototype.$on = function () { ... }
+   Vue.prototype.$once = function () { ... }
+   Vue.prototype.$off = function () { ... }
+   Vue.prototype.$emit = function () { ... }
+ }
+```
+
+#### 6.1.4. lifecycleMixin
+
+lifecycleMixin实现了三个方法：`_update`方法非常重要，它主要负责将`vnode`生成真实节点。
+
+```plain
+ export function lifecycleMixin (Vue: Class<Component>) {
+   // 更新，将 vnode 生成 真实节点
+   Vue.prototype._update = function () { ... }
+   // 强制刷新
+   Vue.prototype.$forceUpdate = function () { ... }
+   // 销毁
+   Vue.prototype.$destroy = function () { ... }
+ }
+```
+
+#### 6.1.5. renderMixin
+
+```javascript
+ export function renderMixin (Vue: Class<Component>) {
+   installRenderHelpers(Vue.prototype)
+ 
+   Vue.prototype.$nextTick = function (fn: Function) {
+     return nextTick(fn, this)
+   }
+   
+   Vue.prototype._render = function (): VNode {
+     return vnode
+   }
+ }
+```
+
+1. `installRenderHelpers`函数用于添加render相关方法，在编译环节最后生成的代码，都是由这些方法拼接而成的代码，相当于AST中最后生成代码的阶段；
+2. `$nextTick`方法，在下一次事件循环触发，涉及到事件循环机制；
+3. `_render`方法，用于生成`vnode`；
+
+### 6.2. Vue的静态方法属性
+
+通过上面5个init方法我们已经了解了许多原型方法的添加过程，但是在Vue中还有很多全局方法，比如`Vue.component``,Vue.use`等方法，它们都是构造函数的静态属性，下面我们看看这些静态属性是如何添加的。与寻找Vue的起始位置过程恰恰相反，这次我们从Vue的起始文件出发，看看最后导出的Vue是怎样的。
+
+#### 6.2.1. src/core/index.js文件
+
+```javascript
+ import { initGlobalAPI } from './global-api/index'
+ 
+ initGlobalAPI(Vue)
+ 
+ // ... 中间省略
+ 
+ Vue.version = '__VERSION__'
+```
+
+这里我们看一下`initGlobalAPI`方法，打开`core/global-api/index.js`文件
+
+```javascript
+export function initGlobalAPI (Vue: GlobalAPI) {
+  Vue.util = {
+    warn,
+    extend,
+    mergeOptions,
+    defineReactive
+  }
+
+  Vue.set = set
+  Vue.delete = del
+  Vue.nextTick = nextTick
+
+  // 2.6 explicit observable API
+  Vue.observable = <T>(obj: T): T => {
+    observe(obj)
+    return obj
+  }
+
+  Vue.options = Object.create(null)
+  ASSET_TYPES.forEach(type => {
+    Vue.options[type + 's'] = Object.create(null)
+  })
+
+  Vue.options._base = Vue
+
+  extend(Vue.options.components, builtInComponents)
+
+  initUse(Vue)
+  initMixin(Vue)
+  initExtend(Vue)
+  initAssetRegisters(Vue)
+}
+```
+
+这里挂载了很多静态方法，Vue中大多数的全局方法都在这个位置添加的，这里我们着重分析一下`options`：
+
+```javascript
+import builtInComponents from '../components/index'  
+
+ Vue.options = Object.create(null)
+ ASSET_TYPES.forEach(type => {
+   Vue.options[type + 's'] = Object.create(null)
+ })
+
+ Vue.options._base = Vue
+
+ extend(Vue.options.components, builtInComponents)  
+ // Vue.options 内容
+ {
+   components: {
+     KeepAlive
+   },
+   filters: {},
+   directives: {},
+   _base: Vue
+ }
+```
+
+#### 6.2.2. /src/platforms/web/runtime/index.js文件
+
+这里是第二层引入Vue的文件，主要给Vue处理平台相关的一些方法
+
+```javascript
+ import Vue from 'core/index'
+ import config from 'core/config'
+ import { extend, noop } from 'shared/util'
+ import { mountComponent } from 'core/instance/lifecycle'
+ import { devtools, inBrowser } from 'core/util/index'
+ 
+ import {
+   query,
+   mustUseProp,
+   isReservedTag,
+   isReservedAttr,
+   getTagNamespace,
+   isUnknownElement
+ } from 'web/util/index'
+ 
+ import { patch } from './patch'
+ import platformDirectives from './directives/index'
+ import platformComponents from './components/index'
+ 
+ // install platform specific utils
+ Vue.config.mustUseProp = mustUseProp
+ Vue.config.isReservedTag = isReservedTag
+ Vue.config.isReservedAttr = isReservedAttr
+ Vue.config.getTagNamespace = getTagNamespace
+ Vue.config.isUnknownElement = isUnknownElement
+ 
+ // install platform runtime directives & components
+ extend(Vue.options.directives, platformDirectives)
+ extend(Vue.options.components, platformComponents)
+ 
+ Vue.prototype.__patch__ = inBrowser ? patch : noop
+ Vue.prototype.$mount = function () { ... }
+ 
+ export default Vue
+```
+
+这里首先给Vue.config添加了一系列方法，注意，这些方法之所以在这里添加而不是在`core/index.js`文件里添加，是因为这里的方法都与平台相关，不同的平台的方法实现也会不一样。
+
+```javascript
+extend(Vue.options.directives, platformDirectives)
+extend(Vue.options.components, platformComponents)
+```
+
+这两个extend实际上进一步扩充了`Vue.options`方法，扩充后的内容如下
+
+```javascript
+ // Vue.options 内容
+ {
+     components: {
+     KeepAlive,
+     // 新增 platformComponents
+     Transition,
+     // 新增 platformComponents
+     TransitionGroup
+   },
+   filters: {},
+   directives: {
+     // 新增 platformDirectives
+     model,
+     // 新增 platformDirectives
+     show
+   },
+   _base: Vue
+ }
+```
+
+这也是为什么我们可以不用注册也能全局使用`v-model`、`v-show`的原因了，因为Vue已经帮我们全局注册了。
+
+#### 6.2.3. /src/platforms/web/entry-runtime-with-compiler.js文件
+
+```javascript
+ import Vue from './runtime/index'
+ ...
+ 
+ const mount = Vue.prototype.$mount
+ Vue.prototype.$mount = function (
+   el?: string | Element,
+   hydrating?: boolean
+ ): Component {
+     
+     ...
+     
+   return mount.call(this, el, hydrating)
+ }
+ 
+ Vue.compile = compileToFunctions
+ 
+ export default Vue
+```
+
+这里主要是重新实现了`$mount`方法，但是为什么原先在`runtime/index.js`文件里实现了`$mount`方法，这里又要重新实现一遍呢？因为`runtime/index.js`里的`$mount`与编译是无关的，无法处理template模板代码，而这里重写的`$mount`实际上还是调用了`runtime/index.js`里的`$mount`，但是在此之前，增加了从`template`到`render`的编译过程。
+
+### 6.3. 实例化阶段
+
+上述已经将Vue的各种方法属性挂载完毕，现在则是需要进行实例化了，也就是调用之前提到的`_init`方法。打开`/src/core/instance/init.js`文件，代码如下：
+
+```javascript
+ Vue.prototype._init = function (options?: Object) {
+     const vm: Component = this
+     ...
+ 
+     // 1. 合并options
+     if (options && options._isComponent) {
+       initInternalComponent(vm, options)
+     } else {
+       vm.$options = mergeOptions(
+         resolveConstructorOptions(vm.constructor),
+         options || {},
+         vm
+       )
+     }
+   
+     ...
+ 
+     // 2. 初始化数据
+     initLifecycle(vm)
+     initEvents(vm)
+     initRender(vm)
+     callHook(vm, 'beforeCreate')
+     initInjections(vm) // resolve injections before data/props
+     initState(vm)
+     initProvide(vm) // resolve provide after data/props
+     callHook(vm, 'created')
+ 
+     // 3. 挂载
+     if (vm.$options.el) {
+       vm.$mount(vm.$options.el)
+     }
+   }
+```
+
+在初始化的过程中，主要分为三个阶段：
+
+1. 合并选项，将 Vue.options和传入的options进行合并；
+2. 初始化数据，并对数据进行响应式处理；
+3. 编译代码，得到render函数，将vnode生成真实节点，并挂载到界面；
+
+具体的详细源码讲解，在后续课程中讲述。
 
 # vue-cli
 
@@ -12387,6 +14282,8 @@ https://www.yuque.com/lpldplws/web/gdw840?singleDoc# 《Vue3新特性&源码解�
 https://www.yuque.com/lpldplws/web/gmptis?singleDoc# 《Vue3新特性&源码解析（2/3）》 密码：qke4
 https://www.yuque.com/lpldplws/web/ty5nga?singleDoc# 《Vue3新特性&源码解析（3/3）》 密码：apwp
 https://www.yuque.com/lpldplws/web/myfkf4?singleDoc# 《配套习题》 密码：oir9
+
+https://www.yuque.com/lpldplws/web/sp3cao?singleDoc# 《配套习题》 密码：kv13
 
 ## 1.课程目标
 
@@ -28534,8 +30431,942 @@ function compiler(input) {
 ## 7. 课后作业
 
 1. 照着代码，手写一遍compiler的过程；
-
 2. 参考xianzao-cli，自己实现一个自身业务上的cli；
+
+ 
+
+#  在Vue3和React中如何实现异步加载 
+
+- Vue3：defineAsyncComponent
+
+- React：Lazy、Suspense
+
+相同点：
+
+1. 都是为了实现在组件异步加载时，通过占位符展示兜底内容，从而让用户有更好的体验；
+
+不同点：
+
+语法结构不同：
+
+1. Vue3：
+
+```js
+// 不带选项的异步组件
+const asyncModal = defineAsyncComponent(() => import('./Modal.vue'))
+
+// 带选项的异步组件
+const asyncModalWithOptions = defineAsyncComponent({
+  loader: () => import('./Modal.vue'),
+  delay: 200,
+  timeout: 3000,
+  errorComponent: ErrorComponent,
+  loadingComponent: LoadingComponent
+})
+```
+
+2. React：
+
+```js
+import React, { Suspense } from 'react';
+
+const OtherComponent = React.lazy(() => import('./OtherComponent'));
+
+function MyComponent() {
+  return (
+    <div>
+      <Suspense fallback={<div>Loading...</div>}>
+        <OtherComponent />
+      </Suspense>
+    </div>
+  );
+}
+```
+
+# 用Vue和React实现一个自定义dialog组件
+
+https://www.yuque.com/lpldplws/web/myfkf4?singleDoc# 《配套习题》 密码：oir9
+
+- Vue3：teleport + 自定义Hooks
+
+```js
+// hooks/useDOMCreate.ts
+import { onUnmounted } from 'vue'
+
+function useDOMCreate(nodeId:string):void {
+  const node = document.createElement('div')
+  node.id = nodeId
+  document.body.appendChild(node)
+  onUnmounted(() => {
+    document.body.removeChild(node)
+  })
+}
+export default useDOMCreate
+
+//Modal.vue
+<template>
+  <teleport to="#modal">
+    <div class="modal d-block" tabindex="-1" v-if="isVisible">
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title">{{title}}</h5>
+            <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+              <span aria-hidden="true" @click="onClose">&times;</span>
+            </button>
+          </div>
+          <div class="modal-body">
+            <slot></slot>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-dismiss="modal"  @click="onClose">取消</button>
+            <button type="button" class="btn btn-primary"  @click="onConfirm">确定</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </teleport>
+</template>
+<script lang="ts">
+import { defineComponent } from 'vue'
+import useDOMCreate from '../hooks/useDOMCreate'
+export default defineComponent({
+  name: 'Modal',
+  emits: ['model-close', 'model-confirm'],
+  props: {
+    title: {
+      type: String,
+      default: ''
+    },
+    isVisible: {
+      type: Boolean,
+      default: false
+    }
+  },
+  setup(props, ctx) {
+    useDOMCreate('modal')
+    const onClose = () => {
+      ctx.emit('model-close')
+    }
+    const onConfirm = () => {
+      ctx.emit('model-confirm')
+    }
+    return {
+      onClose,
+      onConfirm
+    }
+  }
+})
+</script>
+
+// 使用示例
+<template>
+  <div class="post-detail-page">
+    <button type="button" class="btn btn-danger" @click="handleDelete">删除</button>
+    <modal title='是否确认删除？' :isVisible="modalVisible" @model-close="hanldeModalClose" @model-confirm="handleModalConfim">
+      <p>确认要删除这篇文章吗？</p>
+    </modal>
+  </div>
+</template>
+<script lang="ts">
+import { defineComponent, ref } from 'vue'
+import Modal from '../components/Modal.vue'
+
+export default defineComponent({
+  name: 'post-detail',
+  components: { Modal },
+  setup() {
+    const modalVisible = ref(false)
+    const handleDelete = () => {
+      modalVisible.value = true
+    }
+    const hanldeModalClose = () => {
+      modalVisible.value = false
+    }
+    const handleModalConfim = () => {
+      modalVisible.value = false
+      ...
+     / /后续逻辑处理
+    }
+    return {
+      hanldeModalClose,
+      handleModalConfim,
+      handleDelete,
+      modalVisible
+    }
+  }
+})
+</script>
+```
+
+- React:Portals
+
+```js
+// pages/dialog.js
+import React, { useState } from 'react';
+import { Button } from 'antd';
+import PortalDialog from '@/components/PortalDialog';
+
+const DialogPage = () => {
+  const [isPortalVisible, setIsPortalVisible] = useState(false);
+
+  const showPortal = () => {
+    setIsPortalVisible(true);
+  };
+
+  const hidePortal = () => {
+    setIsPortalVisible(false);
+  };
+
+  return (
+    <>
+      <Button style={{ marginLeft: '20px' }} onClick={showPortal}>
+        Open Dialog（React Portals）
+      </Button>
+      <PortalDialog visible={isPortalVisible} onHide={hidePortal}>
+        <div>dialog-children</div>
+      </PortalDialog>
+    </>
+  );
+};
+
+export default DialogPage;
+
+
+// components/PortalDialog/index.js
+import { createPortal } from 'react-dom';
+import { Button } from 'antd';
+import './style.css';
+
+const PortalDialog = (props) => {
+  const { visible, children, onHide } = props;
+  return visible
+    ? createPortal(
+        <div className="portal-sample">
+          {children}
+          <Button onClick={onHide}>close</Button>
+        </div>,
+        document.getElementById('dialog-root'),
+      )
+    : null;
+};
+
+export default PortalDialog;
+```
+
+ 
+
+# Vue3的设计目标是什么？做了哪些优化？
+
+https://www.yuque.com/lpldplws/web/sp3cao?singleDoc# 《配套习题》 密码：kv13
+
+## 1.1 设计目标
+
+ 
+
+ 
+
+梳理下Vue3之前我们面临的问题：
+
+- 随着功能的增长，复杂组件的代码变得越来越难以维护；
+
+- 缺少一种比较「干净」的在多个组件之间提取和复用逻辑的机制；
+
+- 类型推断不够友好；
+
+- bundle的时间太久了；
+
+而 Vue3 经过长达两三年时间的筹备，做出了以下的优化：
+
+- 更小
+
+- 更快
+
+- TypeScript支持
+
+- API设计一致性
+
+- 提高自身可维护性
+
+- 开放更多底层功能
+
+一句话概述，就是更小更快更友好了；
+
+ 1.1.1. 更小 
+
+Vue3移除一些不常用的 API；
+
+引入tree-shaking，可以将无用模块“剪辑”，仅打包需要的，使打包的整体体积变小了；
+
+ 1.1.2. 更快 
+
+主要体现在编译方面：
+
+●diff算法优化；
+
+●静态提升；
+
+●事件监听缓存；
+
+●SSR优化；
+
+ 1.1.3. 更友好 
+
+vue3在兼顾vue2的options API的同时还推出了composition API，大大增加了代码的逻辑组织和代码复用能力
+
+
+
+我们只需要调用这个函数，即可获取x、y的坐标，完全不用关注实现过程。
+
+试想一下，如果很多类似的第三方库，我们只需要调用即可，不必关注实现过程，开发效率大大提高。
+
+同时，VUE3是基于typescipt编写的，可以享受到自动的类型定义提示。
+
+ 1.2. 优化方案 
+
+vue3从很多层面都做了优化，可以分成三个方面：
+
+●源码；
+
+●性能；
+
+●语法 API；
+
+ 1.2.1. 源码 
+
+源码可以从两个层面展开：
+
+●源码管理；
+
+●TypeScript；
+
+ 1.2.1.1. 源码管理 
+
+vue3整个源码是通过 monorepo的方式维护的，根据功能将不同的模块拆分到packages目录下面不同的子目录中：
+
+PACKAGES
+
+COMPILER-CORE
+
+COMPILER-DOM
+
+COMPILER-SFC
+
+COMPILER-SSR
+
+REACTIVITY
+
+RUNTIME-CORE
+
+RUNTIME-DOM
+
+RUNTIME-TEST
+
+SERVER-RENDERER
+
+SHARED
+
+SIZE-CHECK
+
+TEMPLATE-EXPLORER
+
+VUE
+
+![image.png](https://cdn.nlark.com/yuque/0/2022/png/2340337/1659364259632-33172b4e-bbe3-4c6e-98cd-cc4882737502.png?x-oss-process=image%2Fresize%2Cw_437%2Climit_0)
+
+
+
+这样使得模块拆分更细化，职责划分更明确，模块之间的依赖关系也更加明确，开发人员也更容易阅读、理解和更改所有模块源码，提高代码的可维护性；
+
+另外一些 package（比如 reactivity 响应式库）是可以独立于 Vue 使用的，这样用户如果只想使用 Vue3的响应式能力，可以单独依赖这个响应式库而不用去依赖整个 Vue；
+
+ 1.2.1.2. TypeScript 
+
+Vue3是基于typeScript编写的，提供了更好的类型检查，能支持复杂的类型推导；
+
+ 1.2.2. 性能 
+
+vue3是从什么哪些方面对性能进行进一步优化呢？
+
+●体积优化
+
+●编译优化
+
+●数据劫持优化
+
+这里讲述数据劫持：
+
+在vue2中，数据劫持是通过Object.defineProperty，这个 API 有一些缺陷，并不能检测对象属性的添加和删除，尽管Vue为了解决这个问题提供了 set和delete实例方法，但是对于用户来说，还是增加了一定的心智负担
+
+同时在面对嵌套层级比较深的情况下，就存在性能问题；
+
+相比之下，vue3是通过proxy监听整个对象，那么对于删除还是监听当然也能监听到，同时Proxy 并不能监听到内部深层次的对象变化，而 Vue3 的处理方式是在getter 中去递归响应式，这样的好处是真正访问到的内部对象才会变成响应式，而不是无脑递归。
+
+ 1.2.3. 语法 API 
+
+就是composition API，其两大显著的优化：
+
+●优化逻辑组织；
+
+●优化逻辑复用；
+
+ 1.2.3.1. 逻辑组织 
+
+一张图，我们可以很直观地感受到 Composition API在逻辑组织方面的优势
+
+OPTIONS
+
+COMPOSITION API
+
+API
+
+![image.png](https://cdn.nlark.com/yuque/0/2022/png/2340337/1659364394277-27269e9d-d40d-46fe-9678-35d81251104e.png)
+
+
+
+ 1.2.3.2. 逻辑复用 
+
+在vue2中，我们是通过mixin实现功能混合，如果多个mixin混合，会存在两个非常明显的问题：命名冲突和数据来源不清晰
+
+而通过composition这种形式，可以将一些复用的代码抽离出来作为一个函数，只要的使用的地方直接进行调用即可
+
+同样是上文的获取鼠标位置的例子
+
+
+
+组件使用
+
+
+
+ 2. Vue3.0性能提升主要是通过哪几方面体现的？ 
+
+ 2.1. 编译阶段 
+
+回顾Vue2，我们知道每个组件实例都对应一个 watcher 实例，它会在组件渲染的过程中把用到的数据property记录为依赖，当依赖发生改变，触发setter，则会通知watcher，从而使关联的组件重新渲染
+
+TRIGGER
+
+RE-RENDER
+
+COMPONENT
+
+WATCHER
+
+RENDER
+
+FUNCTION
+
+RENDER
+
+COLLECT
+
+NOTIFY
+
+AS DEPENDENCY
+
+<"TOUCH""
+
+DATA
+
+GETTER
+
+SETTER
+
+VIRTUAL DOM TREE
+
+![image.png](https://cdn.nlark.com/yuque/0/2022/png/2340337/1659364576038-a42ce214-215f-4218-817b-b38cb6d8b3bf.png)
+
+
+
+试想一下，一个组件结构如下图
+
+
+
+可以看到，组件内部只有一个动态节点，剩余一堆都是静态节点，所以这里很多 diff 和遍历其实都是不需要的，造成性能浪费
+
+因此，Vue3在编译阶段，做了进一步优化。主要有如下：
+
+●diff算法优化；
+
+●静态提升；
+
+●事件监听缓存；
+
+●SSR优化；
+
+ 2.1.1. diff算法优化 
+
+Vue3在diff算法中相比Vue2增加了静态标记
+
+关于这个静态标记，其作用是为了会发生变化的地方添加一个flag标记，下次发生变化的时候直接找该地方进行比较
+
+下图这里，已经标记静态节点的p标签在diff过程中则不会比较，把性能进一步提高
+
+NEW VDOM
+
+OLD VDOM
+
+DIV
+
+DIV
+
+<DIV>
+
+A
+
+<P>'HELLOWORLD'</P>
+
+TEXT:NEWMSG
+
+TEXT:MSG
+
+TEXT:HELLOWORLD
+
+TEXT:HELLOWORLD
+
+FLAG:
+
+FLAG:
+
+<P>{MSG>></P>
+
+</DIV>
+
+![image.png](https://cdn.nlark.com/yuque/0/2022/png/2340337/1659364576085-64395f69-9d05-43da-8768-5113b31a226d.png?x-oss-process=image%2Fresize%2Cw_750%2Climit_0)
+
+
+
+关于静态类型枚举如下
+
+
+
+ 2.1.2. 静态提升 
+
+Vue3中对不参与更新的元素，会做静态提升，只会被创建一次，在渲染时直接复用
+
+这样就免去了重复的创建节点，大型应用会受益于这个改动，免去了重复的创建操作，优化了运行时候的内存占用
+
+
+
+没有做静态提升之前
+
+
+
+做了静态提升之后
+
+
+
+静态内容_hoisted_1被放置在render 函数外，每次渲染的时候只要取 _hoisted_1 即可
+
+同时 _hoisted_1 被打上了 PatchFlag ，静态标记值为 -1 ，特殊标志是负整数表示永远不会用于 Diff
+
+ 2.1.3. 事件监听缓存 
+
+默认情况下绑定事件行为会被视为动态绑定，所以每次都会去追踪它的变化
+
+
+
+没开启事件监听器缓存：
+
+
+
+开启事件侦听器缓存后：
+
+
+
+上述开启了缓存后，没有了静态标记。也就是说下次diff算法的时候直接使用；
+
+ 2.1.4. SSR优化 
+
+当静态内容大到一定量级时候，会用createStaticVNode方法在客户端去生成一个static node，这些静态node，会被直接innerHtml，就不需要创建对象，然后根据对象渲染
+
+
+
+编译后
+
+
+
+ 2.2. 源码体积 
+
+相比Vue2，Vue3整体体积变小了，除了移出一些不常用的API，再重要的是Tree shanking
+
+任何一个函数，如ref、reavtived、computed等，仅仅在用到的时候才打包，没用到的模块都被摇掉，打包的整体体积变小
+
+
+
+ 2.3. 响应式系统 
+
+Vue2中采用 defineProperty来劫持整个对象，然后进行深度遍历所有属性，给每个属性添加getter和setter，实现响应式；
+
+vue3采用proxy重写了响应式系统，因为proxy可以对整个对象进行监听，所以不需要深度遍历
+
+●可以监听动态属性的添加；
+
+●可以监听到数组的索引和数组length属性；
+
+●可以监听删除属性；
+
+ 3. Vue3.0里为什么要用 Proxy API 替代 defineProperty API ？ 
+
+ 3.1. Object.defineProperty 
+
+定义：Object.defineProperty() 方法会直接在一个对象上定义一个新属性，或者修改一个对象的现有属性，并返回此对象
+
+ 3.1.1. 为什么能实现响应式？ 
+
+通过defineProperty 两个属性，get及set
+
+●get
+
+属性的 getter函数，当访问该属性时，会调用此函数。执行时不传入任何参数，但是会传入 this 对象（由于继承关系，这里的this并不一定是定义该属性的对象）。该函数的返回值会被用作属性的值
+
+●set
+
+属性的 setter 函数，当属性值被修改时，会调用此函数。该方法接受一个参数（也就是被赋予的新值），会传入赋值时的 this 对象。默认为 undefined
+
+下面通过代码展示：
+
+定义一个响应式函数defineReactive
+
+
+
+调用defineReactive，数据发生变化触发update方法，实现数据响应式
+
+
+
+在对象存在多个key情况下，需要进行遍历
+
+
+
+如果存在嵌套对象的情况，还需要在defineReactive中进行递归
+
+
+
+当给key赋值为对象的时候，还需要在set属性中进行递归
+
+
+
+上述例子能够实现对一个对象的基本响应式，但仍然存在诸多问题
+
+现在对一个对象进行删除与添加属性操作，无法劫持到
+
+
+
+当我们对一个数组进行监听的时候，并不那么好使了
+
+
+
+可以看到数据的api无法劫持到，从而无法实现数据响应式，
+
+所以在Vue2中，增加了set、delete API，并且对数组api方法进行一个重写
+
+还有一个问题则是，如果存在深层的嵌套对象关系，需要深层的进行监听，造成了性能的极大问题
+
+ 3.1.2. 小结 
+
+●检测不到对象属性的添加和删除；
+
+●数组API方法无法监听到；
+
+●需要对每个属性进行遍历监听，如果嵌套对象，需要深层监听，造成性能问题；
+
+ 3.2. proxy 
+
+Proxy的监听是针对一个对象的，那么对这个对象的所有操作会进入监听操作，这就完全可以代理所有属性了
+
+在ES6系列中，我们详细讲解过Proxy的使用，就不再述说了
+
+下面通过代码进行展示：
+
+定义一个响应式方法reactive
+
+
+
+测试一下简单数据的操作，发现都能劫持
+
+
+
+再测试嵌套对象情况，这时候发现就不那么 OK 了
+
+
+
+如果要解决，需要在get之上再进行一层代理
+
+
+
+ 3.2.1. 小结 
+
+Object.defineProperty只能遍历对象属性进行劫持
+
+
+
+Proxy直接可以劫持整个对象，并返回一个新对象，我们可以只操作新的对象达到响应式目的
+
+
+
+Proxy可以直接监听数组的变化（push、shift、splice）
+
+
+
+Proxy有多达13种拦截方法,不限于apply、ownKeys、deleteProperty、has等等，这是Object.defineProperty不具备的
+
+正因为defineProperty自身的缺陷，导致Vue2在实现响应式过程需要实现其他的方法辅助（如重写数组方法、增加额外set、delete方法）
+
+
+
+Proxy 不兼容IE，也没有 polyfill, defineProperty 能支持到IE9
+
+ 4. Vue3.0 所采用的 Composition Api 与 Vue2.x 使用的 Options Api 有什么不同？ 
+
+ 4.1. Options Api 
+
+Options API，即大家常说的选项API，即以vue为后缀的文件，通过定义methods，computed，watch，data等属性与方法，共同处理页面逻辑；
+
+如下图：
+
+OPTIONS API
+
+EXPORT DEFAULT
+
+DATA() [
+
+子
+
+RETURN
+
+功能A
+
+功能B
+
+METHODS:
+
+功能
+
+A
+
+功能
+
+B
+
+子,
+
+COMPUTED:
+
+功能
+
+A
+
+},
+
+WATCH:
+
+功能
+
+B
+
+子
+
+![image.png](https://cdn.nlark.com/yuque/0/2022/png/2340337/1659365328333-3d51d185-5045-4e80-b9a4-1e667ebfd96a.png?x-oss-process=image%2Fresize%2Cw_446%2Climit_0)
+
+
+
+可以看到Options代码编写方式，如果是组件状态，则写在data属性上，如果是方法，则写在methods属性上...
+
+用组件的选项 (data、computed、methods、watch) 组织逻辑在大多数情况下都有效；
+
+然而，当组件变得复杂，导致对应属性的列表也会增长，这可能会导致组件难以阅读和理解；
+
+ 4.2. Composition Api 
+
+在 Vue3 Composition API 中，组件根据逻辑功能来组织的，一个功能所定义的所有 API 会放在一起（更加的高内聚，低耦合）；
+
+即使项目很大，功能很多，我们都能快速的定位到这个功能所用到的所有 API；
+
+FUNCTION
+
+FUNCTION
+
+FUNCTION
+
+UNCTION
+
+FUNCTION
+
+![image.png](https://cdn.nlark.com/yuque/0/2022/png/2340337/1659365373744-1ed636f8-89f4-4681-8772-0d6b704b8a2a.png?x-oss-process=image%2Fresize%2Cw_633%2Climit_0)
+
+
+
+ 4.3. 对比 
+
+下面对Composition Api与Options Api进行两大方面的比较
+
+●逻辑组织；
+
+●逻辑复用；
+
+ 4.3.1. 逻辑组织 
+
+ 4.3.1.1. Options API 
+
+假设一个组件是一个大型组件，其内部有很多处理逻辑关注点（对应下图不用颜色）
+
+HIM SHENTE  SRSTERSTENTENTERSE)
+
+![image.png](https://cdn.nlark.com/yuque/0/2022/png/2340337/1659365427846-ba0465ae-d4a1-40c5-a876-f113a0e155de.png)
+
+
+
+可以看到，这种碎片化使得理解和维护复杂组件变得困难
+
+选项的分离掩盖了潜在的逻辑问题。此外，在处理单个逻辑关注点时，我们必须不断地“跳转”相关代码的选项块；
+
+ 4.3.1.2. Compostion API 
+
+Compositon API正是解决上述问题，将某个逻辑关注点相关的代码全都放在一个函数里，这样当需要修改一个功能时，就不再需要在文件中跳来跳去
+
+下面举个简单例子，将处理count属性相关的代码放在同一个函数了
+
+
+
+组件上中使用count
+
+
+
+再来一张图进行对比，可以很直观地感受到 Composition API在逻辑组织方面的优势，以后修改一个属性功能的时候，只需要跳到控制该属性的方法中即可；
+
+OPTIONS
+
+COMPOSITION API
+
+API
+
+![image.png](https://cdn.nlark.com/yuque/0/2022/png/2340337/1659365494592-1bbbe3a9-0df8-4348-bd7d-d653bced67fe.png)
+
+
+
+ 4.3.2. 逻辑复用 
+
+在Vue2中，我们是用过mixin去复用相同的逻辑
+
+下面举个例子，我们会另起一个mixin.js文件
+
+
+
+然后在组件中使用
+
+
+
+使用单个mixin似乎问题不大，但是当我们一个组件混入大量不同的 mixins的时候
+
+
+
+会存在两个非常明显的问题：
+
+●命名冲突；
+
+●数据来源不清晰；
+
+现在通过Compositon API这种方式改写上面的代码：
+
+
+
+在组件中使用
+
+
+
+可以看到，整个数据来源清晰了，即使去编写更多的 hook 函数，也不会出现命名冲突的问题。
+
+ 4.3. 小结 
+
+●在逻辑组织和逻辑复用方面，Composition API是优于Options API
+
+●因为Composition API几乎是函数，会有更好的类型推断；
+
+●Composition API对 tree-shaking 友好，代码也更容易压缩；
+
+●Composition API中见不到this的使用，减少了this指向不明的情况；
+
+●如果是小型组件，可以继续使用Options API，也是十分友好的；
+
+ 5. 说说Vue 3.0中Treeshaking特性？ 
+
+ 5.1. 是什么？ 
+
+Tree shaking 是一种通过清除多余代码方式来优化项目打包体积的技术，专业术语叫 Dead code elimination
+
+简单来讲，就是在保持代码运行结果不变的前提下，去除无用的代码
+
+如果把代码打包比作制作蛋糕，传统的方式是把鸡蛋（带壳）全部丢进去搅拌，然后放入烤箱，最后把（没有用的）蛋壳全部挑选并剔除出去；
+
+而tree shaking则是一开始就把有用的蛋白蛋黄（import）放入搅拌，最后直接作出蛋糕
+
+也就是说 ，tree shaking 其实是找出使用的代码
+
+在Vue2中，无论我们使用什么功能，它们最终都会出现在生产代码中。主要原因是Vue实例在项目中是单例的，捆绑程序无法检测到该对象的哪些属性在代码中被使用到；
+
+
+
+
+
+JavaScript
+
+复制代码
+
+1
+
+2
+
+3
+
+import Vue from 'vue'
+
+ 
+
+Vue.nextTick(() => {})
+
+而Vue3源码引入tree shaking特性，将全局 API 进行分块。如果您不使用其某些功能，它们将不会包含在您的基础包中；
+
+
+
+
+
+JavaScript
+
+复制代码
+
+1
+
+2
+
+3
+
+import { nextTick, observable } from 'vue'
+
+ 
+
+nextTick(() => {})
+
+ 5.2. 如何做？ 
+
+Tree shaking是基于ES6模板语法（import与exports），主要是借助ES6模块的静态编译思想，在编译时就能确定模块的依赖关系，以及输入和输出的变量
+
+Tree shaking无非就是做了两件事：
+
+●编译阶段利用ES6 Module判断哪些模块已经加载；
+
+●判断那些模块和变量未被使用或者引用，进而删除对应代码；
+
+ 5.3. 作用 
+
+通过Tree shaking，Vue3给我们带来的好处是：
+
+●减少程序体积（更小）；
+
+●减少程序执行时间（更快）；
+
+●便于将来对程序架构进行优化（更友好）；
+
+若有收获，就点个赞吧
 
 # React学习路径
 
@@ -37180,6 +40011,4444 @@ https://www.yuque.com/lpldplws/web/apczyp?singleDoc# 《React核心源码解析�
 https://www.yuque.com/lpldplws/web/oqnqc7?singleDoc# 《React核心源码解析（2/2）》 密码：xmq3
 https://www.yuque.com/lpldplws/web/tmbe7ykqmslqszhe?singleDoc# 《JavaScript高级用法(1/2)》 密码：bwxh
 
+# React核心源码解析（1/2）
+
+https://www.yuque.com/lpldplws/web/apczyp?singleDoc# 《React核心源码解析（1/2）》 密码：iwfp
+
+## 1. 课程目标
+
+P6+~P7：
+
+1. 学习React设计原理，掌握React源码架构、约定及其实现的思路；
+2. 掌握React 核心模块源码及设计；
+
+P7+~P8：
+
+1. 熟练掌握React源码设计模型，能够基于现有React框架设计周边库；
+2. 熟练掌握React生态，能够从0~1完整地实现React技术栈的前端架构设计；
+
+## 2. 课程大纲
+
+- 理念篇
+
+- - React理念
+
+- - - 新老React架构对比
+    - Fiber架构详解
+
+- - 前置知识
+
+- - - 源码文件结构
+    - 深入理解JSX
+
+- 架构篇
+
+- - render阶段
+
+- - - 流程概览
+    - beginWork
+    - completeWork
+
+- - commit阶段
+
+- - - 流程概览
+    - before mutation
+    - mutation
+    - layout
+
+## 3. 主要内容
+
+### 3.1. 理念篇
+
+#### 3.1.1. React理念
+
+##### 3.1.1.1. React理念介绍
+
+我们认为，React 是用 JavaScript 构建快速响应的大型 Web 应用程序的首选方式。它在 Facebook 和 Instagram 上表现优秀。
+
+ui = render (data) -> 单向数据流
+
+如何提升页面响应交互？
+
+- CPU卡顿：大量计算操作导致的性能问题
+- IO卡顿：网络请求延时的，无法快速响应
+
+1. CPU卡顿
+
+- 在浏览器刷新频率为60HZ的情况下（即1000ms / 60HZ = 16.6ms）浏览器刷新一次
+- 浏览器里JS线程与GUI线程是互斥的，不可同时执行，所以JS脚本和浏览器的render、painting不能同时执行，所以执行顺序为：`JS脚本执行 ->样式布局 ->样式绘制`，JS执行时间超过16.6ms，就不会执行render与painting了
+
+```jsx
+// index.js
+import ReactDOM from "react-dom";
+
+import App from "./App";
+
+const rootElement = document.getElementById("root");
+
+// ReactDOM.render(<App />, rootElement);
+ReactDOM.createRoot(rootElement).render(<App />);
+
+// APP.js
+import "./styles.css";
+
+export default function App() {
+  const len = 3000;
+
+  return (
+    <ul>
+      {Array(len)
+        .fill(0)
+        .map((_, i) => (
+          <li>{i}</li>
+        ))}
+    </ul>
+  );
+}
+```
+
+![img](https://cdn.nlark.com/yuque/0/2022/png/2340337/1654241941632-b1abf063-ba5e-4717-953e-603893c41a70.png)
+
+React 是如何解决这个问题的？
+
+在浏览器每一帧的时间中，预留一些时间给JS线程，React利用这部分时间更新组件（预留的初始时间是5ms）。
+
+https://github.com/facebook/react/blob/1fb18e22ae66fdb1dc127347e169e73948778e5a/packages/scheduler/src/forks/SchedulerHostConfig.default.js#L119
+
+时间切片：把更新过程碎片化，把一个耗时长的任务分成很多小片。执行非阻塞渲染，基于优先级应用更新以及在后台预渲染内容。
+
+在开启concurrent mode后
+
+```jsx
+// 通过使用ReactDOM.unstable_createRoot开启Concurrent Mode
+// ReactDOM.render(<App/>, rootEl);  
+ReactDOM.createRoot(rootEl).render(<App/>);
+```
+
+![img](https://cdn.nlark.com/yuque/0/2022/png/2340337/1654241950573-502aa9e4-711d-4f9f-a619-66ad602f02b2.png)
+
+开启时间切片后，React长尾任务会被切到每一帧任务里，执行时间在5ms左右，就可以保障rendering与painting时间了
+
+1. IO卡顿
+
+假设页面加载，是否展示loading
+
+停留时间长：显示loading，加载完成后隐藏
+
+停留时间短：不显示loading，用户无感知，不然loading闪一下
+
+- Suspense：https://17.reactjs.org/docs/concurrent-mode-suspense.html
+- useDeferredValue：https://17.reactjs.org/docs/concurrent-mode-reference.html#usedeferredvalue
+
+demo：
+
+1. suspense & useDeferedValue
+
+https://codesandbox.io/s/u6o2q?file=/src/index.js
+
+2. CM模式会牺牲列表的更新速度，提升输入时的相应速度，重于交互
+
+https://codesandbox.io/s/koyz664q35?file=/src/Clock.js
+
+总结：快速响应 -> 同步的长尾更新转为可中断的异步更新
+
+##### 3.1.1.2. 新老React架构对比
+
+React15：
+
+- Reconciler（协调器）—— 负责找出变化的组件
+- Renderer（渲染器）—— 负责将变化的组件渲染到页面上
+
+Reconciler：
+
+https://zh-hans.reactjs.org/docs/codebase-overview.html#reconcilers
+
+在React中可以通过this.setState、this.forceUpdate、ReactDOM.render等API触发更新。
+
+每当有更新发生时，Reconciler会做如下工作：
+
+1. 调用函数组件、或class组件的render方法，将返回的JSX转化为虚拟DOM
+2. 将虚拟DOM和上次更新时的虚拟DOM对比
+3. 通过对比找出本次更新中变化的虚拟DOM
+4. 通知Renderer将变化的虚拟DOM渲染到页面上
+
+Renderer：
+
+https://zh-hans.reactjs.org/docs/codebase-overview.html#renderers
+
+由于React支持跨平台，所以不同平台有不同的Renderer。我们前端最熟悉的是负责在浏览器环境渲染的Renderer —— ReactDOM。
+
+除此之外，还有：
+
+ReactNative：渲染App原生组件
+
+ReactArt：渲染到Canvas, SVG 或 VML (IE8)
+
+在每次更新发生时，Renderer接到Reconciler通知，将变化的组件渲染在当前宿主环境。
+
+React 15架构的缺点
+
+在Reconciler中，mount的组件会调用[mountComponent](https://github.com/facebook/react/blob/15-stable/src/renderers/dom/shared/ReactDOMComponent.js#L498)，update的组件会调用[updateComponent](https://github.com/facebook/react/blob/15-stable/src/renderers/dom/shared/ReactDOMComponent.js#L877)。这两个方法会递归更新子组件
+
+递归的缺点：
+
+1. 当层级很深时，递归更新时间超过了16ms，用户交互就会卡顿
+2. React 15不支持用可中断的异步更新代替同步的更新
+
+demo：
+
+https://codesandbox.io/s/fervent-sutherland-pf7sg?file=/src/App.js
+
+正常：
+
+![img](https://cdn.nlark.com/yuque/0/2022/png/2340337/1654243825493-5c3864f5-9741-4d16-8b9e-6ec219e0b4d6.png)
+
+加入同步更新中断
+
+![img](https://cdn.nlark.com/yuque/0/2022/png/2340337/1654243831828-17210451-ef06-4669-88b5-99cf8b40072d.png)
+
+React16：
+
+- Scheduler（调度器）—— 调度任务的优先级，高优任务优先进入Reconciler
+- Reconciler（协调器）—— 负责找出变化的组件
+- Renderer（渲染器）—— 负责将变化的组件渲染到页面上
+
+Scheduler（调度器）：
+
+需要一种机制，当浏览器有剩余时间时通知我们，从而完成任务调度。
+
+部分浏览器已经实现了这个API，这就是[requestIdleCallback](https://developer.mozilla.org/zh-CN/docs/Web/API/Window/requestIdleCallback)。但是由于以下因素，React放弃使用：
+
+- 浏览器兼容性
+- 触发频率不稳定，受很多因素影响。比如当我们的浏览器切换tab后，之前tab注册的requestIdleCallback触发的频率会变得很低
+
+基于以上原因，React实现了功能更完备的requestIdleCallbackpolyfill，这就是Scheduler。除了在空闲时触发回调的功能外，Scheduler还提供了多种调度优先级供任务设置。下节课详解
+
+Reconciler（协调器）
+
+我们知道，在React15中Reconciler是递归处理虚拟DOM的。让我们看看[React16的Reconciler](https://github.com/facebook/react/blob/1fb18e22ae66fdb1dc127347e169e73948778e5a/packages/react-reconciler/src/ReactFiberWorkLoop.new.js#L1673)
+
+```jsx
+// 更新工作从递归变成了可以中断的循环过程。每次循环都会调用shouldYield判断当前是否有剩余时间。
+
+/** @noinline */
+function workLoopConcurrent() {
+  // Perform work until Scheduler asks us to yield
+  while (workInProgress !== null && !shouldYield()) {
+    workInProgress = performUnitOfWork(workInProgress);
+  }
+}
+```
+
+Q：如何处理中断更新时DOM渲染不完全？
+
+在React16中，Reconciler与Renderer不再是交替工作。当Scheduler将任务交给Reconciler后，Reconciler会为变化的虚拟DOM打上代表增/删/更新的标记
+
+标记类型详情：https://github.com/facebook/react/blob/1fb18e22ae66fdb1dc127347e169e73948778e5a/packages/react-reconciler/src/ReactSideEffectTags.js
+
+```jsx
+export const Placement = /*             */ 0b0000000000010;
+export const Update = /*                */ 0b0000000000100;
+export const PlacementAndUpdate = /*    */ 0b0000000000110;
+export const Deletion = /*              */ 0b0000000001000;
+```
+
+整个Scheduler与Reconciler的工作都在内存中进行。只有当所有组件都完成Reconciler的工作，才会统一交给Renderer。
+
+详细官方介绍：https://github.com/facebook/react/blob/1fb18e22ae66fdb1dc127347e169e73948778e5a/packages/react-reconciler/src/ReactSideEffectTags.js
+
+Renderer（渲染器）
+
+Renderer根据Reconciler为虚拟DOM打的标记，同步执行对应的DOM操作。
+
+
+
+![img](https://cdn.nlark.com/yuque/0/2022/png/2340337/1654243951117-a981b06c-7873-46bd-b759-7e65843973ee.png)
+
+其中红框中的步骤随时可能由于以下原因被中断：
+
+- 有其他更高优任务需要先更新
+- 当前帧没有剩余时间
+
+由于红框中的工作都在内存中进行，不会更新页面上的DOM，所以即使反复中断，用户也不会看见更新不完全的DOM
+
+同时，由于Scheduler和Reconciler都是平台无关的，所以React为他们分别单独发布了一个包
+
+##### 3.1.1.3. Fiber架构详解
+
+fiber的核心思路：在react中遵循代数效应（algebraic effects）
+
+代数效应是函数式编程中的一个概念，用于将副作用从函数调用中分离。
+
+```jsx
+function getTotalPicNum(user1, user2) {
+  const picNum1 = getPicNum(user1);
+  const picNum2 = getPicNum(user2);
+
+  return picNum1 + picNum2;
+}
+```
+
+假设getPickNum需要异步请求：async await？
+
+- 破坏了上下文的一致性，需要调用它的函数也时async
+
+假如有一个类似的try...catch语法 ------try...handle、perform、resume
+
+```jsx
+function getPicNum(name) {
+  const picNum = perform name;
+  return picNum;
+}
+
+try {
+  getTotalPicNum('xianzao', 'houwan');
+} handle (who) {
+  switch (who) {
+    case 'xianzao':
+      resume with 230;
+    case 'houwan':
+      resume with 122;
+    default:
+      resume with 0;
+  }
+}
+```
+
+代数效应：将副作用（例子中为请求图片数量）从函数逻辑中分离，使函数关注点保持纯粹，也就是不用关心是同步还是异步
+
+Example：Hooks，不用关心useState中state是如何保存变化的，我们只需要使用即可
+
+Q：为什么不使用generator？
+
+- 类似async，会影响上下文；
+- generator的执行状态时上下文关联的
+
+```jsx
+function* doWork(A, B, C) {
+  var x = doExpensiveWorkA(A);
+  yield;
+  var y = x + doExpensiveWorkB(B);
+  yield;
+  var z = y + doExpensiveWorkC(C);
+  return z;
+}
+```
+
+- 单一任务中断执行：ok；
+- 中间有高优先级的任务：但是当我们考虑“高优先级任务插队”的情况，如果此时已经完成doExpensiveWorkA与doExpensiveWorkB计算出x与y。此时B组件接收到一个高优更新，由于Generator执行的中间状态是上下文关联的，所以计算y时无法复用之前已经计算出的x，需要重新计算；
+- 使用全局变量保存之前的中间状态，引入新的复杂度；
+
+React Fiber
+
+1. 定义：React内部实现的一套状态更新机制。支持任务不同优先级，可中断与恢复，并且恢复后可以复用之前的中间状态。
+2. 功能：
+
+1. - 作为架构来说，之前React15的Reconciler采用递归的方式执行，数据保存在递归调用栈中，所以被称为stack Reconciler。React16的Reconciler基于Fiber节点实现，被称为Fiber Reconciler；
+
+2. - 作为静态的数据结构来说，每个Fiber节点对应一个React element，保存了该组件的类型（函数组件/类组件/原生组件...）、对应的DOM节点等信息；
+
+3. - 作为动态的工作单元来说，每个Fiber节点保存了本次更新中该组件改变的状态、要执行的工作（需要被删除/被插入页面中/被更新...）；
+
+react fiber node定义
+
+地址：https://github.com/facebook/react/blob/1fb18e22ae66fdb1dc127347e169e73948778e5a/packages/react-reconciler/src/ReactFiber.new.js#L117
+
+```jsx
+function FiberNode(
+  tag: WorkTag,
+  pendingProps: mixed,
+  key: null | string,
+  mode: TypeOfMode,
+) {
+  // Instance，静态节点的数据结构属性
+  this.tag = tag;
+  this.key = key;
+  this.elementType = null;
+  this.type = null;
+  this.stateNode = null;
+
+  // Fiber，用来链接其他fiber节点形成的fiber树
+  this.return = null;
+  this.child = null;
+  this.sibling = null;
+  this.index = 0;
+
+  this.ref = null;
+
+  // 作为动态的工作单元的属性
+  this.pendingProps = pendingProps;
+  this.memoizedProps = null;
+  this.updateQueue = null;
+  this.memoizedState = null;
+  this.dependencies = null;
+
+  this.mode = mode;
+
+  this.effectTag = NoEffect;
+  this.subtreeTag = NoSubtreeEffect;
+  this.deletions = null;
+  this.nextEffect = null;
+
+  this.firstEffect = null;
+  this.lastEffect = null;
+
+  // 作为调度优先级的属性
+  this.lanes = NoLanes;
+  this.childLanes = NoLanes;
+
+  // 指向该fiber在另一次更新时对应的fiber
+  this.alternate = null;
+
+  if (enableProfilerTimer) {
+    // Note: The following is done to avoid a v8 performance cliff.
+    //
+    // Initializing the fields below to smis and later updating them with
+    // double values will cause Fibers to end up having separate shapes.
+    // This behavior/bug has something to do with Object.preventExtension().
+    // Fortunately this only impacts DEV builds.
+    // Unfortunately it makes React unusably slow for some applications.
+    // To work around this, initialize the fields below with doubles.
+    //
+    // Learn more about this here:
+    // https://github.com/facebook/react/issues/14365
+    // https://bugs.chromium.org/p/v8/issues/detail?id=8538
+    this.actualDuration = Number.NaN;
+    this.actualStartTime = Number.NaN;
+    this.selfBaseDuration = Number.NaN;
+    this.treeBaseDuration = Number.NaN;
+
+    // It's okay to replace the initial doubles with smis after initialization.
+    // This won't trigger the performance cliff mentioned above,
+    // and it simplifies other profiler code (including DevTools).
+    this.actualDuration = 0;
+    this.actualStartTime = -1;
+    this.selfBaseDuration = 0;
+    this.treeBaseDuration = 0;
+  }
+
+  if (__DEV__) {
+    // This isn't directly used but is handy for debugging internals:
+    this._debugID = debugCounter++;
+    this._debugSource = null;
+    this._debugOwner = null;
+    this._debugNeedsRemount = false;
+    this._debugHookTypes = null;
+    if (!hasBadMapPolyfill && typeof Object.preventExtensions === 'function') {
+      Object.preventExtensions(this);
+    }
+  }
+}
+```
+
+- 架构层面
+
+```jsx
+// 指向父级Fiber节点
+this.return = null;
+// 指向子Fiber节点
+this.child = null;
+// 指向右边第一个兄弟Fiber节点
+this.sibling = null;
+
+表示的组件结构
+function App() {
+  return (
+    <div>
+      i am
+      <span>xianzao</span>
+    </div>
+  )
+}
+```
+
+Q：为什么指向的父节点是return而不是parent？
+
+因为作为一个工作单元，return指节点执行完completeWork后会返回的下一个节点。子Fiber节点及其兄弟节点完成工作后会返回其父级节点，所以用return指代父级节点
+
+- 作为静态数据结构
+
+```jsx
+// Fiber对应组件的类型 Function/Class...
+this.tag = tag;
+// key属性
+this.key = key;
+// 大部分情况同type，某些情况不同，比如FunctionComponent使用React.memo包裹
+this.elementType = null;
+// 对于 FunctionComponent，指函数本身，对于ClassComponent，指class
+this.type = null;
+// Fiber对应的真实DOM节点
+this.stateNode = null;
+```
+
+- 作为动态工作单元
+
+记录更新相关的信息，主要是updateQueue
+
+Q：React Fiber 如何更新DOM？
+
+使用“双缓存”
+
+在内存中绘制当前的fiber dom，绘制完毕后直接替换上一帧的fiber dom，由于省去了两帧替换间的计算时间，不会出现从白屏到出现画面的闪烁情况
+
+在React中最多会同时存在两棵Fiber树。当前屏幕上显示内容对应的Fiber树称为current Fiber，正在内存中构建的Fiber树称为workInProgress Fiber，两者通过alternate连接
+
+```jsx
+currentFiber.alternate === workInProgressFiber;
+workInProgressFiber.alternate === currentFiber;
+```
+
+React应用的根节点通过current指针指向不同的fiber dom切换，当update时，workInProgressFiber rende完成后会跟currentFiber 替换，下一次更新会将当前currentFiber（上一次的workInProgressFiber）替换
+
+```jsx
+function App() {
+  const [num, add] = useState(0);
+  return (
+    <p onClick={() => add(num + 1)}>{num}</p>
+  )
+}
+
+ReactDOM.render(<App/>, document.getElementById('root'));
+```
+
+- mount
+
+1. 首次执行ReactDOM.render会创建fiberRootNode（源码中叫fiberRoot）和rootFiber。其中fiberRootNode是整个应用的根节点，rootFiber是<App/>所在组件树的根节点；
+
+1. - 区分fiberRootNode与rootFiber：因为在应用中我们可以多次调用ReactDOM.render渲染不同的组件树，他们会拥有不同的rootFiber。但是整个应用的根节点只有一个，那就是fiberRootNode；
+
+2. - fiberRootNode的current会指向当前页面上已渲染内容对应Fiber树，即current Fiber；
+
+3. - 因为是首次渲染，此时页面还没有挂在所有的DOM，所以rootFiber还没有子fiber dom
+
+![img](https://cdn.nlark.com/yuque/0/2022/png/2340337/1654246932925-a3077892-422b-4042-bb63-ae38ff20c0ed.png)
+
+2. render阶段，根据组件返回的JSX在内存中依次创建Fiber节点并连接在一起构建Fiber树，被称为workInProgress Fiber；
+
+1. - 在构建workInProgress Fiber树时会尝试复用current Fiber树中已有的Fiber节点内的属性（后续的diff），在首屏渲染时只有rootFiber存在对应的current fiber（即rootFiber.alternate）
+
+![img](https://cdn.nlark.com/yuque/0/2022/png/2340337/1654247085437-cb8992a3-6b3e-48ad-ad2d-75782d5354a8.png)
+
+3. alternate阶段：此时workInProgress fiber已经构建完成，fiberRootNode的current指向了workInProgress fiber
+
+![img](https://cdn.nlark.com/yuque/0/2022/png/2340337/1654247148286-081629a7-e562-47ba-a8f7-cc3779d5bc60.png)
+
+- update
+
+1. 假设p元素更新，这会开启一次新的render阶段并构建一棵新的workInProgress Fiber 树，且会尽可能服用显有的current Fiber
+
+![img](https://cdn.nlark.com/yuque/0/2022/png/2340337/1654247218297-94d56084-ed60-4406-94ac-1f9dea875e45.png)
+
+2. alternate阶段
+
+workInProgress fiber在更换完后，fiberRootNode的current指针更换·
+
+![img](https://cdn.nlark.com/yuque/0/2022/png/2340337/1654247301806-06a53627-d10b-437a-a443-af336015c7d1.png)
+
+#### 3.1.2. 前置知识
+
+##### 3.1.2.1. 源码文件结构
+
+github地址：https://github.com/facebook/react
+
+```javascript
+根目录
+├── fixtures        # 包含一些给贡献者准备的小型 React 测试项目
+├── packages        # 包含元数据（比如 package.json）和 React 仓库中所有 package 的源码（子目录 src）
+├── scripts         # 各种工具链的脚本，比如git、jest、eslint等
+```
+
+主要内容在packages中
+
+- react：
+
+- - 地址：https://github.com/facebook/react/tree/main/packages/react
+  - 内容：全局React API，如React.createElement、React.Component等
+
+- scheduler：
+
+- - 地址：https://github.com/facebook/react/tree/main/packages/scheduler
+  - 内容：scheduler实现
+
+- Shared：
+
+- - 地址：https://github.com/facebook/react/tree/main/packages/shared
+  - 内容：其他模块中公用的方法和全局变量
+
+- Render相关
+
+```javascript
+- react-art
+- react-dom                 # 注意这同时是DOM和SSR（服务端渲染）的入口
+- react-native-renderer
+- react-noop-renderer       # 用于debug fiber（后面会介绍fiber）
+- react-test-renderer
+```
+
+- 实验性文件
+
+```javascript
+- react-server        # 创建自定义SSR流
+- react-client        # 创建自定义的client
+- react-fetch         # 用于数据请求
+- react-interactions  # 用于测试交互相关的内部特性，比如React的事件模型
+- react-reconciler    # Reconciler的实现，你可以用他构建自己的Renderer
+```
+
+- 辅助包
+
+```javascript
+- react-is       # 用于测试组件是否是某类型
+- react-client   # 创建自定义的流
+- react-fetch    # 用于数据请求
+- react-refresh  # “热重载”的React官方实现
+```
+
+- react-reconciler（核心关注点）
+- 地址：https://github.com/facebook/react/tree/main/packages/react-reconciler
+- 内容：React16核心更新内容
+
+##### 3.1.2.3. 深入理解JSX
+
+Q：
+
+- JSX和Fiber节点是同一个东西么？
+- React Component、React Element是同一个东西么，他们和JSX有什么关系？
+
+JSX在编译时会被Babel编译为React.createElement方法，这也是为什么要引入`import React from 'react';`的原因
+
+- React.createELement
+
+地址：https://github.com/facebook/react/blob/1fb18e22ae66fdb1dc127347e169e73948778e5a/packages/react/src/ReactElement.js#L348
+
+```javascript
+export function createElement(type, config, children) {
+  let propName;
+
+  const props = {};
+
+  let key = null;
+  let ref = null;
+  let self = null;
+  let source = null;
+
+  if (config != null) {
+    // 将 config 处理后赋值给 props
+    // ...省略
+  }
+
+  const childrenLength = arguments.length - 2;
+  // 处理 children，会被赋值给props.children
+  // ...省略
+
+  // 处理 defaultProps
+  // ...省略
+
+  return ReactElement(
+    type,
+    key,
+    ref,
+    self,
+    source,
+    ReactCurrentOwner.current,
+    props,
+  );
+}
+
+const ReactElement = function(type, key, ref, self, source, owner, props) {
+  const element = {
+    // 标记这是个 React Element
+    $$typeof: REACT_ELEMENT_TYPE,
+
+    type: type,
+    key: key,
+    ref: ref,
+    props: props,
+    _owner: owner,
+  };
+
+  return element;
+};
+```
+
+在全局API isValidElement里，通过$$typeof判断为REACT_ELEMENT_TYPE即为react元素，所以JSX返回的结构也是react element
+
+```jsx
+export function isValidElement(object) {
+  return (
+    typeof object === 'object' &&
+    object !== null &&
+    object.$$typeof === REACT_ELEMENT_TYPE
+  );
+}
+```
+
+- React Component
+
+Q：如何判断组件为class或者function组件
+
+Example：https://codesandbox.io/s/jsx-type-blpuo?file=/src/index.js
+
+ClassComponent对应的Element的type字段为AppClass自身。
+
+FunctionComponent对应的Element的type字段为AppFunc自身。
+
+且无法根据引用类型区分
+
+```javascript
+AppClass instanceof Function === true;
+AppFunc instanceof Function === true;
+```
+
+实际上，React根据classComponent原型上的isReactComponent判断是否为ClassComponent
+
+```javascript
+ClassComponent.prototype.isReactComponent; // {}
+FunctionComponent.prototype.isReactComponent; // undefined
+```
+
+- JSX与Fiber节点的关系
+
+- - JSX是一种描述当前组件内容的数据结构，他不包含组件schedule、reconcile、render所需的相关信息
+
+- - - 比如如下信息就不包括在JSX中：组件在更新中的优先级、组件的state、组件被打上的用于Renderer的标记
+
+- - Fiber更多地是一种更新机制
+
+- - - 在组件mount时，Reconciler根据JSX描述的组件内容生成组件对应的Fiber节点
+    - 在update时，Reconciler将JSX与Fiber节点保存的数据对比，生成组件对应的Fiber节点，并根据对比结果为Fiber节点打上标记
+
+### 3.2. 架构篇
+
+#### 3.2.1. render阶段
+
+内容：Fiber节点是如何被创建并构建成render树的
+
+##### 3.2.1.1. 流程概览
+
+在render的阶段中，根据是同步还是异步，执行performSyncWorkOnRoot 和 performConcurrentWorkOnRoot
+
+```jsx
+// performSyncWorkOnRoot会调用该方法
+function workLoopSync() {
+  while (workInProgress !== null) {
+    performUnitOfWork(workInProgress);
+  }
+}
+
+// performConcurrentWorkOnRoot会调用该方法
+function workLoopConcurrent() {
+  while (workInProgress !== null && !shouldYield()) {
+    performUnitOfWork(workInProgress);
+  }
+}
+```
+
+区别：是否调用shouldYield。如果当前浏览器帧没有剩余时间，shouldYield会中止循环，直到浏览器有空闲时间后再继续遍历
+
+说明：
+
+- `workInProgress`代表当前已创建的`workInProgress fiber`；
+- `performUnitOfWork`方法会创建下一个Fiber节点并赋值给`workInProgress`，并将`workInProgress`与已创建的Fiber节点连接起来构成Fiber树；
+
+虽然fiber reconciler是从stack reconciler重构而来，但都是通过遍历的方式实现可中断的异步递归
+
+1. 递
+
+首先从`rootFiber`开始向下深度优先遍历。为遍历到的每个Fiber节点调用[beginWork](https://github.com/facebook/react/blob/970fa122d8188bafa600e9b5214833487fbf1092/packages/react-reconciler/src/ReactFiberBeginWork.new.js#L3058)（下面详细讲）；
+
+- 该方法会根据传入的Fiber节点创建子Fiber节点，并将这两个Fiber节点连接起来；
+- 当遍历到叶子节点（即没有子组件的组件）时就会进入“归”阶段；
+
+2. 归
+
+在“归”阶段会调用[completeWork](https://github.com/facebook/react/blob/970fa122d8188bafa600e9b5214833487fbf1092/packages/react-reconciler/src/ReactFiberCompleteWork.new.js#L652)（下面详细讲)处理Fiber节点。
+
+- 当某个Fiber节点执行完completeWork，如果其存在兄弟Fiber节点（即fiber.sibling !== null），会进入其兄弟Fiber的“递”阶段；
+- 如果不存在兄弟Fiber，会进入父级Fiber的“归”阶段；
+
+“递”和“归”阶段会交错执行直到“归”到rootFiber
+
+```jsx
+function App() {
+  return (
+    <div>
+      i am
+      <span>text</span>
+    </div>
+  )
+}
+
+ReactDOM.render(<App />, document.getElementById("root"));
+```
+
+![img](https://cdn.nlark.com/yuque/0/2022/png/2340337/1654251357680-2c8c8590-fea6-4048-b7a4-8e97b35afe5d.png)
+
+```javascript
+1. rootFiber beginWork
+2. App Fiber beginWork
+3. div Fiber beginWork
+4. "i am" Fiber beginWork
+5. "i am" Fiber completeWork
+6. span Fiber beginWork
+7. span Fiber completeWork
+8. div Fiber completeWork
+9. App Fiber completeWork
+10. rootFiber completeWork
+
+// 没有叶子节点是因为React针对只有单一文本子节点的Fiber节点做了性能优化
+
+// 递归的格式
+function performUnitOfWork(fiber) {
+  // 执行beginWork
+
+  if (fiber.child) {
+    performUnitOfWork(fiber.child);
+  }
+
+  // 执行completeWork
+
+  if (fiber.sibling) {
+    performUnitOfWork(fiber.sibling);
+  }
+}
+```
+
+#### 3.2.1.2. beginWork
+
+地址：https://github.com/facebook/react/blob/1fb18e22ae66fdb1dc127347e169e73948778e5a/packages/react-reconciler/src/ReactFiberBeginWork.new.js#L3075
+
+beginWork的工作是传入当前Fiber节点，创建子Fiber节点
+
+- 入参
+
+```javascript
+function beginWork(
+  current: Fiber | null,
+  workInProgress: Fiber,
+  renderLanes: Lanes,
+): Fiber | null {
+  // ...省略函数体
+}
+```
+
+- current：当前组件对应的Fiber节点在上一次更新时的Fiber节点，即workInProgress.alternate
+- workInProgress：当前组件对应的Fiber节点
+- renderLanes：优先级相关，后面讲
+
+可以根据current!==null，判断组件时mount还是update
+
+- mount：首次渲染，当前组件的fiber节点为null；
+- update：之前已经mount，fiber节点不为null；
+
+基于此原因，beginWork的工作可以分为两部分：
+
+- update时：如果current存在，在满足一定条件时可以复用current节点，（diff）这样就能克隆current.child作为workInProgress.child，而不需要新建workInProgress.child；
+- mount时：除fiberRootNode以外，current === null。会根据fiber.tag不同，创建不同类型的子Fiber节点；
+
+```javascript
+function beginWork(
+  current: Fiber | null,
+  workInProgress: Fiber,
+  renderLanes: Lanes
+): Fiber | null {
+
+  // update时：如果current存在可能存在优化路径，可以复用current（即上一次更新的Fiber节点）
+  if (current !== null) {
+    // ...省略
+
+    // 复用current
+    return bailoutOnAlreadyFinishedWork(
+      current,
+      workInProgress,
+      renderLanes,
+    );
+  } else {
+    didReceiveUpdate = false;
+  }
+
+  // mount时：根据tag不同，创建不同的子Fiber节点
+  switch (workInProgress.tag) {
+    case IndeterminateComponent: 
+      // ...省略
+    case LazyComponent: 
+      // ...省略
+    case FunctionComponent: 
+      // ...省略
+    case ClassComponent: 
+      // ...省略
+    case HostRoot:
+      // ...省略
+    case HostComponent:
+      // ...省略
+    case HostText:
+      // ...省略
+    // ...省略其他类型
+  }
+}
+```
+
+- update时
+
+- - didReceiveUpdate = false：不需要新建fiber，可以直接复用
+  - !includesSomeLane(renderLanes, updateLanes)，即当前Fiber节点优先级不够（后面讲）
+
+```javascript
+if (current !== null) {
+    const oldProps = current.memoizedProps;
+    const newProps = workInProgress.pendingProps;
+
+    if (
+      oldProps !== newProps ||
+      hasLegacyContextChanged() ||
+      (__DEV__ ? workInProgress.type !== current.type : false)
+    ) {
+      didReceiveUpdate = true;
+    } else if (!includesSomeLane(renderLanes, updateLanes)) {
+      didReceiveUpdate = false;
+      switch (workInProgress.tag) {
+        // 省略处理
+      }
+      return bailoutOnAlreadyFinishedWork(
+        current,
+        workInProgress,
+        renderLanes,
+      );
+    } else {
+      didReceiveUpdate = false;
+    }
+  } else {
+    didReceiveUpdate = false;
+  }
+```
+
+- mount时
+
+- - 根据fiber.tag不同，进入不同逻辑的fiber创建
+  - 官网地址：https://github.com/facebook/react/blob/1fb18e22ae66fdb1dc127347e169e73948778e5a/packages/react-reconciler/src/ReactWorkTags.js
+  - 对于常见的组件（FunctionComponent、ClassComponent），会执行reconcileChildren
+
+```javascript
+// mount时：根据tag不同，创建不同的Fiber节点
+switch (workInProgress.tag) {
+  case IndeterminateComponent: 
+    // ...省略
+  case LazyComponent: 
+    // ...省略
+  case FunctionComponent: 
+    // ...省略
+  case ClassComponent: 
+    // ...省略
+  case HostRoot:
+    // ...省略
+  case HostComponent:
+    // ...省略
+  case HostText:
+    // ...省略
+  // ...省略其他类型
+}
+```
+
+- reconcileChildren
+
+- - mount组件：创建新的子Fiber节点；
+  - update组件：将当前组件与该组件在上次更新时对应的Fiber节点比较（Diff），将比较的结果生成新Fiber节点；
+
+```javascript
+export function reconcileChildren(
+  current: Fiber | null,
+  workInProgress: Fiber,
+  nextChildren: any,
+  renderLanes: Lanes
+) {
+  if (current === null) {
+    // 对于mount的组件
+    workInProgress.child = mountChildFibers(
+      workInProgress,
+      null,
+      nextChildren,
+      renderLanes,
+    );
+  } else {
+    // 对于update的组件
+    workInProgress.child = reconcileChildFibers(
+      workInProgress,
+      current.child,
+      nextChildren,
+      renderLanes,
+    );
+  }
+}
+```
+
+- mountChildFibers & reconcileChildFibers
+
+- - 都会生成新的fiber节点返回给workInProgress.child，作为本次beginWork的返回值，在下次performUnitOfWork执行时workInProgress的入参
+
+- effectTag
+
+- - render阶段的工作是在内存中进行，当工作结束后会通知Renderer需要执行的DOM操作。要执行DOM操作的具体类型就保存在fiber.effectTag中
+
+![img](https://cdn.nlark.com/yuque/0/2022/png/2340337/1654252870881-4b6a0db3-1c92-4fb6-a761-aa4d75b9cec8.png)
+
+##### 3.2.1.3. completeWork
+
+- 作用：针对不同的fiber.tag调用不同的处理逻辑
+- 地址：https://github.com/facebook/react/blob/1fb18e22ae66fdb1dc127347e169e73948778e5a/packages/react-reconciler/src/ReactFiberCompleteWork.new.js#L673
+
+```javascript
+function completeWork(
+  current: Fiber | null,
+  workInProgress: Fiber,
+  renderLanes: Lanes,
+): Fiber | null {
+  const newProps = workInProgress.pendingProps;
+
+  switch (workInProgress.tag) {
+    case IndeterminateComponent:
+    case LazyComponent:
+    case SimpleMemoComponent:
+    case FunctionComponent:
+    case ForwardRef:
+    case Fragment:
+    case Mode:
+    case Profiler:
+    case ContextConsumer:
+    case MemoComponent:
+      return null;
+    case ClassComponent: {
+      // ...省略
+      return null;
+    }
+    case HostRoot: {
+      // ...省略
+      updateHostContainer(workInProgress);
+      return null;
+    }
+    case HostComponent: {
+      // ...省略
+      return null;
+    }
+  // ...省略
+```
+
+- 判断update时我们还需要考虑workInProgress.stateNode != null ?（即该Fiber节点是否存在对应的DOM节点）
+
+```javascript
+case HostComponent: {
+  popHostContext(workInProgress);
+  const rootContainerInstance = getRootHostContainer();
+  const type = workInProgress.type;
+
+  if (current !== null && workInProgress.stateNode != null) {
+    // update的情况
+    // ...省略
+  } else {
+    // mount的情况
+    // ...省略
+  }
+  return null;
+}
+```
+
+- update
+
+当update时，Fiber节点已经存在对应DOM节点，所以不需要生成DOM节点。需要做的主要是处理props，比如：
+
+- - onClick、onChange等回调函数的注册
+  - 处理style prop
+  - 处理DANGEROUSLY_SET_INNER_HTML prop
+  - 处理children prop
+
+```javascript
+if (current !== null && workInProgress.stateNode != null) {
+  // update的情况
+  updateHostComponent(
+    current,
+    workInProgress,
+    type,
+    newProps,
+    rootContainerInstance,
+  );
+}
+```
+
+- - updateHostComponent git地址：https://github.com/facebook/react/blob/1fb18e22ae66fdb1dc127347e169e73948778e5a/packages/react-reconciler/src/ReactFiberCompleteWork.new.js#L225
+
+- - 在updateHostComponent内部，被处理完的props会被赋值给workInProgress.updateQueue，并最终会在commit阶段被渲染在页面上，其中updatePayload为数组形式，他的偶数索引的值为变化的prop key，奇数索引的值为变化的prop value
+
+```javascript
+workInProgress.updateQueue = (updatePayload: any);
+```
+
+- mount时
+
+- - 为Fiber节点生成对应的DOM节点
+  - 将子孙DOM节点插入刚生成的DOM节点中
+  - 与update逻辑中的updateHostComponent类似的处理props的过程
+
+```javascript
+// mount的情况
+
+// ...省略服务端渲染相关逻辑
+
+const currentHostContext = getHostContext();
+// 为fiber创建对应DOM节点
+const instance = createInstance(
+    type,
+    newProps,
+    rootContainerInstance,
+    currentHostContext,
+    workInProgress,
+  );
+// 将子孙DOM节点插入刚生成的DOM节点中
+appendAllChildren(instance, workInProgress, false, false);
+// DOM节点赋值给fiber.stateNode
+workInProgress.stateNode = instance;
+
+// 与update逻辑中的updateHostComponent类似的处理props的过程
+if (
+  finalizeInitialChildren(
+    instance,
+    type,
+    newProps,
+    rootContainerInstance,
+    currentHostContext,
+  )
+) {
+  markUpdate(workInProgress);
+}
+```
+
+- effectList
+
+Q：作为DOM操作的依据，commit阶段需要找到所有有effectTag的Fiber节点并依次执行effectTag对应操作。难道需要在commit阶段再遍历一次Fiber树寻找effectTag !== null的Fiber节点么？
+
+completeWork在上层函数completeUnitOfWork上维护了一个单向链表
+
+effectList中第一个Fiber节点保存在fiber.firstEffect，最后一个元素保存在fiber.lastEffect。
+
+类似appendAllChildren，在“归”阶段，所有有effectTag的Fiber节点都会被追加在effectList中，最终形成一条以rootFiber.firstEffect为起点的单向链表。
+
+地址：https://github.com/facebook/react/blob/1fb18e22ae66fdb1dc127347e169e73948778e5a/packages/react-reconciler/src/ReactFiberWorkLoop.new.js#L1744
+
+```javascript
+                      nextEffect         nextEffect
+rootFiber.firstEffect -----------> fiber -----------> fiber
+```
+
+- 最后
+
+在performSyncWorkOnRoot函数中fiberRootNode被传递给commitRoot方法，开启commit阶段工作流程。
+
+```javascript
+commitRoot(root);
+```
+
+![img](https://cdn.nlark.com/yuque/0/2022/png/2340337/1654253478313-a71f1a18-fe86-44d3-b615-ae56bf8a693f.png)
+
+#### 3.2.2. commit阶段
+
+##### 3.2.2.1. 流程概览
+
+```javascript
+commitRoot(root);
+```
+
+在rootFiber.firstEffect上保存了一条需要执行副作用的Fiber节点的单向链表effectList，这些Fiber节点的updateQueue中保存了变化的props
+
+这些副作用对应的DOM操作在commit阶段执行。
+
+源码地址：https://github.com/facebook/react/blob/1fb18e22ae66fdb1dc127347e169e73948778e5a/packages/react-reconciler/src/ReactFiberWorkLoop.new.js#L2001
+
+除此之外，一些生命周期钩子（比如componentDidXXX）、hook（比如useEffect）需要在commit阶段执行。
+
+commit阶段的主要工作（即Renderer的工作流程）分为三部分：
+
+1. before mutation阶段（执行DOM操作前）
+2. mutation阶段（执行DOM操作）
+3. layout阶段（执行DOM操作后）
+
+- before mutation
+
+```javascript
+do {
+    // 触发useEffect回调与其他同步任务。由于这些任务可能触发新的渲染，所以这里要一直遍历执行直到没有任务
+    flushPassiveEffects();
+  } while (rootWithPendingPassiveEffects !== null);
+
+  // root指 fiberRootNode
+  // root.finishedWork指当前应用的rootFiber
+  const finishedWork = root.finishedWork;
+
+  // 凡是变量名带lane的都是优先级相关
+  const lanes = root.finishedLanes;
+  if (finishedWork === null) {
+    return null;
+  }
+  root.finishedWork = null;
+  root.finishedLanes = NoLanes;
+
+  // 重置Scheduler绑定的回调函数
+  root.callbackNode = null;
+  root.callbackId = NoLanes;
+
+  let remainingLanes = mergeLanes(finishedWork.lanes, finishedWork.childLanes);
+  // 重置优先级相关变量
+  markRootFinished(root, remainingLanes);
+
+  // 清除已完成的discrete updates，例如：用户鼠标点击触发的更新。
+  if (rootsWithPendingDiscreteUpdates !== null) {
+    if (
+      !hasDiscreteLanes(remainingLanes) &&
+      rootsWithPendingDiscreteUpdates.has(root)
+    ) {
+      rootsWithPendingDiscreteUpdates.delete(root);
+    }
+  }
+
+  // 重置全局变量
+  if (root === workInProgressRoot) {
+    workInProgressRoot = null;
+    workInProgress = null;
+    workInProgressRootRenderLanes = NoLanes;
+  } else {
+  }
+
+  // 将effectList赋值给firstEffect
+  // 由于每个fiber的effectList只包含他的子孙节点
+  // 所以根节点如果有effectTag则不会被包含进来
+  // 所以这里将有effectTag的根节点插入到effectList尾部
+  // 这样才能保证有effect的fiber都在effectList中
+  let firstEffect;
+  if (finishedWork.effectTag > PerformedWork) {
+    if (finishedWork.lastEffect !== null) {
+      finishedWork.lastEffect.nextEffect = finishedWork;
+      firstEffect = finishedWork.firstEffect;
+    } else {
+      firstEffect = finishedWork;
+    }
+  } else {
+    // 根节点没有effectTag
+    firstEffect = finishedWork.firstEffect;
+  }
+```
+
+before mutation之前主要做一些变量赋值，状态重置的工作。
+
+- layout
+
+主要包括三点内容：
+
+1. useEffect相关的处理：后面详细讲
+2. 性能追踪相关：代码里有很多和interaction相关的变量。他们都和追踪React渲染时间、性能相关，在[Profiler API](https://zh-hans.reactjs.org/docs/profiler.html)和[DevTool](https://github.com/facebook/react-devtools/pull/1069)中使用，你可以在这里看到[interaction的定义](https://gist.github.com/bvaughn/8de925562903afd2e7a12554adcdda16#overview)
+3. 在commit阶段会触发一些生命周期钩子（如 componentDidXXX）和hook（如useLayoutEffect、useEffect）。
+
+在这些回调方法中可能触发新的更新，新的更新会开启新的render-commit流程。
+
+##### 3.2.2.2. before mutation（执行DOM前）
+
+遍历effectList并调用commitBeforeMutationEffects函数处理。
+
+地址：https://github.com/facebook/react/blob/1fb18e22ae66fdb1dc127347e169e73948778e5a/packages/react-reconciler/src/ReactFiberWorkLoop.new.js#L2104-L2127
+
+```javascript
+// 保存之前的优先级，以同步优先级执行，执行完毕后恢复之前优先级
+const previousLanePriority = getCurrentUpdateLanePriority();
+setCurrentUpdateLanePriority(SyncLanePriority);
+
+// 将当前上下文标记为CommitContext，作为commit阶段的标志
+const prevExecutionContext = executionContext;
+executionContext |= CommitContext;
+
+// 处理focus状态
+focusedInstanceHandle = prepareForCommit(root.containerInfo);
+shouldFireAfterActiveInstanceBlur = false;
+
+// beforeMutation阶段的主函数
+commitBeforeMutationEffects(finishedWork);
+
+focusedInstanceHandle = null;
+```
+
+主要讲下 commitBeforeMutationEffects
+
+```javascript
+function commitBeforeMutationEffects() {
+  while (nextEffect !== null) {
+    const current = nextEffect.alternate;
+
+    if (!shouldFireAfterActiveInstanceBlur && focusedInstanceHandle !== null) {
+      // ...focus blur相关
+    }
+
+    const effectTag = nextEffect.effectTag;
+
+    // 调用getSnapshotBeforeUpdate
+    if ((effectTag & Snapshot) !== NoEffect) {
+      commitBeforeMutationEffectOnFiber(current, nextEffect);
+    }
+
+    // 调度useEffect
+    if ((effectTag & Passive) !== NoEffect) {
+      if (!rootDoesHavePassiveEffects) {
+        rootDoesHavePassiveEffects = true;
+        scheduleCallback(NormalSchedulerPriority, () => {
+          flushPassiveEffects();
+          return null;
+        });
+      }
+    }
+    nextEffect = nextEffect.nextEffect;
+  }
+}
+```
+
+1. 处理DOM节点渲染、删除后的autoFocus、blur等操作；
+2. 调用getSnapshotBeforeUpdate
+3. 调度 useEffect
+
+- 调用getSnapshotBeforeUpdate
+
+commitBeforeMutationEffectOnFiber是commitBeforeMutationLifeCycles的别名，在该方法内会调用getSnapshotBeforeUpdate。
+
+地址：https://github.com/facebook/react/blob/1fb18e22ae66fdb1dc127347e169e73948778e5a/packages/react-reconciler/src/ReactFiberCommitWork.old.js#L222
+
+因为在V16版本后，componentWillXXX钩子为UNSAFE_，所以，React提供了替代的生命周期钩子getSnapshotBeforeUpdate，getSnapshotBeforeUpdate是在commit阶段内的before mutation阶段调用的，由于commit阶段是同步的，所以不会遇到多次调用的问题
+
+Q：为什么从Reactv16开始，componentWillXXX钩子前增加了UNSAFE_前缀？
+
+从React15升级为React16后，源码改动如此之大，说React被重构可能更贴切些。
+
+正是由于变动如此之大，使得一些特性在新旧版本React中表现不一致
+
+为了让开发者能平稳从旧版本迁移到新版本，React推出了三个模式：
+
+- legacy模式 -- 通过ReactDOM.render创建的应用会开启该模式。这是当前React使用的方式。这个模式可能不支持一些新功能。
+- blocking模式 -- 通过ReactDOM.createBlockingRoot创建的应用会开启该模式。开启部分concurrent模式特性，作为迁移到concurrent模式的第一步。
+- concurrent模式 -- 通过ReactDOM.createRoot创建的应用会开启该模式。面向未来的开发模式。
+
+但是在从legacy迁移到concurrent模式时，可中断的异步更新还替代了同步更新
+
+在Stack Reconciler重构为Fiber Reconciler后，render阶段的任务可能中断/重新开始，对应的组件在render阶段的生命周期钩子（即componentWillXXX）可能触发多次。
+
+这种行为和Reactv15不一致，所以标记为UNSAFE_。
+
+- componentWillMount -- componentDidMount
+- componentWillRecieveProps -- getDerivedStateFromProps
+- componentWillUpdate -- getDerivedStateFromProps
+
+在React更新里，每次发起更新都会创建一个Update对象，同一组件的多个Update，会以链表的形式保存在updateQueue中。
+
+- update
+
+```javascript
+const update: Update<*> = {
+  // ...省略当前不需要关注的字段
+  lane, // 表示调度优先级
+  payload: null, // 更新挂载的数据，对于this.setState创建的更新，payload为this.setState的传参
+  next: null // 与其他update形成链表
+};
+```
+
+- updateQueue
+
+```javascript
+const queue: UpdateQueue<State> = {
+    baseState: fiber.memoizedState, // 更新基于哪个state开始
+    firstBaseUpdate: null,  // 更新开始和结束的update
+    lastBaseUpdate: null,
+    shared: { 
+      pending: null, // 更新的单个或多个update形成的链表
+    },
+    // 其他参数省略...
+};
+
+// baseUpdate + shared.pending会作为本次更新需要执行的Update
+```
+
+假设，某个组件updateQueue 存在4个update，数字代表优先级
+
+```javascript
+baseState = '';
+
+A1 - B2 - C1 - D2
+
+// 为了保证更新的连贯性，第一个被跳过的update（B）和后面的update会作为第二次渲染的baseUpdate
+// 为BCD
+// 首次渲染后
+baseState: ''
+Updates: [A1, C1]
+Result state: 'AC'
+
+// 第二次渲染，B在第一次渲染时被跳过，所以在他之后的C造成的渲
+// 染结果不会体现在第二次渲染的baseState中。所以baseState为A而不是上次渲染的Result state AC
+// 。这也是为了保证更新的连贯性
+baseState: 'A'  // 为了保证一致性，C不在        
+Updates: [B2, C1, D2]  
+Result state: 'ABCD'
+
+// Updates里出现了两次C
+```
+
+- 调度useEffect
+
+```javascript
+// 调度useEffect
+if ((effectTag & Passive) !== NoEffect) {
+  if (!rootDoesHavePassiveEffects) {
+    rootDoesHavePassiveEffects = true;
+    scheduleCallback(NormalSchedulerPriority, () => { // scheduler提供，调度优先级的回调
+      // 触发useEffect
+      flushPassiveEffects(); // 具体见后文hooks
+      return null;
+    });
+  }
+}
+```
+
+在flushPassiveEffects方法内部会从全局变量rootWithPendingPassiveEffects获取effectList，就是会遍历rootWithPendingPassiveEffects（即effectList）执行effect回调函数。
+
+Q：为什么要异步调度：
+
+https://zh-hans.reactjs.org/docs/hooks-reference.html#timing-of-effects
+
+与 componentDidMount、componentDidUpdate 不同的是，在浏览器完成布局与绘制之后，传给 useEffect 的函数会延迟调用。这使得它适用于许多常见的副作用场景，比如设置订阅和事件处理等情况，因此不应在函数中执行阻塞浏览器更新屏幕的操作。
+
+防止同步执行时阻塞浏览器渲染
+
+##### 3.2.2.3. mutation（执行DOM中）
+
+类似 before mutation，mutation遍历effectList执行函数。这里执行的是commitMutationEffects。
+
+地址：https://github.com/facebook/react/blob/1fb18e22ae66fdb1dc127347e169e73948778e5a/packages/react-reconciler/src/ReactFiberWorkLoop.old.js#L2091
+
+```javascript
+nextEffect = firstEffect;
+do {
+  try {
+      commitMutationEffects(root, renderPriorityLevel);
+    } catch (error) {
+      invariant(nextEffect !== null, 'Should be working on an effect.');
+      captureCommitPhaseError(nextEffect, error);
+      nextEffect = nextEffect.nextEffect;
+    }
+} while (nextEffect !== null);
+function commitMutationEffects(root: FiberRoot, renderPriorityLevel) {
+  // 遍历effectList
+  while (nextEffect !== null) {
+
+    const effectTag = nextEffect.effectTag;
+
+    // 根据 ContentReset effectTag重置文字节点
+    if (effectTag & ContentReset) {
+      commitResetTextContent(nextEffect);
+    }
+
+    // 更新ref
+    if (effectTag & Ref) {
+      const current = nextEffect.alternate;
+      if (current !== null) {
+        commitDetachRef(current);
+      }
+    }
+
+    // 根据 effectTag 分别处理
+    const primaryEffectTag =
+      effectTag & (Placement | Update | Deletion | Hydrating);
+    switch (primaryEffectTag) {
+      // 插入DOM
+      case Placement: {
+        commitPlacement(nextEffect);
+        nextEffect.effectTag &= ~Placement;
+        break;
+      }
+      // 插入DOM 并 更新DOM
+      case PlacementAndUpdate: {
+        // 插入
+        commitPlacement(nextEffect);
+
+        nextEffect.effectTag &= ~Placement;
+
+        // 更新
+        const current = nextEffect.alternate;
+        commitWork(current, nextEffect);
+        break;
+      }
+      // SSR
+      case Hydrating: {
+        nextEffect.effectTag &= ~Hydrating;
+        break;
+      }
+      // SSR
+      case HydratingAndUpdate: {
+        nextEffect.effectTag &= ~Hydrating;
+
+        const current = nextEffect.alternate;
+        commitWork(current, nextEffect);
+        break;
+      }
+      // 更新DOM
+      case Update: {
+        const current = nextEffect.alternate;
+        commitWork(current, nextEffect);
+        break;
+      }
+      // 删除DOM
+      case Deletion: {
+        commitDeletion(root, nextEffect, renderPriorityLevel);
+        break;
+      }
+    }
+
+    nextEffect = nextEffect.nextEffect;
+  }
+}
+```
+
+执行内容：
+
+1. 根据ContentReset effectTag重置文字节点
+2. 更新ref
+3. 根据effectTag分别处理，其中effectTag包括(Placement | Update | Deletion | Hydrating)，hydrate是SSR，不考虑
+
+- placement effect：插入DOM
+
+调用：commitPlacement
+
+地址：https://github.com/facebook/react/blob/970fa122d8188bafa600e9b5214833487fbf1092/packages/react-reconciler/src/ReactFiberCommitWork.new.js#L1156
+
+实现内容：
+
+1. 获取父DOM节点，其中finishedWork为传入的Fiber节点。
+
+```javascript
+const parentFiber = getHostParentFiber(finishedWork);
+// 父级DOM节点
+const parentStateNode = parentFiber.stateNode;
+```
+
+2. 获取fiber节点的DOM兄弟节点
+
+```javascript
+const before = getHostSibling(finishedWork);
+```
+
+3. 根据DOM的兄弟节点是否存在调用parentNode.insertBefore 或者 parentNode.appendChild，插入DOM
+
+```javascript
+// parentStateNode是否是rootFiber
+if (isContainer) {
+  insertOrAppendPlacementNodeIntoContainer(finishedWork, before, parent);
+} else {
+  insertOrAppendPlacementNode(finishedWork, before, parent);
+}
+```
+
+Q：渲染DOM中时间复杂度最高的操作是？
+
+getHostSibling（获取兄弟DOM节点）
+
+当在同一个父Fiber节点下依次执行多个插入操作，getHostSibling算法的复杂度为指数级。
+
+这是由于Fiber节点不只包括HostComponent，所以Fiber树和渲染的DOM树节点并不是一一对应的。要从Fiber节点找到DOM节点很可能跨层级遍历
+
+```javascript
+function Item() {
+  return <li><li>;
+}
+
+function App() {
+  return (
+    <div>
+      <Item/>
+    </div>
+  )
+}
+
+ReactDOM.render(<App/>, document.getElementById('root'));
+
+// Fiber树
+          child      child      child       child
+rootFiber -----> App -----> div -----> Item -----> li
+
+// DOM树
+#root ---> div ---> li
+
+// 在div的子节点Item前加一个p
+function App() {
+  return (
+    <div>
+      <p></p>
+      <Item/>
+    </div>
+  )
+}
+
+// Fiber树
+          child      child      child
+rootFiber -----> App -----> div -----> p 
+                                       | sibling       child
+                                       | -------> Item -----> li 
+// DOM树
+#root ---> div ---> p
+             |
+               ---> li
+
+// 此时dom中p的兄弟节点是li
+// fiber中fiberP的兄弟节点是fiberItem，fiberItem的子节点才是li
+```
+
+- update effect
+
+调用的方法为commitWork，他会根据Fiber.tag分别处理。
+
+地址：https://github.com/facebook/react/blob/970fa122d8188bafa600e9b5214833487fbf1092/packages/react-reconciler/src/ReactFiberCommitWork.new.js#L1441
+
+主要关注：FunctionComponent和HostComponent
+
+1. FunctionComponent mutation
+
+当fiber.tag为FunctionComponent，会调用commitHookEffectListUnmount。该方法会遍历effectList，执行所有useLayoutEffect hook的销毁函数
+
+地址：https://github.com/facebook/react/blob/970fa122d8188bafa600e9b5214833487fbf1092/packages/react-reconciler/src/ReactFiberCommitWork.new.js#L314
+
+2. HostComponent mutation
+
+当fiber.tag为HostComponent，会调用commitUpdate。
+
+地址：https://github.com/facebook/react/blob/970fa122d8188bafa600e9b5214833487fbf1092/packages/react-dom/src/client/ReactDOMHostConfig.js#L423
+
+最终会在[updateDOMProperties](https://github.com/facebook/react/blob/970fa122d8188bafa600e9b5214833487fbf1092/packages/react-dom/src/client/ReactDOMComponent.js#L378)中将render阶段 completeWork中为Fiber节点赋值的updateQueue对应的内容渲染在页面上。
+
+```javascript
+for (let i = 0; i < updatePayload.length; i += 2) {
+  const propKey = updatePayload[i];
+  const propValue = updatePayload[i + 1];
+
+  // 处理 style
+  if (propKey === STYLE) {
+    setValueForStyles(domElement, propValue);
+  // 处理 DANGEROUSLY_SET_INNER_HTML
+  } else if (propKey === DANGEROUSLY_SET_INNER_HTML) {
+    setInnerHTML(domElement, propValue);
+  // 处理 children
+  } else if (propKey === CHILDREN) {
+    setTextContent(domElement, propValue);
+  } else {
+  // 处理剩余 props
+    setValueForProperty(domElement, propKey, propValue, isCustomComponentTag);
+  }
+}
+```
+
+- deletion effect
+
+当Fiber节点含有Deletion effectTag，意味着该Fiber节点对应的DOM节点需要从页面中删除。调用的方法为commitDeletion。
+
+地址：https://github.com/facebook/react/blob/970fa122d8188bafa600e9b5214833487fbf1092/packages/react-reconciler/src/ReactFiberCommitWork.new.js#L1421
+
+1. 递归调用Fiber节点及其子孙Fiber节点中fiber.tag为ClassComponent的componentWillUnmount生命周期钩子，从页面移除Fiber节点对应DOM节点
+2. 解绑ref
+3. 调度useEffect的销毁函数
+
+##### 3.2.2.4. layout（执行DOM后）
+
+之所以称为layout，因为该阶段的代码都是在DOM渲染完成（mutation阶段完成）后执行的。该阶段触发的生命周期钩子和hook可以直接访问到已经改变后的DOM，即该阶段是可以参与DOM layout的阶段
+
+- layout阶段也是遍历effectList
+
+```javascript
+root.current = finishedWork;
+
+nextEffect = firstEffect;
+do {
+  try {
+    commitLayoutEffects(root, lanes);
+  } catch (error) {
+    invariant(nextEffect !== null, "Should be working on an effect.");
+    captureCommitPhaseError(nextEffect, error);
+    nextEffect = nextEffect.nextEffect;
+  }
+} while (nextEffect !== null);
+
+nextEffect = null;
+```
+
+- commitLayoutEffects
+
+地址：https://github.com/facebook/react/blob/970fa122d8188bafa600e9b5214833487fbf1092/packages/react-reconciler/src/ReactFiberWorkLoop.new.js#L2302
+
+```javascript
+function commitLayoutEffects(root: FiberRoot, committedLanes: Lanes) {
+  while (nextEffect !== null) {
+    const effectTag = nextEffect.effectTag;
+
+    // 调用生命周期钩子和hook
+    if (effectTag & (Update | Callback)) {
+      const current = nextEffect.alternate;
+      commitLayoutEffectOnFiber(root, current, nextEffect, committedLanes);
+    }
+
+    // 赋值ref
+    if (effectTag & Ref) {
+      commitAttachRef(nextEffect);
+    }
+
+    nextEffect = nextEffect.nextEffect;
+  }
+}
+```
+
+1. commitLayoutEffectOnFiber（调用生命周期钩子和hook相关操作）
+2. commitAttachRef（赋值 ref）
+
+- commitLayoutEffectOnFiber
+
+地址：https://github.com/facebook/react/blob/970fa122d8188bafa600e9b5214833487fbf1092/packages/react-reconciler/src/ReactFiberCommitWork.new.js#L459
+
+1. 对于ClassComponent
+
+1. - 通过current === null?区分是mount还是update，调用componentDidMount 或者componentDidUpdate
+
+2. - 触发状态更新的this.setState如果赋值了第二个参数回调函数，也会在此时调用
+
+```javascript
+this.setState({ xxx: 1 }, () => {   console.log("i am update~"); }); 
+```
+
+2. 对于FunctionComponent及相关类型（如ForwardRef、React.memo或者HOC），他会调用useLayoutEffect hook的回调函数，调度useEffect的销毁与回调函数
+
+```javascript
+ switch (finishedWork.tag) {
+    // 以下都是FunctionComponent及相关类型
+    case FunctionComponent:
+    case ForwardRef:
+    case SimpleMemoComponent:
+    case Block: {
+      // 执行useLayoutEffect的回调函数
+      commitHookEffectListMount(HookLayout | HookHasEffect, finishedWork);
+      // 调度useEffect的销毁函数与回调函数
+      schedulePassiveEffects(finishedWork);
+      return;
+    }
+```
+
+- commitAttachRef
+
+获取DOM实例，更新Ref
+
+```javascript
+function commitAttachRef(finishedWork: Fiber) {
+  const ref = finishedWork.ref;
+  if (ref !== null) {
+    const instance = finishedWork.stateNode;
+
+    // 获取DOM实例
+    let instanceToUse;
+    switch (finishedWork.tag) {
+      case HostComponent:
+        instanceToUse = getPublicInstance(instance);
+        break;
+      default:
+        instanceToUse = instance;
+    }
+
+    if (typeof ref === "function") {
+      // 如果ref是函数形式，调用回调函数
+      ref(instanceToUse);
+    } else {
+      // 如果ref是ref实例形式，赋值ref.current
+      ref.current = instanceToUse;
+    }
+  }
+}
+```
+
+- current fiber切换
+
+```javascript
+root.current = finishedWork;
+```
+
+因为双缓存策略，workInProgress Fiber树在commit阶段完成渲染后会变为current Fiber树。这行代码的作用就是切换fiberRootNode指向的current Fiber树。
+
+Q：双缓存切换执行时间
+
+mutation阶段结束后，layout阶段开始前
+
+所以
+
+1. componentWillUnmount在mutation阶段执行。此时current Fiber树还指向前一次更新的Fiber树，在生命周期钩子内获取的DOM还是更新前的；
+2. componentDidMount和componentDidUpdate会在layout阶段执行。此时current Fiber树已经指向更新后的Fiber树，在生命周期钩子内获取的DOM就是更新后的；
+
+# **React核心源码解析（2/2)**
+
+https://www.yuque.com/lpldplws/web/oqnqc7?singleDoc# 《React核心源码解析（2/2）》 密码：xmq3
+
+## 1. 课程目标
+
+ 
+
+P6+~P7：
+
+1. 学习React设计原理，掌握React源码架构、约定及其实现的思路；
+
+2. 掌握React 核心模块源码及设计；
+
+P7+~P8：
+
+1. 熟练掌握React源码设计模型，能够基于现有React框架设计周边库；
+
+2. 熟练掌握React生态，能够从0~1完整地实现React技术栈的前端架构设计；
+
+## 2.课程大纲
+
+ 
+
+- 实现
+
+  - Diff算法
+    - 概览
+    - 单节点Diff
+    - 多节点Diff
+
+  - 状态更新
+    - 流程概览
+    - update
+    - 深入理解优先级
+    - ReactDOM.render
+    - this.setState
+
+  - Hooks
+    - 极简Hooks实现
+    - Hooks数据结构
+    - useState与useReducer
+    - useEffect
+    - useRef
+    - useMemo与useCallback
+
+  - Concurrent Mode
+    - 概览
+    - Scheduler原理及实现
+    - lane模型
+
+ 
+
+## 3.实现篇 
+
+### 3.1 Diff算法
+
+#### 3.1.1 概览
+
+ 
+
+在render阶段，对于update的组件，他会将当前组件与该组件在上次更新时对应的Fiber节点比较（也就是俗称的Diff算法），将比较的结果生成新Fiber节点。
+
+官网对diff算法的介绍：https://zh-hans.reactjs.org/docs/reconciliation.html#the-diffing-algorithm
+
+1. 不同类型的元素：React拆卸原有的树，生成新的树
+
+```jsx
+<div>
+  <Counter />
+</div>
+
+<span>
+  <Counter />
+</span>
+```
+
+a. 卸载时：
+
+- DOM节点销毁；
+
+- 执行componentWilUnmount()；
+
+b. 新建时：
+
+- 执行UNSAFE_componentWillMount()，然后执行componentDidMount()；
+
+2. 同一类型的元素：
+
+```jsx
+<div className="before" title="stuff" />
+<div className="after" title="stuff" />
+  
+<div style={{color: 'red', fontWeight: 'bold'}} />
+<div style={{color: 'green', fontWeight: 'bold'}} />
+```
+
+a. 保留DOM节点，仅对比更新有改变的属性
+
+3. 对比同类型的组件元素：
+
+a. 组件更新时，组件实例保持不变，保证state不变，更新组件的props以保证与新的元素一致，调用UNSAFE_componentWillReceiveProps()、UNSAFE_componentWillUpdate() 以及 componentDidUpdate() 方法；
+
+b. 调用render，执行diff
+
+- React 同时遍历两个子元素的列表；当产生差异时，生成一个 mutation
+  - 在子元素列表结尾新增
+
+```jsx
+<ul>
+  <li>first</li>
+  <li>second</li>
+</ul>
+
+<ul>
+  <li>first</li>
+  <li>second</li>
+  <li>third</li> // 只需要新增元素即可
+</ul>
+```
+
+- 在子元素列表头部新增
+
+```jsx
+<ul>
+  <li>Duke</li>
+  <li>Villanova</li>
+</ul>
+
+// 销毁子元素列表，新建新的子元素列表，有性能问题
+<ul>
+  <li>Connecticut</li>
+  <li>Duke</li>
+  <li>Villanova</li>
+</ul>
+```
+
+c. 使用keys：直接比较key值定位，所以key传index也会有性能问题
+
+```jsx
+<ul>
+  <li key="2015">Duke</li>
+  <li key="2016">Villanova</li>
+</ul>
+
+<ul>
+  <li key="2014">Connecticut</li>
+  <li key="2015">Duke</li>
+  <li key="2016">Villanova</li>
+</ul>
+```
+
+d. 官网总结：
+
+1. 该算法不会尝试匹配不同组件类型的子树。如果你发现你在两种不同类型的组件中切换，但输出非常相似的内容，建议把它们改成同一类型。在实践中，我们没有遇到这类问题；
+2. Key 应该具有稳定，可预测，以及列表内唯一的特质。不稳定的 key（比如通过 Math.random() 生成的）会导致许多组件实例和 DOM 节点被不必要地重新创建，这可能导致性能下降和子组件中的状态丢失；
+
+结合render和commit阶段，一个DOM节点最多有4个节点与之相关：
+
+1. current Fiber。如果该DOM节点已在页面中，current Fiber代表该DOM节点对应的Fiber节点；
+
+2. workInProgress Fiber。如果该DOM节点将在本次更新中渲染到页面中，workInProgress Fiber代表该DOM节点对应的Fiber节点；
+
+3. DOM节点本身；
+
+4. JSX对象。即ClassComponent的render方法的返回结果，或FunctionComponent的调用结果。JSX对象中包含描述DOM节点的信息；
+
+diff算法：对比1 4 生成2
+
+##### 3.1.1.1. Diff的瓶颈及处理方法 
+
+ 
+
+diff操作本身也会带来性能损耗，React文档中提到，即使在最前沿的算法中，将前后两棵树完全比对的算法的复杂程度为 O(n^3)，其中n是树中元素的数量；如果在React中使用了该算法，那么展示1000个元素所需要执行的计算量将在十亿的量级范围。这个开销实在是太过高昂；
+
+为了降低算法复杂度，React的diff会预设三个限制：
+
+1. 只对同级元素进行diff。如果一个DOM节点在前后两次更新中跨越了层级，那么React会忽略；
+
+2. 两个不同类型的元素会产生出不同的树。如果元素由div变为p，React会销毁div及其子孙节点，并新建p及其子孙节点；
+
+3. 开发者可以通过 key prop来暗示哪些子元素在不同的渲染下能保持稳定；
+
+ 
+
+##### 3.1.1.2. Diff是如何实现的 
+
+Diff的入口函数是reconcileChildFibers：会根据newChild（即JSX对象）类型调用不同的处理函数
+
+地址：https://github.com/facebook/react/blob/1fb18e22ae66fdb1dc127347e169e73948778e5a/packages/react-reconciler/src/ReactChildFiber.new.js#L1280
+
+```jsx
+// 根据newChild类型选择不同diff函数处理
+function reconcileChildFibers(
+  returnFiber: Fiber,
+  currentFirstChild: Fiber | null,
+  newChild: any,
+): Fiber | null {
+
+  const isObject = typeof newChild === 'object' && newChild !== null;
+
+  if (isObject) {
+    // object类型，可能是 REACT_ELEMENT_TYPE 或 REACT_PORTAL_TYPE
+    switch (newChild.$$typeof) {
+      case REACT_ELEMENT_TYPE:
+        // 调用 reconcileSingleElement 处理
+      // // ...省略其他case
+    }
+  }
+
+  if (typeof newChild === 'string' || typeof newChild === 'number') {
+    // 调用 reconcileSingleTextNode 处理
+    // ...省略
+  }
+
+  if (isArray(newChild)) {
+    // 调用 reconcileChildrenArray 处理
+    // ...省略
+  }
+
+  // 一些其他情况调用处理函数
+  // ...省略
+
+  // 以上都没有命中，删除节点
+  return deleteRemainingChildren(returnFiber, currentFirstChild);
+}
+```
+
+根据同级的节点数量将Diff分为两类：
+
+1. 当newChild类型为object、number、string，代表同级只有一个节点
+
+2. 当newChild类型为Array，同级有多个节点
+
+#### 3.1.2 单节点Diff
+
+ 
+
+以类型为object为例，执行reconcileSingleElement
+
+```jsx
+  const isObject = typeof newChild === 'object' && newChild !== null;
+
+  if (isObject) {
+    // 对象类型，可能是 REACT_ELEMENT_TYPE 或 REACT_PORTAL_TYPE
+    switch (newChild.$$typeof) {
+      case REACT_ELEMENT_TYPE:
+        // 调用 reconcileSingleElement 处理
+      // ...其他case
+    }
+  }
+```
+
+地址：https://github.com/facebook/react/blob/1fb18e22ae66fdb1dc127347e169e73948778e5a/packages/react-reconciler/src/ReactChildFiber.new.js#L1141
+
+执行流程：
+
+![img](https://cdn.nlark.com/yuque/0/2022/png/2340337/1654362006150-b0eb5467-cac3-4cd8-aef4-3e0bd87b3c93.png?x-oss-process=image%2Fresize%2Cw_1500%2Climit_0)
+
+
+
+```jsx
+function reconcileSingleElement(
+  returnFiber: Fiber,
+  currentFirstChild: Fiber | null,
+  element: ReactElement
+): Fiber {
+  const key = element.key;
+  let child = currentFirstChild;
+  
+  // 首先判断是否存在对应DOM节点
+  while (child !== null) {
+    // 上一次更新存在DOM节点，接下来判断是否可复用
+
+    // 首先比较key是否相同
+    if (child.key === key) {
+
+      // key相同，接下来比较type是否相同
+
+      switch (child.tag) {
+        // ...省略case
+        
+        default: {
+          if (child.elementType === element.type) {
+            // type相同则表示可以复用
+            // 返回复用的fiber
+            return existing;
+          }
+          
+          // type不同则跳出switch
+          break;
+        }
+      }
+      // 代码执行到这里代表：key相同但是type不同
+      // 将该fiber及其兄弟fiber标记为删除
+      deleteRemainingChildren(returnFiber, child);
+      break;
+    } else {
+      // key不同，将该fiber标记为删除
+      deleteChild(returnFiber, child);
+    }
+    child = child.sibling;
+  }
+
+  // 创建新Fiber，并返回 ...省略
+}
+```
+
+1. 先判断key是否相同，如果key相同则判断type是否相同，只有都相同时一个DOM节点才能复用；
+
+2. 删除逻辑：
+
+- 当child !== null且key相同且type不同时执行deleteRemainingChildren将child及其兄弟fiber都标记删除；
+
+- 当child !== null且key不同时仅将child标记删除；
+
+```jsx
+// current fiber
+ul > li li li
+// JSX
+ul > p
+```
+
+需要根据第一个li与p是否相同判断
+
+1. key相同type不同，当前fiber和后续sibling fiber删除；
+
+2. key不同，type也不同，删除当前fiber，前往下一个sibling fiber；
+
+Example：
+
+```jsx
+// 更新前
+<div>a</div>
+// 更新后
+<p>a</p>
+
+// key为null，一致，但type不同，不能复用
+
+// 更新前
+<div key="xxx">a</div>
+// 更新后
+<div key="ooo">a</div>
+
+// key不同，不需要看type，不能复用
+
+// 更新前
+<div key="xxx">a</div>
+// 更新后
+<p key="ooo"a</p>
+
+// key不同，不需要看type，不能复用
+
+// 更新前
+<div key="xxx">a</div>
+// 更新后
+<div key="xxx">b</div>
+
+// key type都相同，props中children不同，更新子元素
+```
+
+#### 3.1.3 多节点Diff
+
+ 
+
+对于多节点的functionComponent，reconcileChildFibers的newChild参数类型为Array，执行reconcileChildrenArray
+
+```jsx
+if (isArray(newChild)) {
+    // 调用 reconcileChildrenArray 处理
+    // ...省略
+}
+```
+
+##### 3.1.3.1. 概览 
+
+ 
+
+同级多个节点的diff，归纳为：
+
+1. 节点更新
+
+```jsx
+// 更新前
+<ul>
+  <li key="0" className="before">0<li>
+  <li key="1">1<li>
+</ul>
+
+// 更新后 情况1 —— 节点属性变化
+<ul>
+  <li key="0" className="after">0<li>
+  <li key="1">1<li>
+</ul>
+
+// 更新后 情况2 —— 节点类型更新
+<ul>
+  <div key="0">0</div>
+  <li key="1">1<li>
+</ul>
+```
+
+2. 节点新增或减少
+
+```jsx
+// 更新前
+<ul>
+  <li key="0">0<li>
+  <li key="1">1<li>
+</ul>
+
+// 更新后 情况1 —— 新增节点
+<ul>
+  <li key="0">0<li>
+  <li key="1">1<li>
+  <li key="2">2<li>
+</ul>
+
+// 更新后 情况2 —— 删除节点
+<ul>
+  <li key="1">1<li>
+</ul>
+```
+
+3. 节点位置变化
+
+```jsx
+// 更新前
+<ul>
+  <li key="0">0<li>
+  <li key="1">1<li>
+</ul>
+
+// 更新后
+<ul>
+  <li key="1">1<li>
+  <li key="0">0<li>
+</ul>
+```
+
+##### 3.1.3.2 Diff思路
+
+1. 针对节点更新
+   - 新增：执行新增逻辑
+   - 删除：执行删除逻辑
+   - 更新：执行更新逻辑
+
+前提：操作优先级一样，但实际开发中，React团队发现，相较于新增和删除，更新组件发生的频率更高。所以Diff会优先判断当前节点是否属于更新。
+
+Q：同级比较能否使用双指针算法提高遍历速度？
+
+不可以
+
+待更新对象为JSX，其中newChildren为数组格式，但current fiber 是链表格式，同级的fiber节点是由sibling指针形成的单链表，不支持双指针遍历；
+
+newChildren[0]与fiber比较，newChildren[1]与fiber.sibling比较 
+无法针对数组和链表进行比较，所以不可行
+
+react团队提供的思路：2轮遍历
+
+1. 处理 更新 的节点；
+
+2. 处理非 更新 的节点；
+
+ 
+
+##### 3.1.3.3. 第一轮遍历 
+
+地址：https://github.com/facebook/react/blob/1fb18e22ae66fdb1dc127347e169e73948778e5a/packages/react-reconciler/src/ReactChildFiber.new.js#L818
+
+1. let i = 0，遍历newChildren，将newChildren[i]与oldFiber比较，判断DOM节点是否可复用；
+
+2. 如果可复用，i++，继续比较newChildren[i]与oldFiber.sibling，可以复用则继续遍历；
+
+3. 如果不可复用，分两种情况：
+
+- key不同导致不可复用，立即跳出整个遍历，第一轮遍历结束；
+
+- key相同type不同导致不可复用，会将oldFiber标记为DELETION，并继续遍历；
+
+4. 如果newChildren遍历完（即 i === newChildren.length - 1 ）或者oldFiber遍历完（即oldFiber.sibling === null），跳出遍历，第一轮遍历结束；
+
+其中，3 4可以完成当前遍历
+
+3：此时newChildren没有遍历完，oldFiber也没有遍历完
+
+```jsx
+// 更新前
+<li key="0">0</li>
+<li key="1">1</li>
+<li key="2">2</li>
+            
+// 更新后
+<li key="0">0</li>
+<li key="2">1</li>
+<li key="1">2</li>
+
+// 第一个节点可复用，遍历到key === 2的节点发现key改变，不可复用
+// 跳出遍历，等待第二轮遍历处理
+
+// oldFiber: key === 1、key === 2未遍历
+// newChildren剩下key === 2、key === 1未遍历
+```
+
+4：可能newChildren遍历完，或oldFiber遍历完，或他们同时遍历完
+
+```jsx
+// 更新前
+<li key="0" className="a">0</li>
+<li key="1" className="b">1</li>
+            
+// 更新后 情况1 —— newChildren与oldFiber都遍历完
+<li key="0" className="aa">0</li>
+<li key="1" className="bb">1</li>
+            
+// 更新后 情况2 —— newChildren没遍历完，oldFiber遍历完
+// newChildren剩下 key==="2" 未遍历
+<li key="0" className="aa">0</li>
+<li key="1" className="bb">1</li>
+<li key="2" className="cc">2</li>
+            
+// 更新后 情况3 —— newChildren遍历完，oldFiber没遍历完
+// oldFiber剩下 key==="1" 未遍历
+<li key="0" className="aa">0</li>
+```
+
+##### 3.1.3.4. 第二轮遍历 
+
+ 
+
+1. newChildren 和 oldFiber 同时遍历完
+
+不需要第二轮的遍历，直接进行 update，diff结束；
+
+2. newChildren没遍历完，oldFiber遍历完
+
+已有的DOM节点都对比结束，这时还有新加入的节点，意味着本次更新有新节点插入，我们只需要遍历剩下的newChildren为生成的workInProgress fiber依次标记Placement；
+
+地址：https://github.com/facebook/react/blob/1fb18e22ae66fdb1dc127347e169e73948778e5a/packages/react-reconciler/src/ReactChildFiber.new.js#L869
+
+3. newChildren遍历完，oldFiber没遍历完
+
+本次更新比之前的节点数量少，有节点被删除了。所以需要遍历剩下的oldFiber，依次标记Deletion；
+
+地址：https://github.com/facebook/react/blob/1fb18e22ae66fdb1dc127347e169e73948778e5a/packages/react-reconciler/src/ReactChildFiber.new.js#L863
+
+4. newChildren与oldFiber都没遍历完
+
+意味着有节点更新了位置
+
+##### 3.1.3.5. 如何处理更新后的节点 
+
+ 
+
+由于有节点改变了位置，所以不能再用位置索引i对比前后的节点，那么如何才能将同一个节点在两次更新中对应上呢--key
+
+为了快速的找到key对应的oldFiber，我们将所有还未处理的oldFiber存入以key为key，oldFiber为value的Map中。
+
+```jsx
+const existingChildren = mapRemainingChildren(returnFiber, oldFiber); 
+```
+
+接下来遍历剩余的newChildren，通过newChildren[i].key就能在existingChildren中找到key相同的oldFiber
+
+##### 3.1.3.6. 标记节点是否移动 
+
+ 
+
+如何判断节点是否移动？参照物是什么？
+
+我们的参照物是：最后一个可复用的节点在oldFiber中的位置索引（用变量lastPlacedIndex表示）。
+
+本次更新中节点是按newChildren的顺序排列。在遍历newChildren过程中，每个遍历到的可复用节点一定是当前遍历到的所有可复用节点中最靠右的那个，即一定在lastPlacedIndex对应的可复用的节点在本次更新中位置的后面；
+
+所以只需要比较遍历到的可复用节点在上次更新时是否也在lastPlacedIndex对应的oldFiber后面，就能知道两次更新中这两个节点的相对位置改变没有；
+
+我们用变量oldIndex表示遍历到的可复用节点在oldFiber中的位置索引。如果oldIndex < lastPlacedIndex，代表本次更新该节点需要向右移动；
+
+lastPlacedIndex初始为0，每遍历一个可复用的节点，如果oldIndex >= lastPlacedIndex，则lastPlacedIndex = oldIndex；
+
+ 
+
+##### 3.1.3.7. Demo 
+
+每个字母代表一个节点，字母的值代表节点的key
+
+demo 1
+
+```jsx
+// 之前
+abcd
+
+// 之后
+acdb
+
+===第一轮遍历开始===
+a（之后）vs a（之前）  
+key不变，可复用
+此时 a 对应的oldFiber（之前的a）在之前的数组（abcd）中索引为0
+所以 lastPlacedIndex = 0;
+
+继续第一轮遍历...
+
+c（之后）vs b（之前）  
+key改变，不能复用，跳出第一轮遍历
+此时 lastPlacedIndex === 0;
+===第一轮遍历结束===
+
+===第二轮遍历开始===
+newChildren === cdb，没用完，不需要执行删除旧节点
+oldFiber === bcd，没用完，不需要执行插入新节点
+
+将剩余oldFiber（bcd）保存为map
+
+// 当前oldFiber：bcd
+// 当前newChildren：cdb
+
+继续遍历剩余newChildren
+
+key === c 在 oldFiber中存在
+const oldIndex = c（之前）.index;
+此时 oldIndex === 2;  // 之前节点为 abcd，所以c.index === 2
+比较 oldIndex 与 lastPlacedIndex;
+
+如果 oldIndex >= lastPlacedIndex 代表该可复用节点不需要移动
+并将 lastPlacedIndex = oldIndex;
+如果 oldIndex < lastplacedIndex 该可复用节点之前插入的位置索引小于这次更新需要插入的位置索引，代表该节点需要向右移动
+
+在例子中，oldIndex 2 > lastPlacedIndex 0，
+则 lastPlacedIndex = 2;
+c节点位置不变
+
+继续遍历剩余newChildren
+
+// 当前oldFiber：bd
+// 当前newChildren：db
+
+key === d 在 oldFiber中存在
+const oldIndex = d（之前）.index;
+oldIndex 3 > lastPlacedIndex 2 // 之前节点为 abcd，所以d.index === 3
+则 lastPlacedIndex = 3;
+d节点位置不变
+
+继续遍历剩余newChildren
+
+// 当前oldFiber：b
+// 当前newChildren：b
+
+key === b 在 oldFiber中存在
+const oldIndex = b（之前）.index;
+oldIndex 1 < lastPlacedIndex 3 // 之前节点为 abcd，所以b.index === 1
+则 b节点需要向右移动
+===第二轮遍历结束===
+
+最终acd 3个节点都没有移动，b节点被标记为移动
+```
+
+demo 2
+
+```jsx
+// 之前
+abcd
+
+// 之后
+dabc
+
+===第一轮遍历开始===
+d（之后）vs a（之前）  
+key改变，不能复用，跳出遍历
+===第一轮遍历结束===
+
+===第二轮遍历开始===
+newChildren === dabc，没用完，不需要执行删除旧节点
+oldFiber === abcd，没用完，不需要执行插入新节点
+
+将剩余oldFiber（abcd）保存为map
+
+继续遍历剩余newChildren
+
+// 当前oldFiber：abcd
+// 当前newChildren dabc
+
+key === d 在 oldFiber中存在
+const oldIndex = d（之前）.index;
+此时 oldIndex === 3; // 之前节点为 abcd，所以d.index === 3
+比较 oldIndex 与 lastPlacedIndex;
+oldIndex 3 > lastPlacedIndex 0
+则 lastPlacedIndex = 3;
+d节点位置不变
+
+继续遍历剩余newChildren
+
+// 当前oldFiber：abc
+// 当前newChildren abc
+
+key === a 在 oldFiber中存在
+const oldIndex = a（之前）.index; // 之前节点为 abcd，所以a.index === 0
+此时 oldIndex === 0;
+比较 oldIndex 与 lastPlacedIndex;
+oldIndex 0 < lastPlacedIndex 3
+则 a节点需要向右移动
+
+继续遍历剩余newChildren
+
+// 当前oldFiber：bc
+// 当前newChildren bc
+
+key === b 在 oldFiber中存在
+const oldIndex = b（之前）.index; // 之前节点为 abcd，所以b.index === 1
+此时 oldIndex === 1;
+比较 oldIndex 与 lastPlacedIndex;
+oldIndex 1 < lastPlacedIndex 3
+则 b节点需要向右移动
+
+继续遍历剩余newChildren
+
+// 当前oldFiber：c
+// 当前newChildren c
+
+key === c 在 oldFiber中存在
+const oldIndex = c（之前）.index; // 之前节点为 abcd，所以c.index === 2
+此时 oldIndex === 2;
+比较 oldIndex 与 lastPlacedIndex;
+oldIndex 2 < lastPlacedIndex 3
+则 c节点需要向右移动
+
+===第二轮遍历结束===
+```
+
+所以，尽量减少节点从后面移动到前面的操作
+
+1. abcd -> acdb：b移动到最右边
+
+2. abcd -> dabc：abc移动到最右边
+
+### 3.2 状态更新
+
+#### 3.2.1 概览
+
+ 
+
+梳理下几个关键的节点：
+
+1. render阶段的开始
+
+开始于performSyncWorkOnRoot或performConcurrentWorkOnRoot方法的调用。这取决于本次更新是同步更新还是异步更新，render结束完后会进入commit
+
+2. commit阶段的开始
+
+开始于commitRoot方法的调用。其中rootFiber会作为传参
+
+此时，状态为
+
+```js
+触发状态更新（根据场景调用不同方法）
+
+    |
+    |
+    v
+
+    ？
+
+    |
+    |
+    v
+
+render阶段（`performSyncWorkOnRoot` 或 `performConcurrentWorkOnRoot`）
+
+    |
+    |
+    v
+
+commit阶段（`commitRoot`）
+```
+
+##### 3.2.1.1. 创建Update对象(后面核心讲解) 
+
+在react里，触发状态更新的操作包括：
+
+- ReactDOM.render
+
+- this.setState
+
+- this.forceUpdate
+
+- useState
+
+- useReducer
+
+Q：如何在调用场景不同的情况下，接入同一套状态管理机制？
+
+在每次状态更新，都会创建保存一个更新状态相关的对象，称为Update，在render的beginwork中会根据Update得到新的state
+
+ 
+
+##### 3.2.1.2. 从fiber到root 
+
+render阶段是从rootFiber开始向下遍历。那么如何从触发状态更新的fiber得到rootFiber呢？
+
+调用markUpdateLaneFromFiberToRoot方法。
+
+地址：https://github.com/facebook/react/blob/1fb18e22ae66fdb1dc127347e169e73948778e5a/packages/react-reconciler/src/ReactFiberWorkLoop.new.js#L636
+
+该方法做的工作可以概括为：从触发状态更新的fiber一直向上遍历到rootFiber，并返回rootFiber。
+
+ 
+
+##### 3.2.1.3. 调度更新 
+
+现在有一个rootFiber，该rootFiber对应的Fiber树中某个Fiber节点包含一个Update。
+
+接下来通知Scheduler根据更新的优先级，决定以同步还是异步的方式调度本次更新。
+
+这里调用的方法是ensureRootIsScheduled
+
+地址：https://github.com/facebook/react/blob/b6df4417c79c11cfb44f965fab55b573882b1d54/packages/react-reconciler/src/ReactFiberWorkLoop.new.js#L602
+
+ensureRootIsScheduled核心代码：
+
+```jsx
+if (newCallbackPriority === SyncLanePriority) {
+  // 任务已经过期，需要同步执行render阶段
+  newCallbackNode = scheduleSyncCallback(
+    performSyncWorkOnRoot.bind(null, root)
+  );
+} else {
+  // 根据任务优先级异步执行render阶段
+  var schedulerPriorityLevel = lanePriorityToSchedulerPriority(
+    newCallbackPriority
+  );
+  newCallbackNode = scheduleCallback(
+    schedulerPriorityLevel,
+    performConcurrentWorkOnRoot.bind(null, root)
+  );
+}
+```
+
+至此，状态更新的流程已经通了
+
+```jsx
+触发状态更新（根据场景调用不同方法）
+
+    |
+    |
+    v
+
+创建Update对象（后面详解）
+
+    |
+    |
+    v
+
+从fiber到root（`markUpdateLaneFromFiberToRoot`）
+
+    |
+    |
+    v
+
+调度更新（`ensureRootIsScheduled`）
+
+    |
+    |
+    v
+
+render阶段（`performSyncWorkOnRoot` 或 `performConcurrentWorkOnRoot`）
+
+    |
+    |
+    v
+
+commit阶段（`commitRoot`）
+```
+
+ 
+
+#### 3.2.2 Update
+
+##### 3.2.2.1 Update思路
+
+ 
+
+ 
+
+通过代码版本控制类比
+
+1. 同步更新
+
+在没有代码版本控制前，我们在代码中逐步叠加功能。一切看起来井然有序，直到我们遇到了一个紧急线上bug（红色节点）
+
+![img](https://cdn.nlark.com/yuque/0/2022/png/2340337/1654365326803-5b943e35-c7b1-4642-94cd-b163460cf368.png?x-oss-process=image%2Fresize%2Cw_1500%2Climit_0)
+
+
+
+如果要修改，需要先将之前的代码提交；
+
+所有通过ReactDOM.render创建的应用都是通过类似的方式更新状态，没有优先级，高优先级需要排在其他更新的后面
+
+2. 并发更新
+
+如果有了代码版本控制，需要发布urgent变更，暂存当前已有的修改，在master上直接修复
+
+![img](https://cdn.nlark.com/yuque/0/2022/png/2340337/1654365436582-ce20378e-ebad-490f-a00b-418cf8223c48.png?x-oss-process=image%2Fresize%2Cw_1170%2Climit_0)
+
+
+
+修复后使用 git rebase 和分支连接，当前开发的分支是基于修复bug的最新的master分支
+
+![img](https://cdn.nlark.com/yuque/0/2022/png/2340337/1654365542205-6bcb4575-aeaa-49a8-8528-c8cd14e2c071.png?x-oss-process=image%2Fresize%2Cw_1034%2Climit_0)
+
+
+
+在React中，通过ReactDOM.createBlockingRoot和ReactDOM.createRoot创建的应用会采用并发的方式更新状态；
+
+高优更新（红色节点）中断正在进行中的低优更新（蓝色节点），先完成render - commit流程；
+
+待高优更新完成后，低优更新基于高优更新的结果重新更新；
+
+##### 3.2.2.2. Update的分类 
+
+ 
+
+| 触发方法         | 组件              |
+| ---------------- | ----------------- |
+| ReactDOM.render  | HostRoot          |
+| this.setState    | ClassComponent    |
+| this.forceUpdate | ClassComponent    |
+| useState         | FunctionComponent |
+| useReducer       | FunctionComponent |
+
+共有三种组件支持Update：HostRoot 、ClassComponent、FunctionComponent，其中，ClassComponent与HostRoot共用一套Update结构，FunctionComponent单独使用一种Update结构
+
+虽然他们的结构不同，但是工作机制与工作流程大体相同。在本节我们介绍前一种Update，FunctionComponent对应的Update在后面讲解
+
+ 
+
+##### 3.2.2.3. Update结构 
+
+ClassComponent与HostRoot（即rootFiber.tag对应类型）共用同一种Update结构
+
+```jsx
+const update: Update<*> = {
+  eventTime,
+  lane,
+  suspenseConfig,
+  tag: UpdateState,
+  payload: null,
+  callback: null,
+
+  next: null,
+};
+```
+
+- eventTime：任务时间，通过performance.now()获取的毫秒数；
+
+- lane：优先级相关字段；
+
+- suspenseConfig：Suspense相关；
+
+- tag：更新的类型，包括UpdateState | ReplaceState | ForceUpdate | CaptureUpdate；
+
+- payload：更新挂载的数据，不同类型组件挂载的数据不同。对于ClassComponent，payload为this.setState的第一个传参。对于HostRoot，payload为ReactDOM.render的第一个传参；
+
+- callback：commit layout中支持的回调函数。
+
+- next：与其他Update连接形成链表。
+
+ 
+
+##### 3.2.2.4. Update与Fiber联系 
+
+Fiber节点组成Fiber树，页面中最多同时存在两棵Fiber树：
+
+- 代表当前页面状态的current Fiber树
+
+- 代表正在render阶段的workInProgress Fiber树
+
+类似Fiber节点组成Fiber树，Fiber节点上的多个Update会组成链表并被包含在fiber.updateQueue中。
+
+Q：什么情况下，一个Fiber节点会有多个Update
+
+```jsx
+onClick() {
+  this.setState({
+    a: 1
+  })
+
+  this.setState({
+    b: 2
+  })
+}
+```
+
+Fiber节点最多同时存在两个updateQueue：
+
+- current fiber保存的updateQueue即current updateQueue
+
+- workInProgress fiber保存的updateQueue即workInProgress updateQueue
+
+在commit阶段完成页面渲染后，workInProgress Fiber树变为current Fiber树，workInProgress Fiber树内Fiber节点的updateQueue就变成current updateQueue
+
+ 
+
+##### 3.2.2.5. updateQueue 
+
+updateQueue有三种类型，其中针对HostComponent的类型在completeWork里讲过。
+
+剩下两种类型和Update的两种类型对应
+
+ClassComponent与HostRoot使用的UpdateQueue结构如下：
+
+```jsx
+const queue: UpdateQueue<State> = {
+    baseState: fiber.memoizedState,
+    firstBaseUpdate: null,
+    lastBaseUpdate: null,
+    shared: {
+      pending: null,
+    },
+    effects: null,
+  };
+```
+
+- baseState：本次更新前该Fiber节点的state，Update基于该state计算更新后的state，可以将baseState类比心智模型中的master分支；
+
+- firstBaseUpdate与lastBaseUpdate：本次更新前该Fiber节点已保存的Update。以链表形式存在，链表头为firstBaseUpdate，链表尾为lastBaseUpdate。之所以在更新产生前该Fiber节点内就存在Update，是由于某些Update优先级较低所以在上次render阶段由Update计算state时被跳过，可以将baseUpdate类比心智模型中执行git rebase基于的commit（节点D）；
+
+- shared.pending：触发更新时，产生的Update会保存在shared.pending中形成单向环状链表。当由Update计算state时这个环会被剪开并连接在lastBaseUpdate后面，可以将shared.pending类比心智模型中本次需要提交的commit（节点ABC）。
+
+- effects：数组。保存update.callback !== null的Update；
+
+ 
+
+##### 3.2.2.6. demo 
+
+假设有一个fiber刚经历commit阶段完成渲染。
+
+该fiber上有两个由于优先级过低所以在上次的render阶段并没有处理的Update。他们会成为下次更新的baseUpdate。
+
+我们称其为u1和u2，其中u1.next === u2。
+
+```jsx
+fiber.updateQueue.firstBaseUpdate === u1;
+fiber.updateQueue.lastBaseUpdate === u2;
+u1.next === u2;
+```
+
+我们用-->表示链表的指向：
+
+```jsx
+fiber.updateQueue.baseUpdate: u1 --> u2
+```
+
+现在我们在fiber上触发两次状态更新，这会先后产生两个新的Update，我们称为u3和u4。
+
+每个 update 都会插入到 updateQueue 队列上
+
+当插入u3后：
+
+```jsx
+fiber.updateQueue.shared.pending === u3;
+u3.next === u3;
+```
+
+shared.pending的环状链表，用图表示为：
+
+```jsx
+fiber.updateQueue.shared.pending:   u3 ─────┐ 
+                                     ^      |                                    
+                                     └──────┘
+```
+
+接着插入u4之后：
+
+```jsx
+fiber.updateQueue.shared.pending = u4;
+u4.next === u3;
+u3.next === u4;
+```
+
+shared.pending是环状链表，用图表示为：
+
+```jsx
+fiber.updateQueue.shared.pending:   u4 ──> u3
+                                     ^      |                                    
+                                     └──────┘
+```
+
+shared.pending 会保证始终指向最后一个插入的update
+
+更新调度完成后进入render阶段
+
+此时shared.pending的环被剪开并连接在updateQueue.lastBaseUpdate后面：
+
+```jsx
+fiber.updateQueue.baseUpdate: u1 --> u2 --> u3 --> u4
+```
+
+接下来遍历updateQueue.baseUpdate链表，以fiber.updateQueue.baseState为初始state，依次与遍历到的每个Update计算并产生新的state；
+
+在遍历时如果有优先级低的Update会被跳过；
+
+当遍历完成后获得的state，就是该Fiber节点在本次更新的state
+
+state的变化在render阶段产生与上次更新不同的JSX对象，通过Diff算法产生effectTag，在commit阶段渲染在页面上，同时，渲染完成后workInProgress Fiber树变为current Fiber树，整个更新流程结束。
+
+ 
+
+#### 3.2.3. 深入理解优先级
+
+ 
+
+ 
+
+ 
+
+ 
+
+##### 3.2.3.1. 什么是优先级
+
+状态更新由用户交互产生，用户心里对交互执行顺序有个预期。React根据人机交互研究的结果中用户对交互的预期顺序为交互产生的状态更新赋予不同优先级
+
+- 生命周期方法：同步执行；
+
+- 受控的用户输入：比如输入框内输入文字，同步执行；
+
+- 交互事件：比如动画，高优先级执行；
+
+- 其他：比如数据请求，低优先级执行；
+
+ 
+
+##### 3.2.3.2. 如何调度优先级
+
+React会调用Scheduler提供的方法runWithPriority，该方法接收一个优先级常量与一个回调函数作为参数。回调函数会以优先级高低为顺序排列在一个定时器中并在合适的时间触发。
+
+unstable_runWithPriority地址：https://github.com/facebook/react/blob/970fa122d8188bafa600e9b5214833487fbf1092/packages/scheduler/src/Scheduler.js#L217
+
+scheduler优先级常量定义地址：
+
+https://github.com/facebook/react/blob/970fa122d8188bafa600e9b5214833487fbf1092/packages/scheduler/src/SchedulerPriorities.js
+
+##### 3.2.3.3. demo 
+
+ 
+
+![img](https://cdn.nlark.com/yuque/0/2022/png/2340337/1654367776393-be18e2a6-7451-4b1a-a41f-12cef056b0c7.png?x-oss-process=image%2Fresize%2Cw_1500%2Climit_0)
+
+
+
+以上有两个Update。我们将“关闭黑夜模式”产生的Update称为u1，输入字母“I”产生的Update称为u2
+
+其中u1先触发并进入render阶段。其优先级较低，执行时间较长。此时：
+
+```jsx
+fiber.updateQueue = {
+  baseState: {
+    blackTheme: true,
+    text: 'H'
+  },
+  firstBaseUpdate: null,
+  lastBaseUpdate: null
+  shared: {
+    pending: u1
+  },
+  effects: null
+};
+```
+
+在u1完成render阶段前用户通过键盘输入字母“I”，产生了u2。u2属于受控的用户输入，优先级高于u1，于是中断u1产生的render阶段。
+
+```jsx
+fiber.updateQueue.shared.pending === u2 ----> u1
+                                     ^        |
+                                     |________|
+// 即
+u2.next === u1;
+u1.next === u2;
+```
+
+其中u2优先级高于u1。
+
+接下来进入u2产生的render阶段。
+
+在processUpdateQueue方法中，shared.pending环状链表会被剪开并拼接在baseUpdate后面。
+
+需要明确一点，shared.pending指向最后一个pending的update，所以实际执行时update的顺序为：
+
+```jsx
+u1 -- u2
+```
+
+接下来遍历baseUpdate，处理优先级合适的Update（这一次处理的是更高优的u2）；
+
+由于u2不是baseUpdate中的第一个update，在其之前的u1由于优先级不够被跳过；
+
+update之间可能有依赖关系，所以被跳过的update及其后面所有update会成为下次更新的baseUpdate。（即u1 -- u2）;
+
+最终u2完成render - commit阶段；
+
+此时：
+
+```jsx
+fiber.updateQueue = {
+  baseState: {
+    blackTheme: true,
+    text: 'HI'
+  },
+  firstBaseUpdate: u1,
+  lastBaseUpdate: u2
+  shared: {
+    pending: null
+  },
+  effects: null
+};
+```
+
+在commit阶段结尾会再调度一次更新。在该次更新中会基于baseState中firstBaseUpdate保存的u1，开启一次新的render阶段。
+
+最终结果：
+
+```jsx
+fiber.updateQueue = {
+  baseState: {
+    blackTheme: false,
+    text: 'HI'
+  },
+  firstBaseUpdate: null,
+  lastBaseUpdate: null
+  shared: {
+    pending: null
+  },
+  effects: null
+};
+```
+
+可以看到，u2执行了2次，相对应的render阶段的生命周期 componentWillXXX也会执行2次，这就是为什么这些生命周期会被标记为unsafe_；
+
+Q：render阶段可能会被中断，如何保证updateQueue中的Update不会丢失？
+
+在render阶段，shared.pending的环被剪开并连接在updateQueue.lastBaseUpdate后面。
+
+实际上shared.pending会被同时连接在workInProgress updateQueue.lastBaseUpdate与current updateQueue.lastBaseUpdate后面。
+
+当render阶段被中断后重新开始时，会基于current updateQueue克隆出workInProgress updateQueue。由于current updateQueue.lastBaseUpdate已经保存了上一次的Update，所以不会丢失
+
+当commit阶段完成渲染，由于workInProgress updateQueue.lastBaseUpdate中保存了上一次的Update，所以 workInProgress Fiber树变成current Fiber树后也不会造成Update丢失
+
+Q：如何保证状态依赖的连续性？
+
+当某个Update由于优先级低而被跳过时，保存在baseUpdate中的不仅是该Update，还包括链表中该Update之后的所有Update。
+
+考虑如下例子：
+
+```jsx
+baseState: ''
+shared.pending: A1 --> B2 --> C1 --> D2
+```
+
+其中字母代表该Update要在页面插入的字母，数字代表优先级，值越低优先级越高。
+
+第一次render，优先级为1。
+
+```jsx
+baseState: ''
+baseUpdate: null
+render阶段使用的Update: [A1, C1]
+memoizedState: 'AC'
+```
+
+其中B2由于优先级为2，低于当前优先级，所以他及其后面的所有Update会被保存在baseUpdate中作为下次更新的Update（即B2 C1 D2）。
+
+这么做是为了保持状态的前后依赖顺序。
+
+第二次render，优先级为2。
+
+```jsx
+baseState: 'A'
+baseUpdate: B2 --> C1 --> D2
+render阶段使用的Update: [B2, C1, D2]
+memoizedState: 'ABCD'
+```
+
+此时，React能保证最终的状态一定和用户触发的交互一致，但是中间过程状态无法保证
+
+ 
+
+#### 3.2.4. ReactDOM.render 
+
+首次执行ReactDOM.render会创建fiberRootNode和rootFiber。其中fiberRootNode是整个应用的根节点，rootFiber是要渲染组件所在组件树的根节点
+
+```jsx
+// container指ReactDOM.render的第二个参数（即应用挂载的DOM节点）
+root = container._reactRootContainer = legacyCreateRootFromDOMContainer(
+  container,
+  forceHydrate,
+);
+fiberRoot = root._internalRoot;
+```
+
+地址：https://github.com/facebook/react/blob/1fb18e22ae66fdb1dc127347e169e73948778e5a/packages/react-dom/src/client/ReactDOMLegacy.js#L193
+
+legacyCreateRootFromDOMContainer方法内部会调用createFiberRoot方法完成fiberRootNode和rootFiber的创建以及关联。并初始化updateQueue
+
+```jsx
+export function createFiberRoot(
+  containerInfo: any,
+  tag: RootTag,
+  hydrate: boolean,
+  hydrationCallbacks: null | SuspenseHydrationCallbacks,
+): FiberRoot {
+  // 创建fiberRootNode
+  const root: FiberRoot = (new FiberRootNode(containerInfo, tag, hydrate): any);
+  
+  // 创建rootFiber
+  const uninitializedFiber = createHostRootFiber(tag);
+
+  // 连接rootFiber与fiberRootNode
+  root.current = uninitializedFiber;
+  uninitializedFiber.stateNode = root;
+
+  // 初始化updateQueue
+  initializeUpdateQueue(uninitializedFiber);
+
+  return root;
+}
+```
+
+##### 3.2.4.1. 创建Update 
+
+ 
+
+地址：https://github.com/facebook/react/blob/1fb18e22ae66fdb1dc127347e169e73948778e5a/packages/react-reconciler/src/ReactFiberReconciler.new.js#L255
+
+```jsx
+export function updateContainer(
+  element: ReactNodeList,
+  container: OpaqueRoot,
+  parentComponent: ?React$Component<any, any>,
+  callback: ?Function,
+): Lane {
+  // ...省略与逻辑不相关代码
+
+  // 创建update
+  const update = createUpdate(eventTime, lane, suspenseConfig);
+  
+  // update.payload为需要挂载在根节点的组件
+  update.payload = {element};
+
+  // callback为ReactDOM.render的第三个参数 —— 回调函数
+  callback = callback === undefined ? null : callback;
+  if (callback !== null) {
+    update.callback = callback;
+  }
+
+  // 将生成的update加入updateQueue
+  enqueueUpdate(current, update);
+  // 调度更新
+  scheduleUpdateOnFiber(current, lane, eventTime);
+
+  // ...省略与逻辑不相关代码
+}
+```
+
+所以完整流程为：
+
+```jsx
+创建fiberRootNode、rootFiber、updateQueue（`legacyCreateRootFromDOMContainer`）
+
+    |
+    |
+    v
+
+创建Update对象（`updateContainer`）
+
+    |
+    |
+    v
+
+从fiber到root（`markUpdateLaneFromFiberToRoot`）
+
+    |
+    |
+    v
+
+调度更新（`ensureRootIsScheduled`）
+
+    |
+    |
+    v
+
+render阶段（`performSyncWorkOnRoot` 或 `performConcurrentWorkOnRoot`）
+
+    |
+    |
+    v
+
+commit阶段（`commitRoot`）
+```
+
+##### 3.2.4.2. React其他入口函数 
+
+ 
+
+当前React共有三种模式：
+
+- legacy，这是当前React使用的方式。当前没有计划删除本模式，但是这个模式可能不支持一些新功能；
+
+- blocking，开启部分concurrent模式特性的中间模式。目前正在实验中。作为迁移到concurrent模式的第一个步骤；
+
+- concurrent，面向未来的开发模式。我们之前讲的任务中断/任务优先级都是针对concurrent模式；
+
+支持的程度为：
+
+|                                                              | legacy 模式 | blocking 模式 | concurrent 模式 |
+| ------------------------------------------------------------ | ----------- | ------------- | --------------- |
+| [String Refs](https://zh-hans.reactjs.org/docs/refs-and-the-dom.html#legacy-api-string-refs) | ✅           | 🚫**           | 🚫**             |
+| [Legacy Context](https://zh-hans.reactjs.org/docs/legacy-context.html) | ✅           | 🚫**           | 🚫**             |
+| [findDOMNode](https://zh-hans.reactjs.org/docs/strict-mode.html#warning-about-deprecated-finddomnode-usage) | ✅           | 🚫**           | 🚫**             |
+| [Suspense](https://zh-hans.reactjs.org/docs/concurrent-mode-suspense.html#what-is-suspense-exactly) | ✅           | ✅             | ✅               |
+| [SuspenseList](https://zh-hans.reactjs.org/docs/concurrent-mode-patterns.html#suspenselist) | 🚫           | ✅             | ✅               |
+| Suspense SSR + Hydration                                     | 🚫           | ✅             | ✅               |
+| Progressive Hydration                                        | 🚫           | ✅             | ✅               |
+| Selective Hydration                                          | 🚫           | 🚫             | ✅               |
+| Cooperative Multitasking                                     | 🚫           | 🚫             | ✅               |
+| Automatic batching of multiple setStates                     | 🚫*          | ✅             | ✅               |
+| [Priority-based Rendering](https://zh-hans.reactjs.org/docs/concurrent-mode-patterns.html#splitting-high-and-low-priority-state) | 🚫           | 🚫             | ✅               |
+| [Interruptible Prerendering](https://zh-hans.reactjs.org/docs/concurrent-mode-intro.html#interruptible-rendering) | 🚫           | 🚫             | ✅               |
+| [useTransition](https://zh-hans.reactjs.org/docs/concurrent-mode-patterns.html#transitions) | 🚫           | 🚫             | ✅               |
+| [useDeferredValue](https://zh-hans.reactjs.org/docs/concurrent-mode-patterns.html#deferring-a-value) | 🚫           | 🚫             | ✅               |
+| [Suspense Reveal "Train"](https://zh-hans.reactjs.org/docs/concurrent-mode-patterns.html#suspense-reveal-train) | 🚫           | 🚫             | ✅               |
+
+模式的变化影响整个应用的工作方式，所以无法只针对某个组件开启不同模式
+
+基于此原因，可以通过不同的入口函数开启不同模式：
+
+- legacy -- ReactDOM.render(<App />, rootNode)
+
+- blocking -- ReactDOM.createBlockingRoot(rootNode).render(<App />)
+
+- concurrent -- ReactDOM.createRoot(rootNode).render(<App />)
+
+你可以在[这里](https://zh-hans.reactjs.org/docs/concurrent-mode-adoption.html#why-so-many-modes)看到React团队解释为什么会有这么多模式
+
+#### 3.2.5. this.setState 
+
+this.setState 会调用this.updater.enqueueSetState
+
+地址：https://github.com/facebook/react/blob/1fb18e22ae66fdb1dc127347e169e73948778e5a/packages/react/src/ReactBaseClasses.js#L57
+
+```jsx
+Component.prototype.setState = function (partialState, callback) {
+  if (!(typeof partialState === 'object' || typeof partialState === 'function' || partialState == null)) {
+    {
+      throw Error( "setState(...): takes an object of state variables to update or a function which returns an object of state variables." );
+    }
+  }
+  this.updater.enqueueSetState(this, partialState, callback, 'setState');
+};
+```
+
+enqueueSetState就是我们从创建update到调度update
+
+```jsx
+enqueueSetState(inst, payload, callback) {
+  // 通过组件实例获取对应fiber
+  const fiber = getInstance(inst);
+
+  const eventTime = requestEventTime();
+  const suspenseConfig = requestCurrentSuspenseConfig();
+
+  // 获取优先级
+  const lane = requestUpdateLane(fiber, suspenseConfig);
+
+  // 创建update
+  const update = createUpdate(eventTime, lane, suspenseConfig);
+
+  update.payload = payload;
+
+  // 赋值回调函数
+  if (callback !== undefined && callback !== null) {
+    update.callback = callback;
+  }
+
+  // 将update插入updateQueue
+  enqueueUpdate(fiber, update);
+  // 调度update
+  scheduleUpdateOnFiber(fiber, lane, eventTime);
+}
+```
+
+##### 3.2.5.1. this.forceUpdate 
+
+ 
+
+在this.updater上，除了enqueueSetState外，还存在enqueueForceUpdate，在this.forceUpdate时调用；
+
+```jsx
+enqueueForceUpdate(inst, callback) {
+    const fiber = getInstance(inst);
+    const eventTime = requestEventTime();
+    const suspenseConfig = requestCurrentSuspenseConfig();
+    const lane = requestUpdateLane(fiber, suspenseConfig);
+
+    const update = createUpdate(eventTime, lane, suspenseConfig);
+
+    // 赋值tag为ForceUpdate
+    update.tag = ForceUpdate;
+
+    if (callback !== undefined && callback !== null) {
+      update.callback = callback;
+    }
+
+    enqueueUpdate(fiber, update);
+    scheduleUpdateOnFiber(fiber, lane, eventTime);
+  },
+};
+```
+
+此时，当某次更新含有tag为ForceUpdate的Update，那么当前ClassComponent不会受其他性能优化手段（shouldComponentUpdate|PureComponent）影响，一定会更新。
+
+### 3.3. Hooks
+
+#### 3.3.1. 极简Hooks实现
+
+```jsx
+function App() {
+  const [num, updateNum] = useState(0);
+
+  return <p onClick={() => updateNum(num => num + 1)}>{num}</p>;
+}
+```
+
+1. 通过一些途径产生更新，更新会造成组件render--updateNum；
+
+2. 组件render时useState返回的num为更新后的结果；
+
+其中步骤1的更新可以分为mount和update：
+
+1. 调用ReactDOM.render会产生mount的更新，更新内容为useState的initialValue（即0）。
+
+2. 点击p标签触发updateNum会产生一次update的更新，更新内容为num => num + 1。
+
+ 
+
+##### 3.3.1.1. 更新是什么
+
+通过一些途径产生更新，更新会造成组件render
+
+```jsx
+const update = {
+  // 更新执行的函数
+  action,
+  // 与同一个Hook的其他更新形成链表
+  next: null
+}
+```
+
+##### 3.3.1.2 update的数据结构 
+
+加入有多个update，如何组合起来
+
+```jsx
+// 之前
+return <p onClick={() => updateNum(num => num + 1)}>{num}</p>;
+
+// 之后
+return <p onClick={() => {
+  updateNum(num => num + 1);
+  updateNum(num => num + 1);
+  updateNum(num => num + 1);
+}}>{num}</p>;
+```
+
+通过环形单向链表
+
+调用updateNum实际上是dispatchAction.bind(null, hook.queue)
+
+```jsx
+function dispatchAction(queue, action) {
+  // 创建update
+  const update = {
+    action,
+    next: null
+  }
+
+  // 环状单向链表操作
+  if (queue.pending === null) {
+    update.next = update;
+  } else {
+    update.next = queue.pending.next;
+    queue.pending.next = update;
+  }
+  queue.pending = update;
+
+  // 模拟React开始调度更新
+  schedule();
+}
+```
+
+demo：
+
+当产生第一个update（我们叫他u0），此时queue.pending === null。
+
+update.next = update;即u0.next = u0，他会和自己首尾相连形成单向环状链表。
+
+然后queue.pending = update;即queue.pending = u0
+
+```js
+queue.pending = u0 ----->
+                ^       |
+                |       |
+                ---------
+```
+
+当产生第二个update（我们叫他u1），update.next = queue.pending.next;，此时queue.pending.next === u0， 即u1.next = u0。
+
+queue.pending.next = update;，即u0.next = u1。
+
+然后queue.pending = update;即queue.pending = u1
+
+```js
+queue.pending = u1 ---> u0   
+                ^       |
+                |       |
+                ---------
+```
+
+queue.pending始终指向最后一个插入的update
+
+##### 3.3.1.3. 状态如何保存 
+
+ 
+
+更新产生的update对象会保存在queue中。
+
+不同于ClassComponent的实例可以存储数据
+
+对于FunctionComponent，queue存储对应的fiber中。
+
+```jsx
+// App组件对应的fiber对象
+const fiber = {
+  // 保存该FunctionComponent对应的Hooks链表
+  memoizedState: null,
+  // 指向App函数
+  stateNode: App
+};
+```
+
+##### 3.3.1.4. Hooks数据结构 
+
+ 
+
+```jsx
+hook = {
+  // 保存update的queue，即上文介绍的queue
+  queue: {
+    pending: null
+  },
+  // 保存hook对应的state
+  memoizedState: initialState,
+  // 与下一个Hook连接形成单向无环链表
+  next: null
+}
+```
+
+Q：update与hook的关系
+
+每个useState对应一个hook对象。
+
+调用const [num, updateNum] = useState(0);时updateNum（即上文介绍的dispatchAction）产生的update保存在useState对应的hook.queue中
+
+##### 3.3.1.5. 模拟react调度更新流程 
+
+1. 实现通过操作产生更新，更新造成组件render
+
+```js
+function dispatchAction(queue, action) {
+  // ...创建update
+  
+  // ...环状单向链表操作
+
+  // 模拟React开始调度更新
+  schedule();
+}
+
+// 模拟调度
+// 首次render时是mount
+isMount = true;
+
+function schedule() {
+  // 更新前将workInProgressHook重置为fiber保存的第一个Hook
+  workInProgressHook = fiber.memoizedState;
+  // 触发组件render
+  fiber.stateNode();
+  // 组件首次render为mount，以后再触发的更新为update
+  isMount = false;
+}
+
+// 每当遇到下一个useState，我们移动workInProgressHook的指针
+workInProgressHook = workInProgressHook.next;
+// 保证了每次组件render时useState的调用顺序及数量保持一致
+// 可以通过workInProgressHook找到当前useState对应的hook对象。
+```
+
+##### 3.3.1.6 计算state
+
+2. 组件render时，useState返回的值为更新后的结果，即一个完整的useState
+
+ ```js
+ function useState(initialState) {
+   // 当前useState使用的hook会被赋值该该变量
+   let hook;
+ 
+   if (isMount) {
+     hook = {
+       queue: {
+         pending: null
+       },
+       memoizedState: initialState,
+       next: null
+     }
+ 
+     // 将hook插入fiber.memoizedState链表末尾
+     if (!fiber.memoizedState) {
+       fiber.memoizedState = hook;
+     } else {
+       workInProgressHook.next = hook;
+     }
+     // 移动workInProgressHook指针
+     workInProgressHook = hook;
+   } else {
+     // update时找到对应hook
+     hook = workInProgressHook;
+     // 移动workInProgressHook指针
+     workInProgressHook = workInProgressHook.next;
+   }
+ 
+   let baseState = hook.memoizedState;
+   if (hook.queue.pending) {
+     // 获取update环状单向链表中第一个update
+     let firstUpdate = hook.queue.pending.next;
+   
+     do {
+       // 执行update action
+       const action = firstUpdate.action;
+       baseState = action(baseState);
+       firstUpdate = firstUpdate.next;
+   
+       // 最后一个update执行完后跳出循环
+     } while (firstUpdate !== hook.queue.pending.next)
+   
+     // 清空queue.pending
+     hook.queue.pending = null;
+   }
+   hook.memoizedState = baseState;
+ 
+   return [baseState, dispatchAction.bind(null, hook.queue)];
+ }
+ ```
+
+####  3.3.2. Hooks数据结构 
+
+#####  3.3.2.1. dispatcher 
+
+上文中，useState使用isMount区分mount和update
+
+在真实的Hooks中，组件mount时的hook与update时的hook来源于不同的对象，这类对象在源码中被称为dispatcher
+
+```js
+// mount时的Dispatcher
+const HooksDispatcherOnMount: Dispatcher = {
+  useCallback: mountCallback,
+  useContext: readContext,
+  useEffect: mountEffect,
+  useImperativeHandle: mountImperativeHandle,
+  useLayoutEffect: mountLayoutEffect,
+  useMemo: mountMemo,
+  useReducer: mountReducer,
+  useRef: mountRef,
+  useState: mountState,
+  // ...省略
+};
+
+// update时的Dispatcher
+const HooksDispatcherOnUpdate: Dispatcher = {
+  useCallback: updateCallback,
+  useContext: readContext,
+  useEffect: updateEffect,
+  useImperativeHandle: updateImperativeHandle,
+  useLayoutEffect: updateLayoutEffect,
+  useMemo: updateMemo,
+  useReducer: updateReducer,
+  useRef: updateRef,
+  useState: updateState,
+  // ...省略
+};
+```
+
+mount时调用的hook和update时调用的hook其实是两个不同的函数。
+
+在FunctionComponent render前，会根据FunctionComponent对应fiber的以下条件区分mount与update
+
+```js
+current === null || current.memoizedState === null
+```
+
+并将不同情况对应的dispatcher赋值给全局变量ReactCurrentDispatcher的current属性
+
+```js
+ReactCurrentDispatcher.current =
+      current === null || current.memoizedState === null
+        ? HooksDispatcherOnMount
+        : HooksDispatcherOnUpdate;  
+```
+
+地址：https://github.com/acdlite/react/blob/1fb18e22ae66fdb1dc127347e169e73948778e5a/packages/react-reconciler/src/ReactFiberHooks.new.js#L409
+
+#####  3.3.2.2. dispatch异常场景 
+
+```js
+useEffect(() => {
+  useState(0);
+})
+```
+
+实际上，ReactCurrentDispatcher.current已经指向ContextOnlyDispatcher，所以调用useState实际会调用throwInvalidHookError，直接抛出异常
+
+```js
+export const ContextOnlyDispatcher: Dispatcher = {
+  useCallback: throwInvalidHookError,
+  useContext: throwInvalidHookError,
+  useEffect: throwInvalidHookError,
+  useImperativeHandle: throwInvalidHookError,
+  useLayoutEffect: throwInvalidHookError,
+  // ...省略
+```
+
+地址：https://github.com/acdlite/react/blob/1fb18e22ae66fdb1dc127347e169e73948778e5a/packages/react-reconciler/src/ReactFiberHooks.new.js#L458
+
+#####  3.3.2.3. Hook数据结构 
+
+```js
+const hook: Hook = {
+  memoizedState: null,
+
+  baseState: null,
+  baseQueue: null,
+  queue: null,
+
+  next: null,
+};
+```
+
+除了memoizedState，其余与updateQueue一致
+
+- useState：对于const [state, updateState] = useState(initialState)，memoizedState保存state的值
+
+- useReducer：对于const [state, dispatch] = useReducer(reducer, {});，memoizedState保存state的值
+
+- useEffect：memoizedState保存包含useEffect回调函数、依赖项等的链表数据结构effect。effect链表同时会保存在fiber.updateQueue中
+
+- useRef：对于useRef(1)，memoizedState保存{current: 1}
+
+- useMemo：对于useMemo(callback, [depA])，memoizedState保存[callback(), depA]
+
+- useCallback：对于useCallback(callback, [depA])，memoizedState保存[callback, depA]。与useMemo的区别是，useCallback保存的是callback函数本身，而useMemo保存的是callback函数的执行结果
+
+有些hook是没有memoizedState的，比如：
+
+- useContext
+
+####  3.3.3. useState与useReducer 
+
+useState和useReducer是Redux作者加入React后的一个核心贡献：将Redux的思想带入到React里
+
+本质来说，useState只是预置了reducer的useReducer
+
+#####  3.3.3.1. 概览 
+
+```js
+function App() {
+  const [state, dispatch] = useReducer(reducer, {a: 1});
+
+  const [num, updateNum] = useState(0);
+  
+  return (
+    <div>
+      <button onClick={() => dispatch({type: 'a'})}>{state.a}</button>  
+      <button onClick={() => updateNum(num => num + 1)}>{num}</button>  
+    </div>
+  )
+}
+```
+
+- 声明阶段即App调用时，会依次执行useReducer与useState方法
+
+- 调用阶段即点击按钮后，dispatch或updateNum被调用时
+
+#####  3.3.3.2. 声明阶段 
+
+当FunctionComponent进入render阶段的beginWork时，会调用[renderWithHooks](https://github.com/acdlite/react/blob/1fb18e22ae66fdb1dc127347e169e73948778e5a/packages/react-reconciler/src/ReactFiberBeginWork.new.js#L1419)方法
+
+该方法内部会执行FunctionComponent对应函数（即fiber.type）
+
+```js
+function useState(initialState) {
+  var dispatcher = resolveDispatcher();
+  return dispatcher.useState(initialState);
+}
+function useReducer(reducer, initialArg, init) {
+  var dispatcher = resolveDispatcher();
+  return dispatcher.useReducer(reducer, initialArg, init);
+}
+```
+
+#####  3.3.3.2.1. mount时 
+
+mount时，useReducer会调用[mountReducer](https://github.com/acdlite/react/blob/1fb18e22ae66fdb1dc127347e169e73948778e5a/packages/react-reconciler/src/ReactFiberHooks.new.js#L638)，useState会调用[mountState](https://github.com/acdlite/react/blob/1fb18e22ae66fdb1dc127347e169e73948778e5a/packages/react-reconciler/src/ReactFiberHooks.new.js#L1143)
+
+```js
+function mountState<S>(
+  initialState: (() => S) | S,
+): [S, Dispatch<BasicStateAction<S>>] {
+  // 创建并返回当前的hook
+  const hook = mountWorkInProgressHook();
+
+  // ...赋值初始state
+
+  // 创建queue
+  const queue = (hook.queue = {
+    pending: null,
+    dispatch: null,
+    lastRenderedReducer: basicStateReducer,
+    lastRenderedState: (initialState: any),
+  });
+
+  // ...创建dispatch
+  return [hook.memoizedState, dispatch];
+}
+
+function mountReducer<S, I, A>(
+  reducer: (S, A) => S,
+  initialArg: I,
+  init?: I => S,
+): [S, Dispatch<A>] {
+  // 创建并返回当前的hook
+  const hook = mountWorkInProgressHook();
+
+  // ...赋值初始state
+
+  // 创建queue
+  const queue = (hook.queue = {
+    pending: null,
+    dispatch: null,
+    lastRenderedReducer: reducer,
+    lastRenderedState: (initialState: any),
+  });
+
+  // ...创建dispatch
+  return [hook.memoizedState, dispatch];
+}
+```
+
+其中，mountWorkInProgressHook对应创建并返回对应的Hook，以上两个hooks的区别：
+
+queue参数的lastRenderedReducer字段
+
+```js
+const queue = (hook.queue = {
+  pending: null,
+  // 保存dispatchAction.bind()的值
+  dispatch: null,
+  // 上一次render时使用的reducer
+  lastRenderedReducer: reducer,
+  // 上一次render时的state
+  lastRenderedState: (initialState: any),
+});
+```
+
+useReducer的lastRenderedReducer为传入的reducer参数。useState的lastRenderedReducer为basicStateReducer，basicStateReducer如下：
+
+```js
+function basicStateReducer<S>(state: S, action: BasicStateAction<S>): S {
+  return typeof action === 'function' ? action(state) : action;
+}
+```
+
+######  3.3.3.2.2. update时 
+
+在update时，useReducer和useState调用的是同一个函数 updateReducer
+
+地址：https://github.com/acdlite/react/blob/1fb18e22ae66fdb1dc127347e169e73948778e5a/packages/react-reconciler/src/ReactFiberHooks.new.js#L665
+
+```js
+// 找到对应的hook，根据update计算该hook的新state并返回
+function updateReducer<S, I, A>(
+  reducer: (S, A) => S,
+  initialArg: I,
+  init?: I => S,
+): [S, Dispatch<A>] {
+  // 获取当前hook
+  const hook = updateWorkInProgressHook();
+  const queue = hook.queue;
+  
+  queue.lastRenderedReducer = reducer;
+
+  // ...同update与updateQueue类似的更新逻辑
+
+  const dispatch: Dispatch<A> = (queue.dispatch: any);
+  return [hook.memoizedState, dispatch];
+}
+```
+
+#####  3.3.3.3. 调用阶段 
+
+调用阶段会执行[dispatchAction](https://github.com/acdlite/react/blob/1fb18e22ae66fdb1dc127347e169e73948778e5a/packages/react-reconciler/src/ReactFiberHooks.new.js#L1662)，此时该FunctionComponent对应的fiber以及hook.queue已经通过调用bind方法预先作为参数传入
+
+```js
+// 创建update，将update加入queue.pending中，并开启调度。
+
+function dispatchAction(fiber, queue, action) {
+
+  // ...创建update
+  var update = {
+    eventTime: eventTime,
+    lane: lane,
+    suspenseConfig: suspenseConfig,
+    action: action,
+    eagerReducer: null,
+    eagerState: null,
+    next: null
+  }; 
+
+  // ...将update加入queue.pending
+  
+  var alternate = fiber.alternate;
+
+  if (fiber === currentlyRenderingFiber$1 || alternate !== null && alternate === currentlyRenderingFiber$1) {
+    // render阶段触发的更新
+    didScheduleRenderPhaseUpdateDuringThisPass = didScheduleRenderPhaseUpdate = true;
+  } else {
+    if (fiber.lanes === NoLanes && (alternate === null || alternate.lanes === NoLanes)) {
+      // ...fiber的updateQueue为空，优化路径
+    }
+
+    scheduleUpdateOnFiber(fiber, lane, eventTime);
+  }
+}
+```
+
+####  3.3.4. useEffect 
+
+参考commit阶段时useEffect工作流
+
+在flushPassiveEffects方法内部会从全局变量rootWithPendingPassiveEffects获取effectList。
+
+#####  3.3.4.1. flushPassiveEffectsImpl 
+
+flushPassiveEffects内部会设置优先级，并执行flushPassiveEffectsImpl
+
+地址：https://github.com/facebook/react/blob/1fb18e22ae66fdb1dc127347e169e73948778e5a/packages/react-reconciler/src/ReactFiberWorkLoop.old.js#L2458
+
+flushPassiveEffectsImpl主要做三件事：
+
+- 调用该useEffect在上一次render时的销毁函数；
+
+- 调用该useEffect在本次render时的回调函数；
+
+- 如果存在同步任务，不需要等待下次事件循环的宏任务，提前执行；
+
+这里主要关注前两件事：
+
+######  3.3.4.1.1. 销毁函数的执行 
+
+useEffect的执行需要保证所有组件useEffect的销毁函数必须都执行完后才能执行任意一个组件的useEffect的回调函数。
+
+这是因为多个组件间可能共用同一个ref。
+
+如果不是按照“全部销毁”再“全部执行”的顺序，那么在某个组件useEffect的销毁函数中修改的ref.current可能影响另一个组件useEffect的回调函数中的同一个ref的current属性。
+
+在useLayoutEffect中也有同样的问题，所以他们都遵循“全部销毁”再“全部执行”的顺序。
+
+所以，会遍历并执行所有useEffect的销毁函数
+
+```js
+// pendingPassiveHookEffectsUnmount中保存了所有需要执行销毁的useEffect
+const unmountEffects = pendingPassiveHookEffectsUnmount;
+  pendingPassiveHookEffectsUnmount = [];
+  for (let i = 0; i < unmountEffects.length; i += 2) {
+    const effect = ((unmountEffects[i]: any): HookEffect);
+    const fiber = ((unmountEffects[i + 1]: any): Fiber);
+    const destroy = effect.destroy;
+    effect.destroy = undefined;
+
+    if (typeof destroy === 'function') {
+      // 销毁函数存在则执行
+      try {
+        destroy();
+      } catch (error) {
+        captureCommitPhaseError(fiber, error);
+      }
+    }
+  }
+```
+
+其中pendingPassiveHookEffectsUnmount数组的索引i保存需要销毁的effect，i+1保存该effect对应的fiber
+
+######  3.3.4.1.2. 回调函数的执行 
+
+遍历数组，执行对应effect的回调函数。
+
+```js
+// pendingPassiveHookEffectsMount中保存了所有需要执行回调的useEffect
+const mountEffects = pendingPassiveHookEffectsMount;
+pendingPassiveHookEffectsMount = [];
+for (let i = 0; i < mountEffects.length; i += 2) {
+  const effect = ((mountEffects[i]: any): HookEffect);
+  const fiber = ((mountEffects[i + 1]: any): Fiber);
+  
+  try {
+    const create = effect.create;
+   effect.destroy = create();
+  } catch (error) {
+    captureCommitPhaseError(fiber, error);
+  }
+}
+```
+
+####  3.3.5. useRef 
+
+ref是reference（引用）的缩写。在React中，我们习惯用ref保存DOM。
+
+对于useRef(1)，memoizedState保存{current: 1}
+
+#####  3.3.5.1. useRef的两个状态 
+
+在mount和update时对应了两个dispatcher
+
+地址：https://github.com/facebook/react/blob/1fb18e22ae66fdb1dc127347e169e73948778e5a/packages/react-reconciler/src/ReactFiberHooks.old.js#L1208-L1221
+
+```js
+function mountRef<T>(initialValue: T): {|current: T|} {
+  // 获取当前useRef hook
+  const hook = mountWorkInProgressHook();
+  // 创建ref
+  const ref = {current: initialValue};
+  hook.memoizedState = ref;
+  return ref;
+}
+
+function updateRef<T>(initialValue: T): {|current: T|} {
+  // 获取当前useRef hook
+  const hook = updateWorkInProgressHook();
+  // 返回保存的数据
+  return hook.memoizedState;
+}
+```
+
+useRef仅仅是返回一个包含current属性的对象，可以看React.createRef，证明了ref在mount时只有current属性
+
+```js
+export function createRef(): RefObject {
+  const refObject = {
+    current: null,
+  };
+  return refObject;
+}
+```
+
+#####  3.3.5.2. Ref工作流程 
+
+在React中，HostComponent、ClassComponent、ForwardRef可以赋值ref属性。
+
+```js
+// HostComponent
+<div ref={domRef}></div>
+// ClassComponent / ForwardRef
+<App ref={cpnRef} />
+```
+
+其中，ForwardRef只是将ref作为第二个参数传递下去，不会进入ref的工作流程。
+
+因为HostComponent在commit阶段的mutation阶段执行DOM操作。
+
+所以，对应ref的更新也是发生在mutation阶段。
+
+同时，mutation阶段执行DOM操作的依据为effectTag。
+
+所以，对于HostComponent、ClassComponent如果包含ref操作，那么也会赋值相应的effectTag。
+
+```js
+// ...
+export const Placement = /*                    */ 0b0000000000000010;
+export const Update = /*                       */ 0b0000000000000100;
+export const Deletion = /*                     */ 0b0000000000001000;
+export const Ref = /*                          */ 0b0000000010000000;
+// ...
+```
+
+所以，ref的工作流程可以分为两部分：
+
+1. render阶段为含有ref属性的fiber添加Ref effectTag
+
+2. commit阶段为包含Ref effectTag的fiber执行对应操作
+
+#####  3.3.5.3. render阶段 
+
+在render阶段的beginWork与completeWork中有个同名方法markRef用于为含有ref属性的fiber增加Ref effectTag
+
+```js
+// beginWork的markRef
+function markRef(current: Fiber | null, workInProgress: Fiber) {
+  const ref = workInProgress.ref;
+  if (
+    (current === null && ref !== null) ||
+    (current !== null && current.ref !== ref)
+  ) {
+    // Schedule a Ref effect
+    workInProgress.effectTag |= Ref;
+  }
+}
+// completeWork的markRef
+function markRef(workInProgress: Fiber) {
+  workInProgress.effectTag |= Ref;
+}
+```
+
+markRef在beginWork地址：https://github.com/facebook/react/blob/1fb18e22ae66fdb1dc127347e169e73948778e5a/packages/react-reconciler/src/ReactFiberBeginWork.old.js#L693
+
+在completeWork地址：
+
+https://github.com/facebook/react/blob/1fb18e22ae66fdb1dc127347e169e73948778e5a/packages/react-reconciler/src/ReactFiberCompleteWork.old.js#L153
+
+在beginWork中，如下两处调用了markRef：
+
+- updateClassComponent内的[finishClassComponent](https://github.com/facebook/react/blob/1fb18e22ae66fdb1dc127347e169e73948778e5a/packages/react-reconciler/src/ReactFiberBeginWork.old.js#L958)，对应ClassComponent；
+
+注意 ClassComponent 即使 shouldComponentUpdate 为false该组件也会调用markRef
+
+- [updateHostComponent](https://github.com/facebook/react/blob/1fb18e22ae66fdb1dc127347e169e73948778e5a/packages/react-reconciler/src/ReactFiberBeginWork.old.js#L1156)，对应HostComponent；
+
+在completeWork中，如下两处调用了markRef：
+
+- completeWork中的[HostComponent](https://github.com/facebook/react/blob/1fb18e22ae66fdb1dc127347e169e73948778e5a/packages/react-reconciler/src/ReactFiberCompleteWork.old.js#L728)类型
+
+- completeWork中的[ScopeComponent](https://github.com/facebook/react/blob/1fb18e22ae66fdb1dc127347e169e73948778e5a/packages/react-reconciler/src/ReactFiberCompleteWork.old.js#L1278)类型
+
+[ ](https://github.com/facebook/react/pull/16587)
+
+总结下组件对应fiber被赋值Ref effectTag需要满足的条件：
+
+- fiber类型为HostComponent、ClassComponent
+
+- 对于mount，workInProgress.ref !== null，即存在ref属性
+
+- 对于update，current.ref !== workInProgress.ref，即ref属性改变
+
+#####  3.3.5.4. commit阶段 
+
+在commit阶段的mutation阶段中，对于ref属性改变的情况，需要先移除之前的ref。
+
+地址：https://github.com/facebook/react/blob/1fb18e22ae66fdb1dc127347e169e73948778e5a/packages/react-reconciler/src/ReactFiberWorkLoop.old.js#L2342
+
+```js
+function commitMutationEffects(root: FiberRoot, renderPriorityLevel) {
+  while (nextEffect !== null) {
+
+    const effectTag = nextEffect.effectTag;
+    // ...
+
+    if (effectTag & Ref) {
+      const current = nextEffect.alternate;
+      if (current !== null) {
+        // 移除之前的ref
+        commitDetachRef(current);
+      }
+    }
+    // ...
+  }
+  // ...
+  
+  function commitDetachRef(current: Fiber) {
+    const currentRef = current.ref;
+    if (currentRef !== null) {
+      if (typeof currentRef === 'function') {
+        // function类型ref，调用他，传参为null
+        currentRef(null);
+      } else {
+        // 对象类型ref，current赋值为null
+        currentRef.current = null;
+      }
+    }
+  }
+```
+
+接下来进入ref的赋值阶段，commitLayoutEffect会执行commitAttachRef（赋值ref）
+
+```js
+function commitAttachRef(finishedWork: Fiber) {
+  const ref = finishedWork.ref;
+  if (ref !== null) {
+    // 获取ref属性对应的Component实例
+    const instance = finishedWork.stateNode;
+    let instanceToUse;
+    switch (finishedWork.tag) {
+      case HostComponent:
+        instanceToUse = getPublicInstance(instance);
+        break;
+      default:
+        instanceToUse = instance;
+    }
+
+    // 赋值ref
+    if (typeof ref === 'function') {
+      ref(instanceToUse);
+    } else {
+      ref.current = instanceToUse;
+    }
+  }
+}
+```
+
+####  3.3.6. useMemo与useCallback 
+
+#####  3.3.6.1. mount 
+
+```js
+function mountMemo<T>(
+  nextCreate: () => T,
+  deps: Array<mixed> | void | null,
+): T {
+  // 创建并返回当前hook
+  const hook = mountWorkInProgressHook();
+  const nextDeps = deps === undefined ? null : deps;
+  // 计算value
+  const nextValue = nextCreate();
+  // 将value与deps保存在hook.memoizedState
+  hook.memoizedState = [nextValue, nextDeps];
+  return nextValue;
+}
+
+function mountCallback<T>(callback: T, deps: Array<mixed> | void | null): T {
+  // 创建并返回当前hook
+  const hook = mountWorkInProgressHook();
+  const nextDeps = deps === undefined ? null : deps;
+  // 将value与deps保存在hook.memoizedState
+  hook.memoizedState = [callback, nextDeps];
+  return callback;
+}
+```
+
+- mountMemo会将回调函数(nextCreate)的执行结果作为value保存
+
+- mountCallback会将回调函数作为value保存
+
+#####  3.3.6.2. update 
+
+```js
+function updateMemo<T>(
+  nextCreate: () => T,
+  deps: Array<mixed> | void | null,
+): T {
+  // 返回当前hook
+  const hook = updateWorkInProgressHook();
+  const nextDeps = deps === undefined ? null : deps;
+  const prevState = hook.memoizedState;
+
+  if (prevState !== null) {
+    if (nextDeps !== null) {
+      const prevDeps: Array<mixed> | null = prevState[1];
+      // 判断update前后value是否变化
+      if (areHookInputsEqual(nextDeps, prevDeps)) {
+        // 未变化
+        return prevState[0];
+      }
+    }
+  }
+  // 变化，重新计算value
+  const nextValue = nextCreate();
+  hook.memoizedState = [nextValue, nextDeps];
+  return nextValue;
+}
+
+function updateCallback<T>(callback: T, deps: Array<mixed> | void | null): T {
+  // 返回当前hook
+  const hook = updateWorkInProgressHook();
+  const nextDeps = deps === undefined ? null : deps;
+  const prevState = hook.memoizedState;
+
+  if (prevState !== null) {
+    if (nextDeps !== null) {
+      const prevDeps: Array<mixed> | null = prevState[1];
+      // 判断update前后value是否变化
+      if (areHookInputsEqual(nextDeps, prevDeps)) {
+        // 未变化
+        return prevState[0];
+      }
+    }
+  }
+
+  // 变化，将新的callback作为value
+  hook.memoizedState = [callback, nextDeps];
+  return callback;
+```
+
+对于update，这两个hook的唯一区别也是是回调函数本身还是回调函数的执行结果作为value。
+
+###  3.4. Concurrent Mode 
+
+####  3.4.1. 概览 
+
+Concurrent 模式是一组 React 的新功能，可帮助应用保持响应，并根据用户的设备性能和网速进行适当的调整。
+
+Concurrent Mode是React16年重构 Fiber架构 的源动力，也是React未来的发展方向。
+
+#####  3.4.1.1. 底层架构--fiber架构 
+
+Concurrent Mode最关键的一点是：实现异步可中断的更新。
+
+Fiber架构的意义在于，他将单个组件作为工作单元，使以组件为粒度的“异步可中断的更新”成为可能。
+
+#####  3.4.1.2. 架构的驱动力--Scheduler 
+
+当同步运行Fiber架构（通过ReactDOM.render），则Fiber架构与V15并无区别。
+
+但是当我们配合时间切片，就能根据宿主环境性能，为每个工作单元分配一个可运行时间，实现“异步可中断的更新”
+
+#####  3.4.1.3. 架构运行策略--lane 
+
+基于当前的架构，当一次更新在运行过程中被中断，过段时间再继续运行，这就是“异步可中断的更新”；
+
+当一次更新在运行过程中被中断，转而重新开始一次新的更新，我们可以说：后一次更新打断了前一次更新；
+
+这就是优先级的概念：后一次更新的优先级更高，就会打断正在进行的前一次更新。
+
+多个优先级之间如何互相打断？优先级能否升降？本次更新应该赋予什么优先级？
+
+这就需要一个模型控制不同优先级之间的关系与行为，也就是lane
+
+#####  3.4.1.4. 上层实现 
+
+从源码层面讲，Concurrent Mode是一套可控的“多优先级更新架构”，落地的上层实现包括：
+
+1. batchUpdates
+
+2. Suspense
+
+3. useDeferredValue
+
+####  3.4.2. scheduler原理及实现 
+
+scheduler实现功能：
+
+1. 时间切片
+
+2. 优先级调度
+
+#####  3.4.2.1. 时间切片原理 
+
+时间切片的本质是模拟实现[requestIdleCallback](https://developer.mozilla.org/zh-CN/docs/Web/API/Window/requestIdleCallback)
+
+requestIdleCallback是在“浏览器重排/重绘”后如果当前帧还有空余时间时被调用的。
+
+```js
+一个task(宏任务) -- 
+队列中全部job(微任务) -- 
+requestAnimationFrame -- 
+浏览器重排/重绘 -- 
+requestIdleCallback
+```
+
+除去“浏览器重排/重绘”，下图是浏览器一帧中可以用于执行JS的时机。
+
+一个task(宏任务) -- 队列中全部job(微任务) -- requestAnimationFrame -- 浏览器重排/重绘 -- requestIdleCallback 
+
+requestIdleCallback是在“浏览器重排/重绘”后如果当前帧还有空余时间时被调用的。
+
+浏览器并没有提供其他API能够在同样的时机（浏览器重排/重绘后）调用以模拟其实现。
+
+唯一能精准控制调用时机的API是requestAnimationFrame，他能让我们在“浏览器重排/重绘”之前执行JS。
+
+这也是为什么我们通常用这个API实现JS动画 —— 这是浏览器渲染前的最后时机，所以动画能快速被渲染。
+
+所以，Scheduler的时间切片功能是通过task（宏任务）实现的。
+
+- setTimeout：最常见
+
+- [MessageChannel](https://developer.mozilla.org/zh-CN/docs/Web/API/MessageChannel)：执行时机比setTimeout更早
+
+所以Scheduler将需要被执行的回调函数作为MessageChannel的回调执行。如果当前宿主环境不支持MessageChannel，则使用setTimeout
+
+- setTimeout：https://github.com/facebook/react/blob/1fb18e22ae66fdb1dc127347e169e73948778e5a/packages/scheduler/src/forks/SchedulerHostConfig.default.js#L47-L55
+
+- MessageChannel：https://github.com/facebook/react/blob/1fb18e22ae66fdb1dc127347e169e73948778e5a/packages/scheduler/src/forks/SchedulerHostConfig.default.js#L228-L234
+
+在React的render阶段，开启Concurrent Mode时，每次遍历前，都会通过Scheduler提供的shouldYield方法判断是否需要中断遍历，使浏览器有时间渲染：
+
+```js
+function workLoopConcurrent() {
+  // Perform work until Scheduler asks us to yield
+  while (workInProgress !== null && !shouldYield()) {
+    performUnitOfWork(workInProgress);
+  }
+}
+```
+
+在Schdeduler中，为任务分配的初始剩余时间为5ms，但随着应用运行，会通过fps动态调整分配给任务的可执行时间。
+
+```js
+ forceFrameRate = function(fps) {
+    if (fps < 0 || fps > 125) {
+      // Using console['error'] to evade Babel and ESLint
+      console['error'](
+        'forceFrameRate takes a positive int between 0 and 125, ' +
+          'forcing frame rates higher than 125 fps is not unsupported',
+      );
+      return;
+    }
+    if (fps > 0) {
+      yieldInterval = Math.floor(1000 / fps);
+    } else {
+      // reset the framerate
+      yieldInterval = 5;
+    }
+  };
+```
+
+这也解释了为什么在设置Concurrent Mode后每个任务的执行时间大体都是多于5ms的一小段时间 —— 每个时间切片被设定为5ms，任务本身再执行一小段时间，所以整体时间是多于5ms的时间
+
+#####  3.4.2.2. 优先级调度 
+
+Scheduler是独立于React的包，对外暴露了一个方法[unstable_runWithPriority](https://github.com/facebook/react/blob/1fb18e22ae66fdb1dc127347e169e73948778e5a/packages/scheduler/src/Scheduler.js#L217-L237)。
+
+这个方法接受一个优先级与一个回调函数，在回调函数内部调用获取优先级的方法都会取得第一个参数对应的优先级：
+
+```js
+function unstable_runWithPriority(priorityLevel, eventHandler) {
+  switch (priorityLevel) {
+    case ImmediatePriority:
+    case UserBlockingPriority:
+    case NormalPriority:
+    case LowPriority:
+    case IdlePriority:
+      break;
+    default:
+      priorityLevel = NormalPriority;
+  }
+
+  var previousPriorityLevel = currentPriorityLevel;
+  currentPriorityLevel = priorityLevel;
+
+  try {
+    return eventHandler();
+  } finally {
+    currentPriorityLevel = previousPriorityLevel;
+  }
+}
+```
+
+一共有5种优先级
+
+```js
+// Times out immediately
+var IMMEDIATE_PRIORITY_TIMEOUT = -1;
+// Eventually times out
+var USER_BLOCKING_PRIORITY_TIMEOUT = 250;
+var NORMAL_PRIORITY_TIMEOUT = 5000;
+var LOW_PRIORITY_TIMEOUT = 10000;
+// Never times out
+var IDLE_PRIORITY_TIMEOUT = maxSigned31BitInt;
+```
+
+####  3.4.3. lane模型 
+
+lane模型就是react优先级的机制，可以用来
+
+- 可以表示优先级的不同
+
+- 可能同时存在几个同优先级的更新，所以还得能表示批的概念
+
+- 方便进行优先级相关计算
+
+#####  3.4.3.1. 表示优先级不同 
+
+lane模型使用31位的二进制表示31条赛道，位数越小的优先级越高，某些相邻的位拥有相同优先级。
+
+```js
+export const NoLanes: Lanes = /*                        */ 0b0000000000000000000000000000000;
+export const NoLane: Lane = /*                          */ 0b0000000000000000000000000000000;
+
+export const SyncLane: Lane = /*                        */ 0b0000000000000000000000000000001;
+export const SyncBatchedLane: Lane = /*                 */ 0b0000000000000000000000000000010;
+
+export const InputDiscreteHydrationLane: Lane = /*      */ 0b0000000000000000000000000000100;
+const InputDiscreteLanes: Lanes = /*                    */ 0b0000000000000000000000000011000;
+
+const InputContinuousHydrationLane: Lane = /*           */ 0b0000000000000000000000000100000;
+const InputContinuousLanes: Lanes = /*                  */ 0b0000000000000000000000011000000;
+
+export const DefaultHydrationLane: Lane = /*            */ 0b0000000000000000000000100000000;
+export const DefaultLanes: Lanes = /*                   */ 0b0000000000000000000111000000000;
+
+const TransitionHydrationLane: Lane = /*                */ 0b0000000000000000001000000000000;
+const TransitionLanes: Lanes = /*                       */ 0b0000000001111111110000000000000;
+
+const RetryLanes: Lanes = /*                            */ 0b0000011110000000000000000000000;
+
+export const SomeRetryLane: Lanes = /*                  */ 0b0000010000000000000000000000000;
+
+export const SelectiveHydrationLane: Lane = /*          */ 0b0000100000000000000000000000000;
+
+const NonIdleLanes = /*                                 */ 0b0000111111111111111111111111111;
+
+export const IdleHydrationLane: Lane = /*               */ 0b0001000000000000000000000000000;
+const IdleLanes: Lanes = /*                             */ 0b0110000000000000000000000000000;
+
+export const OffscreenLane: Lane = /*                   */ 0b1000000000000000000000000000000;
+```
+
+同步优先级占用的位数为第一位
+
+```js
+export const SyncLane: Lane = /*                        */ 0b0000000000000000000000000000001;
+```
+
+##### 3.4.3.2 表示“批”的概念
+
+```js
+const InputDiscreteLanes: Lanes = /*                    */ 0b0000000000000000000000000011000;
+export const DefaultLanes: Lanes = /*                   */ 0b0000000000000000000111000000000;
+const TransitionLanes: Lanes = /*                       */ 0b0000000001111111110000000000000;
+```
+
+其中的某些变量占了多个位，这就是批
+
+其中InputDiscreteLanes是“用户交互”触发更新会拥有的优先级范围。
+
+DefaultLanes是“请求数据返回后触发更新”拥有的优先级范围。
+
+TransitionLanes是Suspense、useTransition、useDeferredValue拥有的优先级范围。
+
+这其中有个细节，越低优先级的lanes占用的位越多。比如InputDiscreteLanes占了2个位，TransitionLanes占了9个位。
+
+原因在于：越低优先级的更新越容易被打断，导致积压下来，所以需要更多的位。相反，最高优的同步更新的SyncLane不需要多余的lanes
+
+ 3.4.3.3. 方便进行优先级相关计算 
+
+使用位运算符
+
+```js
+// 判断a b是否有交集
+export function includesSomeLane(a: Lanes | Lane, b: Lanes | Lane) {
+  return (a & b) !== NoLanes;
+}
+
+// 计算b这个lanes是否是a对应的lanes的子集，只需要判断a与b按位与的结果是否为b：
+export function isSubsetOfLanes(set: Lanes, subset: Lanes | Lane) {
+  return (set & subset) === subset;
+}
+
+// 将两个lane或lanes的位合并只需要执行按位或操作：
+export function mergeLanes(a: Lanes | Lane, b: Lanes | Lane): Lanes {
+  return a | b;
+}
+```
+
 # React源码
 
 https://developer.mozilla.org/zh-CN/docs/Web/API/PerformanceLongTaskTiming 性能分析
@@ -37218,6 +44487,32 @@ Jsx->js->VDOM->fiber
 - before mutation：DOM更新之前
 - mutation：DOM更新中的阶段
 - layout：DOM更新后的阶段
+
+return child sibling单向链表
+
+2轮遍历
+
+第一轮：
+
+1. 遍历JSX newChildren newChildren[i] 和oldFiber对比，判断是否可以复用
+
+2. 可以复用 i++  newChildren[i] oldFiber是否可以复用
+3. 不能复用
+   1. key不同，直接跳出遍历，进入到第二轮遍历
+   2. key相同 type不同，oldFiber DELETION继续遍历
+
+4. newChildren 遍历完成 oldFiber遍历完成
+
+第二轮：
+
+newChildren oldFiber
+
+1. newChildren oldFiber同时遍历完成，update
+2. newChildren没有遍历完，oldFiber遍历完成，新增节点Placement
+3. newChildren遍历完，oldFiber遍历完，DELETION
+4. newChildren和oldFiber都没有遍历完，节点位置发生变化
+
+
 
 
 
