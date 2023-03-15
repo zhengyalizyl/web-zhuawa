@@ -44634,10 +44634,10 @@ P6+ ～ P7：
 
 - Webview
 - ReactNative （Weex）
-
 - Flutter
-
 - RN + Fabric
+
+![RN跨端演进](/Volumes/F/zyl-study/web-zhuawa/20221203/RN跨端演进.png)
 
 ### 端与跨端
 
@@ -44994,11 +44994,17 @@ function createInstance(
 
 ##### Renderer
 
+<img src="/Users/zhengyali/Library/Application Support/typora-user-images/image-20230315204524326.png" alt="image-20230315204524326" style="zoom:67%;" />
+
 #### 一起实现一个render
 
 其他的可参考资料：
 
 https://www.awesome-react-native.com/
+
+
+
+
 
 
 
