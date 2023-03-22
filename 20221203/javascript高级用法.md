@@ -39637,6 +39637,10 @@ https://www.yuque.com/lpldplws/web/qbadd9?singleDoc# 《React SSR & 同构》 �
 
 https://www.gatsbyjs.com/     --ssr
 
+https://www.npmjs.com/package/xianzao-ui
+
+https://github.com/xianzao/xianzao-ui
+
 ## 1. 课程目标
 
 1. 掌握CSR与SSR的区别，掌握SSR的基本用法；
@@ -39737,8 +39741,6 @@ https://www.gatsbyjs.com/     --ssr
 - 需要更多的服务器负载均衡。由于服务器增加了渲染HTML的需求，使得原本只需要输出静态资源文件的nodejs服务，新增了数据获取的IO和渲染HTML的CPU占用，如果流量突然暴增，有可能导致服务器down机，因此需要使用响应的缓存策略和准备相应的服务器负载。
 
 - 涉及构建设置和部署的更多要求。与可以部署在任何静态文件服务器上的完全静态单页面应用程序 (SPA) 不同，服务器渲染应用程序，需要处于 Node.js server 运行环境。
-
- 
 
 # 6.同构
 
@@ -41803,8 +41805,6 @@ P7+~P8：
 2. 熟练掌握React生态，能够从0~1完整地实现React技术栈的前端架构设计；
 
 ## 2.课程大纲
-
- 
 
 - 实现
 
@@ -44512,15 +44512,7 @@ newChildren oldFiber
 3. newChildren遍历完，oldFiber遍历完，DELETION
 4. newChildren和oldFiber都没有遍历完，节点位置发生变化
 
-
-
-
-
 https://react.iamkasong.com/img/beginWork.png
-
-
-
-
 
 # 2023前端面试&框架高频考点解析
 
@@ -45002,9 +44994,903 @@ function createInstance(
 
 https://www.awesome-react-native.com/
 
+# 浏览器中输入URL以后，发生了什么？
+
+本质上，浏览器最终加载的还是js
 
 
 
+# 面试
+
+## 面试前
+
+### 1. 打包工程化 --熟悉，思考
+
+### 2.工程流程 
+
+- 每个项目需要的流程
+- 看公司的开发是否符合规范
+
+### 3. 熟悉程度
+
+- 简历上查一下自己对项目的成熟度
+
+### 4. 合理安排面试时间
+
+- 不要随意改动自己的面试时间
+
+## 第一面：技术骨干（有没有其他方面补充，就是想发现你其他方面的闪光点，想捞你）
+
+### 目标
+
+1. 确认与简历信息基本吻合，并且进一步定位深浅
+
+2. 确认具备快速学习上手干活的能力--查看有没有解决问题的能力
+
+3. 基础知识能力能够满足岗位的最低需求
+
+4. 能否快速适应团队的工作，并且有一定的提升空间
+
+### 面试人
+
+1. 简历上技术一定要熟悉，并且按照级别深度准备
+2. 以往业务经理，学会回头看
+3. 基础知识的扫盲以及提高
+4. 寻找机会展示自己的学习思考能力
+
+### 技术考察
+
+- HTML、计算机网络、浏览器、性能
+- 样式css=>派生
+- js基础=>基础类型=>继承=>OOP=>es6=>手写=>技巧变量提升、函数提升、闭包、防抖、节流
+- 代理、垃圾回收、event loop，设计模式，AST
+- 框架MVVM，工具类-network,router.babel,打包-webpack
+- 实操&算法
+  - 字符串内容替换、数组去重、对象全等
+  - 排序，场景类
+
+## 二面
+
+### 面试官-leader
+
+- 除了基础实践层面，知识体系的完成度
+- 除了业务开发外，实际解决问题的能力
+  - 和设计师有没有共同讨论某个东西怎么实现完成
+
+- 领域场景以及架构设计能力
+
+### 面试人
+
+- 知识体系图谱-知识图谱
+- 解决问题的能力-回顾项目、沟通、业务设想
+
+- 框架设计、架构能力《web站点搭建》《前端架构》《大话设计模式》
+
+### 考察
+
+- 网络类
+- 框架类
+- web架构类
+- 新技术敏感度
+
+## 三面
+
+### 目标
+
+#### 广度和个人思考
+
+#### 历史类
+
+#### 抽象处理类
+
+#### 个人思考
+
+## 简历
+
+### 面试官
+
+1. 技术掌握程度-提问的顺序以及深度
+2. 技术栈、端、长期涉足领域-提问的方式、感兴趣程度
+3. 业务方向以及成熟程度-提问的重点
+
+### 面试人
+
+1. 从深度到了解、并按照顺序来书写和准备
+
+2. 明确罗列技术栈、端、业务领域
+3. 尽量不要写自己未知的领域、主动暴露自己擅长的领域
+
+#### 比如
+
+xxx通应用        PC/H5       2020/10-至今   前端开发负责
+
+独立负责xxxx、xxx、xxx、模块的前端部分工作。应用：vue、react、ant-d...独立完成了所有模块的设计开发，
+
+1. 抽离/解藕出网络层统一化对网络请求报错做了上报处理（性能做了监控处理），从而沉淀实现了一套主动运营问题发现并及时解决的方案
+2. 并且沉淀出独立组件库，实现多模块复用。在沉淀过程中，对于按需加载/xxx做了调研，最终借鉴xxx的方式，实现了本模块按需加载逻辑。后续可以在xxx方面进一步优化
+
+# 突击课 HTML
+
+https://vgbixa7nr9.feishu.cn/drive/folder/fldcnA1evRprBZvnk8iFCLAegEc
+
+## HTML DOCTYPE 的含义？什么是 HTML 的标准模式与混杂模式？
+
+HTML的文档类型声明，doctype ，说明这个页面是用什么来编写的。
+
+- h5 html5 有一个比较宽松的语法，基本上完全向后兼容。
+
+```html
+<!doctype html>
+```
+
+- h4.0.1
+  - strict 结构中不能有出现格式或表现的内容
+    - `<b></b>`，`<p font='5'></p>`
+  - tansitional
+
+```html
+<!-- strict html -->
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
+<!-- strict xhtml -->
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+
+<!-- transitional html -->
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<!-- transitional xhtml -->
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+```
+
+## HTML5有哪些语义化标签及其特性？HTML元素有哪些分类与特性？
+
+让我们根据结构化的内容，选择合适的标签。
+
+- seo 有利；
+- 代码的可读性，更好；
+- 标签上加上 alt, title 
+- accessibility 方便一些其他的设备进行解析。
+
+## 如何检测浏览器是否支持HTML5特性？
+
+- canvas
+- video, audio
+- 本地缓存的支持 localStorage, Worker
+- article, footer, header
+- form: calender, date
+- esm es module, script 是不再需要 type 属性了。
+
+1. 检查特定的属性和方法
+
+```js
+!!navigator.geolocation
+!!window.localStorage
+!!window.Worker
+```
+
+2. 创建一个元素，看看特定元素，有没有属性和方法
+
+```js
+document.createElement('canvas').getContext()
+document.createElement('video').canPlayType;
+```
+
+3. 第三方库
+   http://modernizr.cn/
+
+## jump HTML中meta的作用？
+
+## HTML的标签有哪些可以优化SEO？
+
+1. meta 中的相关属性
+   `<meta name="author" content="aaa@gmail.com">`
+   `<meta name="description" content="XXX XRM XXX 系统" >`
+   `<meta name="keywords" content="XXX XRM XXX 系统" >`
+
+2. 标签
+   1. title 
+   2. meta
+   3. header
+   4. nav
+   5. article
+   6. aside
+   7. footer
+
+A:
+
+1. 首先要保证是SSR的；
+2. meta 中相关的属性；
+3. 语义化标签，以一些结构化的为主。 费效比。
+
+## DOM和BOM有什么区别？
+
+JavaScript 在浏览器环境下，一般由三部分组成。
+
+- ECMAScript 核心。描述了JS的语法和基本对象；
+- DOM 文档对象模型， document. 你有一些 API，可以操作 文档。
+- BOM 浏览器对象模型，browser. 你有一些 API，可以操作 浏览器。
+
+## 如何实现移动端适配？
+
+### 1px 问题
+
+先放大 200% ,然后 scale(0.5)
+
+### rem 方案
+
+rem 指的是 html 的 font-size 的大小。
+
+## 如何禁用页面中的右键、打印、另存为、复制等功能？
+
+```js
+// 右键
+document.onmousedown = function(event) {
+    if(event.button === 2) {
+        return false;
+    }
+}
+
+document.oncontextmenu = function(event) {
+    return false;
+}
+
+// 复制
+// <body oncopy="nocopy()">
+function nocopy(event) {
+    event.returnValue = false;
+}
+
+// f12
+document.onkeydown = function(e) {
+    if(window.event && window.event.keyCode === 123) {
+        window.event.returnValue = false;
+    }
+}
+```
+
+## href="javascript:void(0)"和href="#"区别是什么？
+
+href="#" 我的锚点，默认是 #top,会让你网页往上走。
+javascript:void(0) 死链接。
+
+## 对target="_blank"的理解？有什么安全性问题？如何防范？
+
+target="_blank", 类似于 window.open, 你的子页面，会拿到你当前的句柄(句柄就塞windows的对象)。
+window.opener
+
+```js
+if(window.opener) {
+    window.opener.loacation.href = "bad.html"
+}
+```
+
+```html
+<a href="x.html" target="_blank" rel="noopener noreferer">跳转</a>
+```
+
+```js
+var otherWindow = window.open('xxx');
+otherWindow.opener = null;
+```
+
+## 简述页面的存储区别？什么是本地存储？怎么做离线缓存？
+
+1. cookie 
+   每个cookie 不能超过 4kb
+   每个域 20个
+   [key, value, domain, expireTime, httpOnly, sec, ss]
+
+2. web storage 
+   localstorage 
+   sessionstorage
+   5MB 
+
+3. indexedDB [webSQL]
+4. application cache
+   - pwa
+   - service worker
+
+## 什么是canvas？什么时候需要使用canvas？
+
+canvas 的中文：画布。
+css div 普通的网页；
+svg 和传统的html 差别不大。html 处理矢量绘图的能力不足。
+canvas 2d 
+canvas webGL OpenGL 的 ES 规范，在 web 端的实现。利用 GPU 去渲染一些，3d/2d 的图形。 
+
+## 什么是PWA？
+
+渐进式网页应用。
+核心技术：
+
+- app manifest
+- service worker 客户端代理的工作
+- web push
+
+## 什么是Shadow DOM？
+
+web component 做到真正的组件化。
+
+- 原生规范，无需框架
+- 原生使用，无需编译
+- 真正意义上的 css scope
+
+```js
+customElements.define('shadow-test', class extends HTMLElemenet {
+    connectedCallback() {
+        const shadow = this.attachShadow({mode: 'open'})
+        shadow.innerHTML = "this is a shadow dom"
+    }
+})
+
+```
+
+<!-- stencil 框架 -->
+
+## iframe有哪些应用？
+
+- 最常见的一种微前端手段
+- ajax 上传文件
+- 广告
+- 跨域
+
+## 如何处理iframe通信？
+
+- 同域下面
+
+```js
+document.demain = "baidu.com";
+frame.contentWindow.xxx;
+```
+
+- post message
 
 
+## 浏览器的渲染和布局逻辑是什么？
+
+- DOM 树构建
+- CSS 树构建
+- 渲染树构建
+- 页面布局
+- 页面绘制
+
+## 页面的重绘回流是什么？
+
+回流
+回流又称重排，指改变几何属性的渲染。感觉“回流”较高大上，后续统称回流吧。
+
+可理解为将整个网页填白，对内容重新渲染一次。只不过以人眼的感官速度看浏览器回流是不会有任何变化的，若你拥有闪电侠的感官速度看浏览器回流(实质是将时间调慢)，就会发现每次回流都会将网页清空，从左上角第一个像素点从左到右从上到下这样一点一点渲染，直至右下角最后一个像素点。每次回流都会呈现该过程，只是感受不
+
+到而已。
+
+渲染树的节点发生改变，影响了节点的几何属性，导致节点位置发生变化，此时就会触发浏览器回流并重新生成渲染树。回流意味着节点的几何属性改变，需重新计算并生成渲染树，导致渲染树的全部或部分发生变化。
+
+重绘
+重绘指改变外观属性而不影响几何属性的渲染。相比回流，重绘在两者中会温和一些，后续谈到的CSS性能优化就会基于该特性展开。
+
+渲染树的节点发生改变，但不影响节点的几何属性。由此可见，回流对浏览器性能的消耗高于重绘且回流一定伴随重绘，重绘却不一定伴随回流。
+
+为何回流一定伴随重绘？整个节点的位置都变了，肯定要重新渲染它的外观属性啊！
+
+回流必定引发重绘，重绘不一定引发回流，可利用该法则解决一些因为回流重绘而引发的性能问题。在优化性能前，需了解什么情况可能产生性能问题，以下罗列一些常见情况。
+
+改变窗口大小
+修改盒模型
+增删样式
+重构布局
+重设尺寸
+改变字体
+改动文字
+
+## 怎样计算首屏和白屏的时间？常统计的页面性能数据指标包括？
+
+FP FCP 
+
+PerformanceObserver
+
+## 页面上有哪些领域可以做进一步的性能优化？
+
+- visibility:hidden --> display:none
+- 避免使用 table
+- 避免层级过多
+- dom insert -- fragment
+- requestIdelCallback
+
+FCP CLS FID
+
+
+## 浏览器之间的线程调度是怎么做的？
+
+● 最新的Chrome浏览器包括：1个浏览器主进程，1个GPU进程，1个网络进程，多个渲染进程，和多个插件进程；
+  ○ 浏览器进程： 负责控制浏览器除标签页外的界面，包括地址栏、书签、前进后退按钮等，以及负责与其他进程的协调工作，同时提供存储功能
+  ○ GPU进程：负责整个浏览器界面的渲染。Chrome刚开始发布的时候是没有GPU进程的，而使用GPU的初衷是为了实现3D CSS效果，只是后面网页、Chrome的UI界面都用GPU来绘制，这使GPU成为浏览器普遍的需求，最后Chrome在多进程架构上也引入了GPU进程
+  ○ 网络进程：负责发起和接受网络请求，以前是作为模块运行在浏览器进程一时在面的，后面才独立出来，成为一个单独的进程
+  ○ 插件进程：主要是负责插件的运行，因为插件可能崩溃，所以需要通过插件进程来隔离，以保证插件崩溃也不会对浏览器和页面造成影响
+  ○ 渲染进程：负责控制显示tab标签页内的所有内容，核心任务是将HTML、CSS、JS转为用户可以与之交互的网页，排版引擎Blink和JS引擎V8都是运行在该进程中，默认情况下Chrome会为每个Tab标签页创建一个渲染进程
+
+- 渲染进程中的线程 
+  - GUI渲染线程：负责渲染页面，解析html和CSS、构建DOM树、CSSOM树、渲染树、和绘制页面，重绘重排也是在该线程执行
+  -  JS引擎线程：一个tab页中只有一个JS引擎线程(单线程)，负责解析和执行JS。它GUI渲染进程不能同时执行，只能一个一个来，如果JS执行过长就会导致阻塞掉帧
+  - 计时器线程：指setInterval和setTimeout，因为JS引擎是单线程的，所以如果处于阻塞状态，那么计时器就会不准了，所以需要单独的线程来负责计时器工作
+  -  异步http请求线程： XMLHttpRequest连接后浏览器开的一个线程，比如请求有回调函数，异步线程就会将回调函数加入事件队列，等待JS引擎空闲执行
+  -  事件触发线程：主要用来控制事件循环，比如JS执行遇到计时器，AJAX异步请求等，就会将对应任务添加到事件触发线程中，在对应事件符合触发条件触发时，就把事件添加到待处理队列的队尾，等JS引擎处理
+
+Chrome为例，有四种进程模型，分别是
+
+- Process-per-site-instance：默认模式。访问不同站点创建新的进程，在旧页面中打开的新页面，且新页面与旧页面属于同一站点的话会共用一个进程不会创建
+-  Process-per-site：同一站点使用同一进程
+-  Process-per-tab：每一个标签页都创建新的进程
+- Single Process：单进程模式
+
+线程模型中的线程都是干嘛的呢？
+
+- MessagePumpForIO：处理进程间通信的线程，在Chrome中，这类线程都叫做IO线
+-  MessagePumpForUI：处理UI的线程用的
+-  MessagePumpDefault：一般的线程用到的
+
+典型进程通信方式有：
+
+- 管道通信：就是操作系统在内核中开辟一段缓冲区，进程1可以将需要交互的数据拷贝到这个缓冲区里，进程2就可以读取了
+- 消息队列通信：消息队列就是用户可以添加和读取消息的列表，消息队列里提供了一种从一个进程向另一个进程发送数据块的方法，不过和管道通信一样每个数据块有最大长度限制
+- 共享内存通信：就是映射一段能被其他进程访问的内存，由一个进程创建，但多个进程都可以访问，共享进程最快的是IPC方式
+- 信号量通信：比如信号量初始值是1，进程1来访问一块内存的时候，就把信号量设为0，然后进程2也来访问的时候看到信号量为0，就知道有其他进程在访问了，就不访问了
+-  socket：其他的都是同一台主机之间的进程通信，而在不同主机的进程通信就要用到socket的通信方式了，比如发起http请求，服务器返回数据
+
+# 突击课-css
+
+## 面试方式
+
+### 分级
+
+初级 => 中级 *
+概念 + 原理 + 场景
+
+中级 **
+实际应用 + 复合场景
+
+高级 ***
+技巧 + 工程化
+
+### 面试方式
+
+特点：相对零散，从点到面
+
+### 面试题：
+
+### display有哪些属性？*
+
+none - 不展示
+block - 块类型
+inline - 行内
+inline-block - 默认行内块状
+list-item | table
+inherit - 继承
+
+### inline & inline-block的区别能说说么？ *
+
+inline: 共享一行，行内概念
+block: 独占一行
+inline-block：共享一行，内容作为block对象呈现
+
+### 行内元素和块级元素有什么区别呢？ *
+
+- 行内元素：
+  无法设置宽高
+  水平方向可设置margin + padding，垂直方向则无法设置
+  不会自动换行
+
+- 块级元素：
+  可以设置宽高
+  水平垂直方向可设置margin + padding
+  可以自动换行
+  多个块状是默认从上往下换行排列
+
+### 有哪些行内和块级元素？*
+
+块级元素
+div form h1 pre table ul……
+行内
+a br code em img i input strong textarea……
+
+### 块级元素和内联元素有哪几种转换方式？ **
+
+1. display
+2. float
+   float: left/right => display: block ** => 去除行内元素之间的空白问题 ***
+3. position
+   position: absolute / fixed => 块级
+
+### 选择器 & 优先级
+
+1. #### 选择器的优先级是什么样的？ 选择器如何做样式判断？ 这段样式能不能生效？ *
+
+   内联样式                    1000
+   id选择器    #id             100
+   类选择器    .class          10
+   属性选择器  a[ref="link"]   10
+   标签选择器  div             1
+   伪类选择器  li:last-child   10
+   伪元素选择器 li:before      1
+
+​      兄弟选择器  div+p           0
+​      子选择器    ul>li           0
+​      后代选择器  li a            0
+
+​      通配符      *               0
+
+2. #### 特殊场景的优先级如何判断？ *
+
+   !important 优先级最高
+   如果优先级相同，则后者高于前者
+   继承得到的样式，优先级最低
+
+3. #### 可继承的样式有哪些？ **
+
+   - 字体
+      font-family,font-weight,font-size,font-style
+   - 文本
+      text-indent,text-align,line-height,word-spacing,letter-spacing,color
+   - 元素
+      visibility
+   - 列表布局
+      list-style
+   - 光标
+      cursor
+
+### 隐藏和显示相关
+
+1. #### 有哪些可以隐藏过一个元素的方法？有什么区别？ **
+
+   display: none; 不占位
+   visibility: hidden; 占位
+
+​       opacity: 0;  占位
+​       position: absolute;  不占位
+​       z-index: 负值;   不占位
+​       clip   占位
+​       transform: scale(0, 0)  占位
+
+2. #### display vs visibility有什么区别？ ** 
+
+   他们俩都是让元素隐藏和展示。
+
+浏览器渲染时，display不占据空间，渲染树中会不存在
+visibility，占据一根树枝
+
+继承属性来说，display不会被继承，visibility会被继承
+
+性能影响上，display造成文档的重排，但是修改visibility只会导致文本的重绘
+
+### 盒模型及其特性
+
+1. 简单说说标准盒模型、IE盒模型分别是什么？怎么转换? *
+   盒模型特点：
+   content + padding + border + margin
+   区别：
+   标准盒模型 - width和height只包含content部分
+   IE盒模型 - width和height包含了content + padding + border部分
+   转换：
+   box-sizing: content-box / border-box;
+
+2. 伪元素和伪类是什么？如何使用？区别是什么？ *
+   伪元素：只出现在css样式表中，不存在于doc中。
+
+```js
+    p::before {
+        content: 'zhaowa'
+    }
+    p::first-line {
+        background: red;
+    }
+```
+
+伪类：已有的元素上加上特殊类别，不产生新的元素。
+
+```js
+    div:hover {
+        color: red;
+    }
+```
+
+### 图片格式以及CSS-sprites
+
+1. 图片格式有哪些？怎么应用？如何选择？*
+   BMP，无损、没有压缩。通常体积较大。
+   GIF，无损、采用了LZW压缩算法。仅支持8bit索引色，支持动图。
+   JPEG，有损、直接色存储，适合还原度要求较高的照片。
+   PNG-8，无损、使用索引色。体积更优秀，并且支持透明度调节。
+   PNG-24，无损、使用直接色，压缩。
+   SVG，无损、svg放大不会是真的吧，所以适合logo、icon。
+   webP，有损+无损、直接色、支持透明度、压缩。chrome、opera支持
+
+2. CSS-sprites 精灵图、雪碧图怎么处理？ *
+   所有涉及到的图片，放到一张大图中去
+   background-image, background-repeat, background-position
+
+### 像素密度与图片应用
+
+1. 像素密度有了解吗？ *
+   经典设备宽高 414px * 896px
+   物理像素 1242px * 2688px => 1242 / 414 = 3
+   => 逻辑像素：物理像素 = 1：3 => 像素密度3 => 3倍屏
+
+2. 如何在图片的加载上应用动态密度？ *
+   设计师提供 @2x，@3x，@4x
+   200 * 300 => 3倍屏幕 => 600 * 900
+
+```js
+    image {
+        background: ('1x.png');
+    }
+    // 利用媒体查询
+    @media only screen and (min-deivce-pixel-ratio: 3) {
+        image {
+            background: ('3x.png');
+        }
+    }
+```
+
+### css工程化与预处理
+
+1. css类库 与工程化的理解？ ***
+   预处理器：less scss stylus
+   => 利用编译库提供能力，提供层级、mixin、变量、循环、函数
+
+后处理器：postCss
+=> 利用后处理编译，属性增加前缀，实现跨浏览器兼容
+
+### 单行多行文本超出
+
+1. 手写一个单行 & 多行的文本超出省略 *
+
+```js
+    // 单行超出
+    overflow: hidden;
+    text-overflow: ellipsis; // 超出省略号
+    white-space: nowrap;   // 不换行
+
+    // 多行超出
+    overflow: hidden;
+    text-overflow: ellipsis; // 超出省略号
+    display: -webkit-box;  // 弹性伸缩盒子模型
+    -webkit-box-orient: vertical; // 从上往下垂直排列
+    -webkit-line-clamp: 3;  // 显示的行数
+
+    // 兼容性方案
+    p {
+        position: relative;
+        line-height: 18px;
+        height: 40px;
+        overflow: hidden;
+    }
+    p::after {
+        content: '...';
+        position: absolute;
+        bottom: 0;
+        right: 0;
+    }
+    // 方案有什么不足之处 => 固定行高 => js处理 后处理器
+```
+
+### px em rem
+
+1. 多种单位的差别 *
+   百分比：子元素的百分比相对于直接父元素的对应属性
+
+em: 相对于父元素的字体大小倍数
+rem: 相对于根元素字体大小的倍数
+
+vw: 视窗宽度，满视窗宽度为 100vw
+vh: 视窗高度，满视窗高度为 100vh
+vmin: vw和vh中较小值
+vmax: vw和vh中较大值
+
+2. 如何利用rem实现响应式？ 项目如何实现响应式的？
+   根据当前设备的视窗宽度与设计稿的宽度得到一个比例
+   根据比例设置根节点的font-size
+   所有长度单位都用rem
+
+### 布局
+
+1. 定位浮动 - 简单聊聊看浮动的影响还有原理？ *
+   浮动工作原理：
+   浮动元素脱离文档流，不占据空间 => 不受原有文档流的影响，同时无法影响原有父类 => 高度塌陷
+
+2. 浮动停留的条件？浮动元素移动遵循的空间？*
+   浮动元素碰到包含他的边框或者其他浮动元素的时候会停留
+   => 浮动元素可以左右移动
+   => 浮动元素高度独立，不会再影响撑开原有父类的高度
+
+3. 高度塌陷原因，如何解决高度塌陷？*
+   给父级定义height
+    浮动元素之后，给一个div，clear: both;
+    父级标签增加overflow:hidden;
+    用伪元素模拟div
+
+4. 简单说说如何创建BFC，以及如何解决相应一些问题？ **
+   创建BFC的条件：
+   根元素body
+   元素设置浮动：float除了none之外
+   position 脱离文本流的操作
+   display的inlin-block table-cell table-caption flex
+   overflow的 hidden auto scroll
+
+BFC的特点：
+垂直方向上，自上而下排列的，和文档流的排列方式一致
+BFC中上下相邻的两个容器margin会重叠
+计算BFC高度时要计算浮动元素
+BFC不会影响外部元素
+
+5. BFC正作用有哪些？**
+   解决margin重叠问题、解决高度塌陷、创建自适应布局
+
+
+6. 有几种办法能实现两列布局？实现一个左边宽度固定，右侧宽度自适应的两列布局？*
+
+```js
+    // 1. 浮动 + 生成BFC不重叠
+    .left {
+        width: 100px;
+        height: 200px;
+        float: left;
+    }
+    .right {
+        height: 200px;
+        overflow: hidden;
+    }
+
+    // 2. 浮动 + width auto
+    .container {
+        height: 200px;
+    }
+    .left {
+        width: 200px;
+        height: 200px;
+        float: left;
+    }
+    .right {
+        margin-left: 200px;
+        width: auto;
+    }
+
+    // 3. flex大法好
+    .container {
+        height: 200px;
+        display: flex;
+    }
+    .left {
+        width: 200px;
+    }
+    .right {
+        flex: 1;
+    }
+```
+
+7. 两列布局可以，那再加一列呢？左右两栏宽度固定，中间自适应？***
+
+```js
+    // 1. 绝对布局法
+    .container {
+        position: relative;
+        height: 200px;
+    }
+    .left {
+        position: absolute;
+        width: 100px;
+        height: 200px;
+    }
+    .right {
+        position: absolute;
+        width: 200px;
+        height: 200px;
+        top: 0;
+        right: 0;
+    }
+    .center {
+        margin-left: 100px;
+        margin-right: 200px;
+        height: 200px;
+    }
+    // 2. flex大法好
+    .container {
+        display: flex;
+        height: 200px;
+    }
+    .left {
+        width: 100px;
+    }
+    .right {
+        width: 200px;
+    }
+    .center {
+        flex: 1;
+    }
+    // 3. 圣杯布局
+    .container {
+        height: 200px;
+        padding-left: 100px;
+        padding-right: 200px;
+    }
+    .center {
+        float: left;
+        width: 100%;
+        height: 200px;
+    }
+    .left {
+        position: relative;
+        left: -100px;
+    
+        float: left;
+        margin-left: -100%;
+        width: 100px;
+        height: 200px;
+    }
+    .right {
+        position: relative;
+        left: 200px;
+    
+        float: right;
+        margin-left: -200px;
+        width: 200px;
+        height: 200px;
+    }
+    // 4. 双飞翼
+    .container {
+        height: 200px;
+    }
+    .left {
+        float: left;
+        margin-left: -100%;
+        width: 100px;
+        height:200px;
+    }
+    .right {
+        float: left;
+        margin-left: -200px;
+        width: 200px;
+        height: 200px;
+    }
+    .wrapper {
+        float: left;
+        width: 100%;
+        height: 200px;
+    }
+    .center {
+        margin-left: 100px;
+        margin-right: 200px;
+        height: 200px;
+    }
+```
+
+8. 水平垂直居中问题？ **
+
+```js
+    // 1. 绝对定位
+    div {
+        position: absolute;
+        left: 50%;
+        top: 50%;
+        margin-top: -height/2;
+        margin-left: -width/2;
+    }
+    // 2. 自我拉扯
+    div {
+        margin: auto;
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+    }
+    // 3. flex大法好
+    .parent {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+    }
+```
+
+### 奇技淫巧
+
+三角形 => 梯形 => 扇形 => 基础元素 + 技巧
+1px、12px font => 变形进行处理
+动画 => 幻灯片 / 电影
 
