@@ -8097,6 +8097,12 @@ $('body').css('background', 'green')
 4. ES6 在语言标准的层面上，实现了模块功能，而且实现得相当简单，完全可以取代 CommonJS 和 AMD 规范，成为浏览器和服务器通用的模块解决方案；
 5. UMD为同时满足CommonJS, AMD, CMD标准的实现
 
+### 5.1 commonjs和esm的区别？
+
+首先，本身宿主环境是什么，如果不管构建环境的话，一般情况下commonjs的宿主是nodejs中使用的，是值的拷贝,而es的规范的最初提出是在浏览器中使用的，代表着可以异步的去下载。在webpack中import和require是没有区别的，唯一的区别是会打个标记esm为true还是false，其他没有什么区别
+
+本质上都只是一个规范而已，如果传统上nodejs解析commonjs，只是一个值的拷贝，里面的require相当于去读这个文件，对于esm看谁来解析，如果是浏览器解析，本身就是下载这个文件，然后拿这个文件的引用
+
 # **阿里前端面试官带你深度模拟前端专家面试**
 
 https://www.yuque.com/lpldplws/atomml/wa93b6?singleDoc# 《阿里前端面试官带你深度模拟前端专家面试》 密码：xord
@@ -44451,8 +44457,6 @@ export function mergeLanes(a: Lanes | Lane, b: Lanes | Lane): Lanes {
 
 # React源码
 
-https://developer.mozilla.org/zh-CN/docs/Web/API/PerformanceLongTaskTiming 性能分析
-
 react理念
 
 卡顿：
@@ -44513,6 +44517,373 @@ newChildren oldFiber
 4. newChildren和oldFiber都没有遍历完，节点位置发生变化
 
 https://react.iamkasong.com/img/beginWork.png
+
+# node 
+
+## 1节
+
+- node能干什么？
+- npm 的一些规则和原理
+- 包规则和原理
+
+## 2节
+
+- cjs 的原理
+- 常见的node API
+- node 事件循环。
+
+## node 基础
+
+一开始就做前端。
+前端的编程，更倾向于是一种“声明式”的编程。
+本质 - web 是一个“状态机”。
+
+```vue
+<template>
+    <div>
+        <h1>{{msg}}</h1>
+        <ul v-if="dataList && (dataList instanceof Array) && dataList.length > 0">
+            <li v-for="item of dataList" :key="item.id"> {{item.val}}</li>
+        </ul>
+    </div>
+</template>
+
+<script>
+export default {
+    data() {
+        return {
+            msg: 'hello',
+            dataList: []
+        }
+    },
+    methods: {
+        apiGetData() {
+            this.msg = "loading...";
+            getData().then(res => {
+                this.dataList = res.list;
+                this.msg = "loaded"
+            })
+        }
+    }
+}
+</script>
+
+```
+
+本质上，是一个状态编程，声明好了我的结构，明确了状态的流转，保证每一个状态都是可预测的。
+
+### 命令式编程
+
+function()
+input -> process -> output 
+IPO.
+
+```java
+class Test {
+    public static void main(String[] args) {
+        // TODO ...
+    }
+}
+```
+
+node ./index.js
+
+## node 简介
+
+### node 是什么？
+
+> node.js 是一个 JS 的服务端运行环境。基于 V8，在 JS 语言规范的基础上，封装了一些服务端的runtime，让我们能够简单地实现非常多的功能。
+
+### node 的历史
+
+- 2008年 js 就是一个浏览器脚本。
+
+LAMP / XAMP
+
+- linux/windows + Apache + MySQL + php (thinkPhp, CI, DEDECMS);
+  MEAN
+- mongoDB + express + angular + node.js  2014年。
+
+### node 可以做什么?
+
+npm run start 的时候，运行了 node.
+
+- 跨平台开发: PC, web, H5, RN, weex
+- 后端开发: API, RPC, BFF
+- 前端开发:
+- 工具开发: 脚本，脚手架，命令行
+
+### node 分类举例
+
+压缩： UglifJS, JSmin
+依赖： npm, bower, pnpm, yarn
+模块： commonjs
+构建： gulp, grunt, webpack
+模板： jade, handlebars
+跨端： electron, tauri
+
+### node 的问题
+
+`new Thread()`
+
+- 单线程很脆弱， 可以通过 cluster / pm2
+- node 对 mongoDB, MySQL, redis 
+- 对 neo4j, tigergraph
+- 安全问题
+
+### node 和浏览器的区别
+
+- node 环境中，是没有 `dom`, `bom`的，同样的，浏览器也没有 `fs`, `path`这些模块；
+- 事件循环的区别
+- `cjs` 和 `esm`
+  - commonjs 本质是一个规范。node 率先实现了它
+  - node 的实现方式(1-2节课内会讲) readFile 浏览器不行。
+  - export import 异步请求。
+
+
+## npm 规范
+
+### node 的安装
+
+- nvm 
+  - 当我们需要多个版本 node 的时候，我们可以使用 nvm 去切换
+- nrm
+  - 用于设置 node 的镜像源
+- npm
+  - 包管理
+
+### npm 的目标
+
+- 给你和你的团队，带来最好的开源库和依赖。
+  gem - ruby
+  maven - java
+  pip - python 
+
+npm - node 
+**中心式管理**
+
+和 npm 有什么区别？
+
+D:/.r/repository/org/java/apache/spring/spring-framework/2.2.0
+D:/.r/repository/org/java/apache/spring/spring-framework/2.2.1
+D:/.r/repository/org/java/apache/spring/spring-framework/2.2.2
+
+如果说，我的电脑，磁盘也不大，我想要集中管理，像java 这样，咋整？
+
+### npm 项目创建
+
+#### npm install 发生了什么？
+
+【见图3】
+
+#### npm 缓存
+
+`npm config get cache`
+`yarn cache dir`
+
+### npm 和 yarn 和 pnpm
+
+- npm 还是 v3 的时候，是没有 lock 文件的，这时候，yarn 很牛逼
+  - yarn.lock 的机制，保证了包的确定性
+  - 采用了模块扁平安装模式 *
+  - 请求排队，使网络性能更优秀
+  - 采用了缓存机制，实现了离线模式。
+    - `npm config get cache`
+    - `yarn cache dir`
+- 在命令行上的区别
+- npm - rebuild
+- yarn - why pack autoclean license import 
+  synp -- yarn.lock 转成 package-lock.json
+
+##### pnpm:
+
+1. 通过硬链接，将全局的 store，链接在项目的 node_modules/.pnpm 文件中；
+2. 再通过软链接构建组织依赖关系。
+
+#### npm ci
+
+是一个专门为了 ci 环境中使用的安装命令。
+
+- 项目必须有 lock 文件
+- 完全根据 lock 文件安装 - 同 5.0.x
+- 会先删掉已有的 node_modules
+- 一次性所有，不能 npm ci xxx
+- 如果 package.json 和 lock 冲突，直接 throw Error
+
+##### 使用场景
+
+一般会在 ci 环境中使用，更稳定，更快。
+
+#### npm dedupe 
+
+自动地帮你去分析包依赖的关系，然后进行扁平化安装。
+
+### dependencies
+
+1. dependencies 表示项目的依赖。这些都是线上环境的代码组成部分。
+   1. 当你的这个库被下载的时候，dependencies 下面的模块，也会被下载。
+
+2. devDependencies 表示开发依赖。不会自动下载，常见的有 webpack, 各种 loader, plugin. jest 这些，eslint 这些。
+
+3. peerDependencies 表示同版本依赖
+   1. 比如，我们写一个基于 react 的组件，我们要不要自己下载 react 呢？
+      1. 我不能单独运行，我需要你的工程具有 peerDependencies
+      2. 我自己不想下载(react)，你要用我的这个库，你就自己下 react.
+
+4. bundledDependencies
+
+```json
+{
+    "bundledDependencies": [
+        "Bundle1", "Bundle2"
+    ]
+}
+```
+
+5. optionalDependencies
+
+
+
+## commonjs 实现
+
+14:00 开始
+
+### 模块化
+
+由架构师，和开发人员决定的。对外通信的接口。
+
+```js
+function foo() {
+    var bar = 1;
+    var baz = 2;
+}
+
+```
+
+1. 早期
+
+```js
+var student = {
+    name: 'luyi',
+    getStore: function() {
+        return '60'
+    }
+}
+
+student.name;
+student.getStore;
+```
+
+2. 闭包的出现
+
+```js
+(function(global) {
+
+    var name = 'luyi';
+    function getStore() {
+        // $.x.x
+    };
+    global.student = { name, getStore }
+
+})(window)
+
+```
+
+3. 解决依赖的问题。
+
+```js
+(function(global, $) {
+
+    var name = 'luyi';
+    function getStore() {
+        // $.x.x
+    };
+    global.student = { name, getStore }
+
+})(window， jquery)
+
+```
+
+```js
+var module = {
+    exports: {
+
+    }
+};
+
+(function(module, exports, require) {
+
+    const $ = require('../juery.min.js')
+
+    var name = 'luyi';
+    function getStore() {
+        // $.x.x
+    };
+    module.exports = { name, getStore }
+
+})
+
+(module, module.exports, require)
+
+
+```
+
+## node api
+
+### Buffer 
+
+浏览器中，上传一个 blob
+typedArray 
+arrayBuffer
+file 
+fileReader
+
+#### 本质是一个计算机的数据结构
+
+表示的是一个固定长度的 缓冲区序列。
+
+#### 声明
+
+
+
+
+## 事件循环
+
+1. process.nextTick 是一个微任务，并且在 promise 之前
+2. setImmediate 是 libuv 实现的一个 API
+
+```
+             同步的代码
+                 |
+     process.nextTick / promise...
+                 |
+   ┌───────────────────────────┐
+┌─>│           timers          │ 定时器： setTimeout / setInterval
+│  └─────────────┬─────────────┘
+|    process.nextTick / promise...
+│  ┌─────────────┴─────────────┐
+│  │     pending callbacks     │ 执行延迟到下一个循环迭代的I/O回调
+│  └─────────────┬─────────────┘
+|    process.nextTick / promise...
+│  ┌─────────────┴─────────────┐
+│  │       idle, prepare       │ 系统内部使用
+│  └─────────────┬─────────────┘      ┌───────────────┐
+|    process.nextTick / promise...
+│  ┌─────────────┴─────────────┐      │   incoming:   │
+│  │           poll            │<─────┤  connections, │
+│  └─────────────┬─────────────┘      │   data, etc.  │
+|    process.nextTick / promise...
+│  ┌─────────────┴─────────────┐      └───────────────┘
+│  │           check           │ setImmediate 
+│  └─────────────┬─────────────┘
+|    process.nextTick / promise...
+│  ┌─────────────┴─────────────┐
+└──┤      close callbacks      │ 关闭回调函数
+   └───────────────────────────┘
+
+```
+
+
 
 # 2023前端面试&框架高频考点解析
 
@@ -44994,11 +45365,595 @@ function createInstance(
 
 https://www.awesome-react-native.com/
 
+# node
+
+node中想要写esm,共有2种方法？
+
+- package.json添加type:module
+- 将.js的后缀写成.mjs
+- 写一个构建配置
+
+```js
+//rollup.config.js
+const  babel =require('@rollup/plugin-babel');
+
+export default {
+    input:'./server/socket/index.js',
+    output:{
+        file:'./dist/socket/bundle.js',
+        format:'umd'
+    },
+    treeshake:false,
+    plugins:[
+        babel({
+            extension:['.js','.ts'],
+            exclude:'node_modules/**'
+        })
+    ]
+}
+
+//.babelrc
+{
+    "presets":[
+        ["@babel/preset-env",{
+            "modules":false,
+            "loose":true,
+            "targets":'node 14',
+            "useBuiltIns":"useage",
+            "corejs":{
+                "version":"3.29",
+                "proposals":true
+            }
+        }],
+        "@babel/preset-react"
+    ],
+      "plugins":["./consolePlugin"]  
+}
+```
+
+# **小程序机制&微信小程序介绍**
+
+https://www.yuque.com/lpldplws/web/rit375?singleDoc# 《小程序机制&微信小程序介绍》 密码：ddiy
+
+## 1.课程目标
+
+1.学习小程序基本原理，对目前行业内小程序有基本理解
+
+2.掌握微信小程序基本内容
+
+3.掌握微信小程序发布流程
+
+## 2.课程大纲
+
+- 小程序机制解析
+- 微信小程序
+
+## 3. 小程序机制介绍
+
+### 3.1 什么是小程序
+
+小程序页面本质上是网页：
+
+1. 使用技术栈与网页开发是一致的，都用到HTML、CSS和JS
+2. 区别：不支持浏览器API,只能用微信提供的API
+
+外部代码通过小程序这种形式，在手机 App 里面运行：微信、支付宝， 小程序可以视为只能用微信等 APP 作为载体打开和浏览的网站。 
+
+### 3.2 小程序的发展历程
+
+![](https://cdn.nlark.com/yuque/0/2022/png/2340337/1649385302991-e9f50c5d-855d-45d3-a2e7-8bb2bed42254.png?x-oss-process=image%2Fresize%2Cw_750%2Climit_0)
+
+1. 微信小程序形态
+
+   a.小程序从业务形式上更像是公众号开发的演变产物；
+
+   b.早期微信通过 sdk 的形式，增强了开发者开发公众号网页的能力；
+
+   c.小程序的诞生是微信本身迈向平台化超级 App 的业务行为，并且帮助用户更好的实现了「轻量级 Web App」；
+
+2. 开发标准
+
+   a.最初微信小程序自己定义了一套”标准“，最开始的框架甚至没有组件、没有 npm，和 Web 生态严重脱节；
+
+   b.由于特殊的双线程模型与四不像的语法，开发者苦不堪言，小程序的开放之士队三方业务的开放而已
+
+3. 商家涌入
+
+   a.小程序业务的开放性 ->平台型 App；
+
+   b.比如：支付宝小程序、百度小程序、淘宝小程序、360小程序、快应用......
+
+   c.小程序设计目的：大多数选择了和微信类似的架构、框架，更多不是从技术角度考虑，而是想尽可能蹭微信小程序的福利，让开发者可以更快的投放到自己的平台；
+
+### 3.3 原生微信小程序框架介绍
+
+#### 3.3.1 小程序的目录结构
+
+工程的工作目录中包含以下文件：
+
+![](https://cdn.nlark.com/yuque/0/2022/png/2340337/1649385302900-e497ed1c-c1a3-43d9-a9f7-8c66da5a99ce.png)
+
+
+
+#### 3.3.2 技术选型
+
+渲染界面的技术方案：
+
+1. 用纯客户端原生技术渲染
+2. 用纯web技术渲染
+3. 用客户端原生技术与 Web 技术结合的混合技术（简称 Hybrid 技术）渲染；
+
+方案对比：
+
+1. 开发门槛：Web 门槛低，Native 也有像 RN 这样的框架支持；
+2. 体验：Native 体验比 Web 要好太多，Hybrid 在一定程度上比 Web 接近原生体验；
+3. 版本更新：Web 支持在线更新，Native 则需要打包到微信一起审核发布；
+4. 管控和安全：Web 可跳转或是改变页面内容，存在一些不可控因素和安全风险；
+
+ 方案确定：
+
+1. 小程序的宿主环境是微信等手机 APP，用纯客户端原生技术来编写小程序，那么小程序代码每次都需要与手机 APP 代码一起发版❎；
+
+2. Web 支持有一份副本资源包放在云端，通过下载到本地，动态执行后即可渲染出界面，但纯 Web 技术在一些复杂的交互上可能会面临一些性能问题❎；
+
+   a .在 Web 技术中，UI 渲染跟脚本执行都在一个单线程中执行，这就容易导致一些逻辑任务抢占UI渲染的资源。
+
+3. 两者结合起来的 Hybrid 技术来渲染小程序，用一种近似 Web 的方式来开发，并且可以实现在线更新代码✅；
+
+   a. 扩展 Web 的能力。比如像输入框组件（input, textarea）有更好地控制键盘的能力；
+
+   b. 体验更好，同时也减轻 WebView 的渲染工作；
+
+   c.用客户端原生渲染内置一些复杂组件，可以提供更好的性能；
+
+#### 3.3.3 双线程模型
+
+小程序的渲染层和逻辑层分别由 2 个线程管理：
+
+1. 视图层 -> WebView 进行渲染；
+2. 逻辑层 -> JsCore 线程运行 JS脚本；
+
+![](https://cdn.nlark.com/yuque/0/2022/png/2340337/1649385302978-a50aedec-7180-49b1-a709-f4890e2f1280.png)
+
+
+
+设计目的：为了管控和安全等问题，阻止开发者使用一些，例如浏览器的window对象，跳转页面、操作DOM、动态执行脚本的开放性接口；
+
+使用沙箱环境提供纯 JavaScript 的解释执行环境
+
+1. 客户端系统：JavaScript 引擎；
+2. iOS ： JavaScriptCore 框架；
+3. 安卓：腾讯 x5 内核提供的 JsCore ；
+
+小程序双线程模型
+
+- 逻辑层：创建一个单独的线程去执行 JavaScript，在这里执行的都是有关小程序业务逻辑的代码，负责逻辑处理、数据请求、接口调用等；
+- 视图层：界面渲染相关的任务全都在 WebView 线程里执行，通过逻辑层代码去控制渲染哪些界面。一个小程序存在多个界面，所以视图层存在多个 WebView 线程；
+- JSBridge 起到架起上层开发与Native（系统层）的桥梁，使得小程序可通过API使用原生的功能，且部分组件为原生组件实现，从而有良好体验
+
+#### 3.3.4. 数据驱动视图变化 
+
+问题：JS 逻辑代码放到单独的线程去运行，在 Webview 线程里没法直接操作 DOM。开发者如何实现动态更改界面呢？
+
+DOM 的更新通过简单的数据通信来实现
+
+逻辑层和视图层的通信会由 Native （微信客户端）做中转，逻辑层发送网络请求也经由 Native 转发。
+
+JS 对象模拟 DOM 树 -> 比较两棵虚拟 DOM 树的差异 -> 把差异应用到真正的 DOM 树上。
+
+<img src="https://cdn.nlark.com/yuque/0/2022/png/2340337/1649385302760-b87160a6-7f26-4495-8e64-0cbcb1167ed2.png?x-oss-process=image%2Fresize%2Cw_750%2Climit_0&date=1689686549151" style="zoom:70%;" />
+
+1. 在渲染层把 WXML 转化成对应的 JS 对象；
+
+2. 在逻辑层发生数据变更的时候，通过宿主环境提供的 setData 方法把数据从逻辑层传递到 Native，再转发到渲染层；
+
+3. 经过对比前后差异，把差异应用在原来的 DOM 树上，更新界面；
+
+#### 3.3.5. 事件的处理 
+
+视图层需要进行交互，这类反馈应该通知给开发者的逻辑层，需要将对应的处理状态呈现给用户。
+
+视图层的功能只是进行渲染，因此对于事件的分发处理，微信进行了特殊的处理，将所有的事件拦截后，丢到逻辑层交给JS处理。
+
+![](https://cdn.nlark.com/yuque/0/2022/png/2340337/1649385304104-d7e1cabc-e9df-42a9-bd83-9c44a928cfd0.png)
+
+事件的派发处理包括事件捕获和冒泡两种：
+通过native传递给 JSCore，通过 JS 来响应响应的事件之后，对 Dom 进行修改，改动会体现在虚拟 Dom 上，然后再进行真实的渲染。
+
+![](https://cdn.nlark.com/yuque/0/2022/png/2340337/1649385304041-5b3b06aa-e0f1-42ed-a2a5-fd205753011d.png)
+
+#### 3.3.6. 运行机制
+
+小程序启动机制：
+
+1. 冷启动：用户首次打开或小程序被微信主动销毁后再次打开的情况，此时小程序需要重新加载启动
+2. 热启动：假如用户已经打开过某小程序，然后在一定时间内再次打开该小程序，此时无需重新启动，只需将后台状态的小程序切换到前台；
+
+注意：
+
+- 小程序没有重启的概念；
+- 当小程序进入后台，客户端会维持一段时间的运行状态，超过一定时间后（目前是5分钟）会被微信主动销毁；
+- 当短时间内（5s）连续收到两次以上收到系统内存告警，会进行小程序的销毁；
+
+![](https://cdn.nlark.com/yuque/0/2022/png/2340337/1649385304125-0d1911b3-7567-420e-978c-ca85a518b4ac.png)
+
+### 3.4 小程序框架对比
+
+#### 3.4.1 小程序原生语法 
+
+ 
+
+ 
+
+1. 目前小程序生态支持开发者利用前端部分生态开发应用的；
+
+2. 目前小程序已经能够做到前端工程化，并且植入前端生态中已有的一些理念，例如状态管理、CLI 工程化等等，与早期 npm 能力的缺失、只能通过模板渲染实现组件化不可同日而语；
+
+3. 当业务的需求只有投放到微信或者支付宝小程序时，原生语法可以成为前端程序员们的一个选择；前端能力基本都可以在小程序上复用（如状态管理库颗粒化管理组件状态、TS等）；
+
+#### 3.4.2. 增强型框架 
+
+指小程序引入 npm 之后，有了更加开放的能力所带来的收益；
+
+以小程序原生语法为主，在逻辑层引入了增强语法来优化应用性能或者提供更便捷的使用方法；
+
+Example：腾讯开源的 [omix](https://link.zhihu.com/?target=https%3A//github.com/Tencent/omi/tree/master/packages/omix) 框架为例：
+
+```js
+// 逻辑层
+create.Page(store, {
+ // 声明依赖
+ use: ['logs'],
+ computed: {
+ logsLength() {
+ return this.logs.length
+ }
+ },
+ onLoad: function () {
+ //响应式，⾃动更新视图
+ this.store.data.logs = (wx.getStorageSync('logs') ||
+ return util.formatTime(new Date(log))
+ })
+ setTimeout(() => {
+ //响应式，⾃动更新视图
+ this.store.data.logs[0] = 'Changed!'
+ }, 1000)
+ }
+})
+//视图层
+<view class="container log-list">
+ <block wx:for="{{logs}}" wx:for-item="log">
+ <text class="log-item">{{index + 1}}. {{log}}</text>
+ </block>
+</view
+```
+
+1. 整体保留⼩程序已有的语法，但在此基础之上，对它进⾏了扩充和增强；
+
+2. ⽐如引⼊了 Vue 中⽐较有代表性的 computed，⽐如能够直接通过 this.store.data.logs[0] = 'Changed' 修改状态。可以说是在⼩程序原⽣半 Vue 半 React 的语法背景下，彻底将其 Vue 化的⼀种⽅案； 
+
+使⽤增强型框架优势：
+
+1. 可以在只引⼊极少依赖，并且保留对⼩程序认知的情况下，⽤更加舒爽的语 法来写代码；
+2.   对于⽬标只投放到特定平台⼩程序的开发者或者⾮专业前端⽽⾔是⽐较好的 选择之⼀；因为你只需要关注很少的新增⽂档和⼩程序⾃身的⽂档就⾜够 了，底层不需要考虑；
+
+#### 3.4.3. 转换类框架 
+
+目的：让开发者几乎不用感受小程序原生语法，更大程度对接前端已有生态，并且可以实现「一码多端」的业务诉求，只是最后的构建产物为小程序代码。
+
+##### 3.4.3.1. 编译时 
+
+通过编译分析的方式，将开发者写的代码转换成小程序原生语法。
+
+以 Rax 编译时和 Taro 2.0 为例，面向开发者的语法是类 React 语法，开发者通过写有一定语法限制的 React 代码，最后转换产物 1:1 转换成对应的小程序代码。
+
+![](https://cdn.nlark.com/yuque/0/2022/png/2340337/1649385304326-506eca59-ce6d-4296-8605-10df215c7050.png)
+
+以一段简单的代码为例
+
+```js
+// rax
+import { createElement, useEffect, useState } from 'rax'
+import View from 'rax-view';
+export default function Home() {
+ const [name, setName] = useState('world');
+ useEffect(() => {
+ console.log('Here is effect.');
+ }, [])
+ return <View>Hello {name}</View>;
+}
+// 转为⼩程序后的代码
+// 逻辑层
+import { __create_component__, useEffect, useState } fro
+function Home() {
+ const [name, setName] = useState('world');
+ useEffect(() => {
+ console.log('Here is effect.');
+ }, []);
+ this._updateData({
+ _d0: name
+ });
+}
+Component(__create_component__(Home));
+// 视图层
+<block a:if="{{$ready}}">
+ <view class="__rax-view">{{_d0}}</view>
+</block
+```
+
+1. 开发者虽然写的是类 React 语法，但是转换后的代码和渐进增强型框架⾮ 常类似
+2. 开发者可以⽐较清晰的看出编译前后代码的对应关系； 编译时⽅案会通过 AST 分析，将开发者写的 JSX 中 return 的模板部分构建到 视图层，剩余部分代码保留，然后通过运⾏时垫⽚模拟 React 接⼝的表现。
+
+优势
+
+1. 运⾏时性能损耗低；
+2. ⽬标代码明确，开发者所写即所得； 
+3. 运⾏时、编译时优化：⽐如框架会给予开发者更多的语法⽀持以及默认的性 能优化处理，⽐如避免多次 setData，亦或是⻓列表优化等等； 
+
+劣势：
+
+1. 语法限制⾼：需要完全命中开发者在模板部分所⽤到的所有语法，语法受 限，如由于是 1:1 编译转换，开发者在开发的时候还是不得不去遵循⼩程序 的开发规范，⽐如⼀个⽂件中定义只能定义⼀个组件之类的； 
+
+##### 3.4.3.2. 运⾏时
+
+相⽐于上⾯的编译时，最⼤的优势是可以⼏乎没有任何语法约束的去完成代码 编写。 
+
+通过在逻辑层模拟 DOM/BOM API，将这些创建视图的⽅法转换为维护⼀棵 VDOM tree，再将其转换成对应 setData 的数据，最后通过预置好的模板递归 渲染出实际视图。 
+
+优势：没有语法限制； 
+
+劣势：以⼀定的性能损耗来换取更为全⾯的 Web 端特性⽀持；
+
+## 4. 微信小程序 
+
+### 4.1. 微信小程序基本内容 
+
+代码github地址：https://github.com/wechat-miniprogram/miniprogram-demo
+
+#### 4.1.1. 基础 
+
+官方文档：https://developers.weixin.qq.com/miniprogram/dev/framework/
+
+小程序代码组成：
+
+- WXML：（WeiXin Markup Language）
+
+- WXSS：（WeiXin Style Sheets）
+
+- WXS：（WeiXin Script）
+
+小程序框架：
+
+1. 逻辑层
+
+a. 官方文档：https://developers.weixin.qq.com/miniprogram/dev/framework/app-service/
+
+b. 使用 JavaScript 引擎为小程序提供开发者 JavaScript 代码的运行环境以及微信小程序的特有功能；
+
+c. 开发者写的所有代码最终将会打包成一份 JavaScript 文件，并在小程序启动的时候运行，直到小程序销毁。这一行为类似 [ServiceWorker](https://developer.mozilla.org/en-US/docs/Web/API/Service_Worker_API)，所以逻辑层也称之为 App Service；
+
+d. 增加 App 和 Page 方法，进行[程序注册](https://developers.weixin.qq.com/miniprogram/dev/framework/app-service/app.html)和[页面注册](https://developers.weixin.qq.com/miniprogram/dev/framework/app-service/page.html)；
+
+e. 增加 getApp 和 getCurrentPages 方法，分别用来获取 App 实例和当前页面栈；
+
+f. 提供丰富的 [API](https://developers.weixin.qq.com/miniprogram/dev/framework/app-service/api.html)，如微信用户数据，扫一扫，支付等微信特有能力；
+
+g. 提供[模块化](https://developers.weixin.qq.com/miniprogram/dev/framework/app-service/module.html#模块化)能力，每个页面有独立的[作用域](https://developers.weixin.qq.com/miniprogram/dev/framework/app-service/module.html#文件作用域)；
+
+h. 小程序框架的逻辑层并非运行在浏览器中，因此 JavaScript 在 web 中一些能力都无法使用，如 window，document 等。
+
+2. 视图层
+
+a. 官方文档：https://developers.weixin.qq.com/miniprogram/dev/framework/view/
+基础核心
+
+1. 小程序运行时
+   a. 小程序生命周期：热启动 == 后台切前台
+
+![](https://cdn.nlark.com/yuque/0/2022/svg/2340337/1649520479424-14b006a6-3666-49d3-84be-92c0bebc44cc.svg)
+
+b. 更新机制
+ⅰ. 启动时同步更新
+
+1. 定期检查小程序版本；
+2. 长时间未使用小程序；
+
+ⅱ. 启动时异步更新
+
+1. 打开发现有新版本，异步下载，下次冷启动时加载新版本；
+
+ⅲ. 开发者手动更新
+
+[wx.getUpdateManager](https://developers.weixin.qq.com/miniprogram/dev/api/base/update/wx.getUpdateManager.html) 
+
+2. 代码注入
+   a. 按需注入："lazyCodeLoading": "requiredComponents"；小程序仅注入当前页面需要的自定义组件和页面代码，在页面中必然不会用到的自定义组件不会被加载和初始化；
+
+   b. 用时注入：在开启「按需注入」特性的前提下，指定一部分自定义组件不在小程序启动时注入，而是在真正渲染的时候才进行注入，使用占位组件在需要渲染但注入完成前展示；
+
+3. 分包加载
+
+   a. 原则
+
+   ⅰ. 声明 subpackages 后，将按 subpackages 配置路径进行打包，subpackages 配置路径外的目录将被打包到 app（主包） 中；
+   ⅱ. app（主包）也可以有自己的 pages（即最外层的 pages 字段）；
+   ⅲ. subpackage 的根目录不能是另外一个 subpackage 内的子目录；
+   ⅳ. tabBar 页面必须在 app（主包）内
+   b. 独立分包
+   ⅰ. 开发者可以按需将某些具有一定功能独立性的页面配置到独立分包中。当小程序从普通的分包页面启动时，需要首先下载主包;
+   ⅱ. 独立分包运行时，App 并不一定被注册，因此 getApp() 也不一定可以获得 App 对象；基础库 [2.2.4](https://developers.weixin.qq.com/miniprogram/dev/framework/compatibility.html) 版本开始 getApp 支持 [allowDefault] 参数，在 App 未定义时返回一个默认实现。当主包加载，App 被注册时，默认实现中定义的属性会被覆盖合并到真正的 App 中；
+
+4. 小程序如何调试？
+   a. vconsole；
+   b. sourceMap；
+   c. 实时日志：重写log，使用wx.getRealtimeLogManager封装，在运营后台“开发->开发管理->运维中心->实时日志”查看；
+   d. errno：针对API的cb err进行状态码的判断，便于针对业务场景语义
+
+5. 小程序如何兼容版本
+
+   ```js
+   // 1. 版本号⽐较
+   const version = wx.getSystemInfoSync().SDKVersion
+   if (compareVersion(version, '1.1.0') >= 0) {
+    wx.openBluetoothAdapter()
+   } else {
+    // 如果希望⽤户在最新版本的客户端上体验您的⼩程序，可以这样⼦提示
+    wx.showModal({
+    title: '提示',
+    content: '当前微信版本过低，⽆法使⽤该功能，请升级到最新微信版本后重试
+    })
+   }
+   // 2. API是否存在
+   if (wx.openBluetoothAdapter) {
+    wx.openBluetoothAdapter()
+   } else {
+    // 如果希望⽤户在最新版本的客户端上体验您的⼩程序，可以这样⼦提示
+    wx.showModal({
+    title: '提示',
+    content: '当前微信版本过低，⽆法使⽤该功能，请升级到最新微信版本后重试
+    })
+   }
+   // 3. wx.canIUse
+   wx.showModal({
+    success: function(res) {
+    if (wx.canIUse('showModal.success.cancel')) {
+    console.log(res.cancel)
+    }
+    }
+   })
+   // 4. 设置最低基础库版本
+   运营后台设置最低基础库版本
+   ```
+
+
+#### 4.1.2. 框架
+
+官方文档：https://developers.weixin.qq.com/miniprogram/dev/reference/
+
+1. 小程序配置
+   a. 全局配置
+   ⅰ. 根目录下app.json；
+   b. 页面配置
+   ⅰ. 在page页面中对应的json文件，权重最高；
+   ⅱ. 原先在根目录下的app.json中window内属性，在页面json中无需添加window；
+   c. sitemap 配置
+   ⅰ. 根目录下sitemap.json；
+
+2. 框架接口
+   a. 小程序App
+   ⅰ. App：必须在 app.js 中调用，必须调用且只能调用一次
+
+   1. onLaunch
+   2. onShow
+   3. onHide
+   4. onError
+   5. onPageNotFound
+   6. onUnhandledRejection
+   7. onThemeChange
+   8. 其他：可以添加任意的函数或数据变量到 Object 参数中，app.js中用 this 可以访问； （Tips：非原生事件最好不要用on开头）
+      ⅱ. getApp：外部访问App中数据的方式
+
+   b.页面
+
+   i.Page：在页面级别中的"app.js"
+
+   1. data
+
+   2. 生命周期事件
+      a. onLoad：加载时触发
+      b. onReady：渲染完成触发
+      c. onShow
+      d. onHide
+      e. onUnload
+
+   3. 页面事件处理事件
+
+      a. onPullDownRefresh
+      b. onReachBottom
+      c. onPageScroll：监听页面滚动
+      d. onAddToFavorites：添加到收藏并自定义收藏内容
+      e. onShareAppMessage：转发事件
+      f. onShareTimeline：转发朋友圈
+      g. onResize
+      h. onTabItemTap
+      i.onSaveExitState：页面销毁前
+
+   4. 组件事情处理
+
+      a. wxml中绑定的自定义事件
+
+      b. Page.route
+      c. Page.prototype.setData
+      ⅰ. 注意：可以以数据路径来改变数组中的某一项或对象的某个属性，如 array[2].message，a.b.c.d，并且不需要在 this.data 中预先定义。
+
+   5. 页面间通信
+
+https://www.yuque.com/lpldplws/web/nl6k99?singleDoc# 《小程序开发框架解析》 密码：nxr5
+
+https://www.yuque.com/lpldplws/web/wsp422ie5fpedsn4?singleDoc# 《阿里前端面试官带你深度剖析面试真题&React Fiber源码解析》 密码：rgzl
+
+https://rax.js.org/docs/guide/about-miniapp
+
+https://github.com/raxjs/miniapp
+
+https://leetcode.cn/problem-list/2ckc81c/
+
+https://www.yuque.com/lpldplws/web/og6swa9wsde8lc8b?#《前端AST》 密码：lxee
+
+https://github.com/jamiebuilds/the-super-tiny-compiler/blob/master/the-super-tiny-compiler.js
+
+https://www.yuque.com/lpldplws/web/zf77fb?singleDoc# 《微信小程序项目优化&开发实战》 密码：tdbo
+
+https://www.yuque.com/lpldplws/web/avn0gl?singleDoc# 《小程序课程课后习题汇总》 密码：nr6g
+
+https://www.yuque.com/lpldplws/web/tsii7l?singleDoc# 《现代hybrid发展史&flutter 与 dart 开发入门》 密码：ov0l
+
+https://www.yuque.com/g/aliang-khvnv/kb/gss67kry0e7m6ehg/collaborator/join?token=fotRM4sX09Xqy4qa# 《微前端(上)》
+
+https://github.com/umijs/qiankun/pull/1061
+
+https://github.com/jamiebuilds/the-super-tiny-compiler/blob/master/the-super-tiny-compiler.js
+
+https://getbyteoffer.feishu.cn/docx/H4ykdC8ZwokzJex1u9qcaH07nqd
+
+
+https://www.yuque.com/lpldplws/web/itd4rdqaqqioga10?#《webpack》 密码：nn2p 
+------
+
+
 # 浏览器中输入URL以后，发生了什么？
 
 本质上，浏览器最终加载的还是js
 
+![image-20230323222003568](/Users/zhengyali/Library/Application Support/typora-user-images/image-20230323222003568.png)
 
+# 浏览器事件循环
+
+1. 事件循环是谁提供的？
+
+2. 宿主环境（浏览器）提供了事件循环的机制v8-js引擎
+   - 宏任务、微任务
+   - 宏任务、微任务、RAF、界面绘制、RequestIdCallback
+
+![image-20230323221209698](/Users/zhengyali/Library/Application Support/typora-user-images/image-20230323221209698.png)
+
+- 事件循环依赖于宿主环境，如果说的是浏览器的事件循环，我拿谷歌的事件循环来举例
+- 一般分为以下几个阶段，用户的输入，js的timers,beignframe,raf,layout,paint
+  - 输入事件包含了阻塞输入事件和非阻塞输入事件
+  - js的timers
+  - beignframe：处理跟框架之前的事情
+  - raf:用于连续对话，性能优化
+  - layout:
+
+- 对于谷歌来说所有的这个过程都遵循一个消息队列，以消息队列的方式回去处理task，这个过程中会清空job的队列
+
+# 浏览器的5个Observer
+
+1. IntersectionObserver可以监听一个元素和可视区域的相交
+2. MutationObserver可以监听一个普通JS对象/DOM的变化
+3. ResizeObserver [resize事件只能监听窗口]，echarts,框框发生变化，可以用来监听元素大小的变化
+4. PerformanceObserver 替换window.performance
+5. ReportingObserver回调上报
 
 # 面试
 
@@ -45598,7 +46553,7 @@ visibility，占据一根树枝
    JPEG，有损、直接色存储，适合还原度要求较高的照片。
    PNG-8，无损、使用索引色。体积更优秀，并且支持透明度调节。
    PNG-24，无损、使用直接色，压缩。
-   SVG，无损、svg放大不会是真的吧，所以适合logo、icon。
+   SVG，无损、svg放大不会失真，所以适合logo、icon。
    webP，有损+无损、直接色、支持透明度、压缩。chrome、opera支持
 
 2. CSS-sprites 精灵图、雪碧图怎么处理？ *
@@ -45645,9 +46600,9 @@ visibility，占据一根树枝
     // 单行超出
     overflow: hidden;
     text-overflow: ellipsis; // 超出省略号
-    white-space: nowrap;   // 不换行
+    white-space: nowrap;   // 不换行，因为是块级元素有宽高，会默认换行，这里强制性不要要行
 
-    // 多行超出
+    // 多行超出，这里只能-webkit上能
     overflow: hidden;
     text-overflow: ellipsis; // 超出省略号
     display: -webkit-box;  // 弹性伸缩盒子模型
@@ -45658,7 +46613,7 @@ visibility，占据一根树枝
     p {
         position: relative;
         line-height: 18px;
-        height: 40px;
+        height: 40px;//这里是不足之处
         overflow: hidden;
     }
     p::after {
@@ -45700,10 +46655,10 @@ vmax: vw和vh中较大值
    => 浮动元素高度独立，不会再影响撑开原有父类的高度
 
 3. 高度塌陷原因，如何解决高度塌陷？*
-   给父级定义height
-    浮动元素之后，给一个div，clear: both;
-    父级标签增加overflow:hidden;
-    用伪元素模拟div
+   - 给父级定义height
+   - 浮动元素之后，给一个div，clear: both;
+   - 父级标签增加overflow:hidden;
+   -  用伪元素模拟div
 
 4. 简单说说如何创建BFC，以及如何解决相应一些问题？ **
    创建BFC的条件：
@@ -45803,7 +46758,7 @@ BFC不会影响外部元素
     .center {
         flex: 1;
     }
-    // 3. 圣杯布局
+    // 3. 圣杯布局,主要利用父边距
     .container {
         height: 200px;
         padding-left: 100px;
@@ -45813,13 +46768,13 @@ BFC不会影响外部元素
         float: left;
         width: 100%;
         height: 200px;
-    }
+    }//此时center已经是整行了
     .left {
         position: relative;
         left: -100px;
     
         float: left;
-        margin-left: -100%;
+        margin-left: -100%;//这里是跑到上面的关键
         width: 100px;
         height: 200px;
     }
@@ -45893,4 +46848,8 @@ BFC不会影响外部元素
 三角形 => 梯形 => 扇形 => 基础元素 + 技巧
 1px、12px font => 变形进行处理
 动画 => 幻灯片 / 电影
+
+
+
+https://www.electronjs.org/zh/docs/latest/api/desktop-capturer
 
