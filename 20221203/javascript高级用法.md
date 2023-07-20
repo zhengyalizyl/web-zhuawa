@@ -45841,7 +45841,7 @@ b. 更新机制
 
 2. 框架接口
    a. 小程序App
-   ⅰ. App：必须在 app.js 中调用，必须调用且只能调用一次
+        ⅰ. App：必须在 app.js 中调用，必须调用且只能调用一次
 
    1. onLaunch
    2. onShow
@@ -45855,7 +45855,7 @@ b. 更新机制
 
    b.页面
 
-   i.Page：在页面级别中的"app.js"
+      i. Page：在页面级别中的"app.js"
 
    1. data
 
@@ -45884,9 +45884,450 @@ b. 更新机制
 
       b. Page.route
       c. Page.prototype.setData
-      ⅰ. 注意：可以以数据路径来改变数组中的某一项或对象的某个属性，如 array[2].message，a.b.c.d，并且不需要在 this.data 中预先定义。
+           ⅰ. 注意：可以以数据路径来改变数组中的某一项或对象的某个属性，如 array[2].message，a.b.c.d，并且不需要在 this.data 中预先定义。
 
    5. 页面间通信
+
+      使用 [wx.navigateTo](https://developers.weixin.qq.com/miniprogram/dev/api/route/wx.navigateTo.html) 打开，这两个页面间将建立一条数据通道：
+      a. 被打开的页面可以通过 this.getOpenerEventChannel() 方法来获得一个 EventChannel 对象；
+      b. wx.navigateTo 的 success 回调中也包含一个 EventChannel 对象；
+      c. 这两个 EventChannel 对象间可以使用 emit 和 on 方法相互发送、监听事件；
+
+   iii. getCurrentPage
+
+   1. 获取当前页面栈，数组中第一个元素为首页，最后一元素为当前页面；
+
+   2. 场景：
+
+      ```js
+      1. 进⼊⼩程序⾮默认⾸⻚时，需要执⾏对应操作
+      onShow() {
+       let pages = getCurrentPages(); // 当前⻚⾯栈
+       if (pages.length == 1) {
+       //todo
+       }
+      }
+      2. 跨⻚⾯赋值
+      let pages = getCurrentPages();// 当前⻚⾯栈
+      let prevPage = pages[pages.length - 2];// 上⼀⻚⾯
+      prevPage.setData({
+       // 直接给上移⻚⾯赋值
+      });
+      3. ⻚⾯跳转后⾃动刷新
+      wx.switchTab({
+       url: '../index/index',
+       success: function (e) {
+       const page = getCurrentPages().pop(); // 当前⻚⾯
+       if (page == undefined || page == null) return;
+       page.onLoad(); //或者其它操作
+       }
+      })
+      4. 获取当前⻚⾯相关信息
+      let pages = getCurrentPages(); // 当前⻚⾯栈
+      // 当前⻚⾯为⻚⾯栈的最后⼀个元素
+      let prevPage = pages[pages.length - 1];// 当前⻚⾯
+      
+      console.log( prevPage.route) //举例：输出为‘pages/index/index'
+      ```
+
+      3. 自定义组件
+         ⅰ. Component
+         ⅱ. Behavior
+
+      4. 模块化
+         ⅰ. require
+
+         1. 引入module.export或者 export暴露出的接口，需要引入模块文件相对于当前文件的相对路径，或npm模块名，或npm模块路径。不支持绝对路径
+
+         ii. module：当前模块对象
+         ⅲ. export：module.export的引用
+         ⅳ. requirePlugin：引用插件
+         ⅴ. requireMiniProgram：引用当前小程序
+
+      5. 基础功能
+         ⅰ. console
+
+         1. console.debug
+         2. console.error
+         3. console.log
+         4. console.info
+         5. console.warn
+         6. console.group
+         7. console.groupEnd
+
+         ii. 定时器
+
+         1. setTimeout
+         2. clearTimeout
+         3. setInterval
+         4. clearInterval
+
+   3. WXML
+      a. 数据绑定
+           ⅰ. 数据绑定使用 Mustache 语法（双大括号）包起来，与Page里data变量绑定起来；
+           ⅱ. 支持类型
+
+               1.  变量：<view> {{ message }} </view>
+               1.  属性：<view id="item-{{id}}"> </view>
+
+      1. 控制属性：<view wx:if="{{condition}}"> </view>
+      2. 关键字（在双引号间）：<checkbox checked="{{false}}"> </checkbox> 
+      3. 运算：<view> {{a + b}} + {{c}} + d </view>
+      4. 逻辑：<view wx:if="{{length > 5}}"> </view> 
+      5. etc......
+
+      b. 列表渲染
+
+      ```js
+      // 默认数组的当前项的下标变量名默认为 index，数组当前项的变量名默
+      <view wx:for="{{array}}">
+       {{index}}: {{item.message}}
+      </view>
+      Page({
+       data: {
+       array: [{
+       message: 'foo',
+       }, {
+       message: 'bar'
+       }]
+       }
+      })
+      // ⼿动指定
+      <view wx:for="{{array}}" wx:for-index="idx" wx:for-item=
+       {{idx}}: {{itemName.message}}
+      </view>
+      // 重复渲染代码块
+      <block wx:for="{{[1, 2, 3]}}">
+       <view> {{index}}: </view>
+       <view> {{item}} </view>
+      </block>
+      ```
+
+      c. 条件渲染
+
+      ```js
+      <view wx:if="{{length > 5}}"> 1 </view>
+      <view wx:elif="{{length > 2}}"> 2 </view>
+      <view wx:else> 3 </view>
+      // block
+      <block wx:if="{{true}}">
+       <view> view1 </view>
+       <view> view2 </view>
+      </block>
+      wx:if vs hidden
+      wx:if 有更⾼的切换消耗⽽ hidden 有更⾼的初始渲染消耗。
+      因此，如果需要频繁切换的情景下，⽤ hidden 更好，如果在运⾏时条件不大可能改变则wx:if较好
+      ```
+
+      d. 模版
+
+      ```js
+      // 定义模板
+      <!--
+       index: int
+       msg: string
+       time: string
+      -->
+      <template name="msgItem">
+       <view>
+       <text> {{index}}: {{msg}} </text>
+       <text> Time: {{time}} </text>
+       </view>
+      </template>
+      // 使⽤模板
+      <template is="msgItem" data="{{...item}}"/>
+      
+      Page({
+       data: {
+       item: {
+       index: 0,
+       msg: 'this is a template',
+       time: '2016-09-15'
+       }
+       }
+      }
+      ```
+
+      e. 引用
+
+      ```js
+      // import
+      // 只会 import ⽬标⽂件中定义的 template，⽽不会 import ⽬标⽂
+      <!-- item.wxml -->
+      <template name="item">
+       <text>{{text}}</text>
+      </template>
+      <import src="item.wxml"/>
+      <template is="item" data="{{text: 'forbar'}}"/>
+      
+      // include
+      // include 可以将⽬标⽂件除了 <template/> <wxs/> 外的整个代码
+      
+      <!-- index.wxml -->
+      <include src="header.wxml"/>
+      <view> body </view>
+      <include src="footer.wxml"/>
+      
+      <!-- header.wxml -->
+      <view> header </view>
+      <!-- footer.wxml -->
+          <view> footer </view>
+      ```
+
+4. wxs
+
+   a. 模块
+        ⅰ. 可以编写在 wxml 文件中的 <wxs> 标签内，或以 .wxs 为后缀名的文件内； 
+        ⅱ. wxs支持module、src标签，src为相对路径；
+        ⅲ. 每个 wxs 模块均有一个内置的 module 对象；
+        ⅳ. 在wxs中，可以引入新的wxs，或者使用require引入；
+
+   ```js
+   // /pages/tools.wxs
+   var foo = "'hello world' from tools.wxs";
+   var bar = function (d) {
+    return d;
+   }
+   module.exports = {
+    FOO: foo,
+    bar: bar,
+   };
+   module.exports.msg = "some msg";
+   <!-- page/index/index.wxml -->
+   <wxs src="./../tools.wxs" module="tools" />
+   var tools = require("./tools.wxs");
+   
+   <view> {{tools.msg}} </view>
+   <view> {{tools.bar(tools.FOO)}} </view>
+   ```
+
+​       b. 变量	
+
+​            i. WXS 中的变量均为值的引用；
+​            ⅱ. 没有声明的变量直接赋值使用，会被定义为全局变量；
+​            ⅲ. 如果只声明变量而不赋值，则默认值为 undefined；
+​            ⅳ. var表现与javascript一致，会有变量提升。
+​       c. 注释
+
+```js
+<!-- wxml -->
+<wxs module="sample">
+// ⽅法⼀：单⾏注释
+/*
+⽅法⼆：多⾏注释
+*/
+/*
+⽅法三：结尾注释。即从 /* 开始往后的所有 WXS 代码均被注释
+var a = 1;
+var b = 2;
+var c = "fake";
+</wxs>
+```
+
+​		d. 运算符
+
+​			i. 同JS一致；
+
+​		e. 语句
+​			ⅰ. 同JS一致，支持if else if else、switch、for、while；
+​		f. 数据类型
+​            ⅰ. number ： 数值
+​			ⅱ. string ：字符串
+​			ⅲ. boolean：布尔值
+​			ⅳ. object：对象
+​			ⅴ. function：函数
+​			ⅵ. array : 数组
+​			ⅶ. date：日期
+​			ⅷ. regexp：正则
+
+```js
+// 如何区分数据类型
+1. constructor可以区分所有类型
+var number = 10;
+console.log( "Number" === number.constructor );
+var string = "str";
+console.log( "String" === string.constructor );
+var boolean = true;
+console.log( "Boolean" === boolean.constructor );
+var object = {};
+console.log( "Object" === object.constructor );
+var func = function(){};
+console.log( "Function" === func.constructor );
+var array = [];
+console.log( "Array" === array.constructor );
+var date = getDate();
+console.log( "Date" === date.constructor );
+var regexp = getRegExp();
+console.log( "RegExp" === regexp.constructor )；
+2. typeof可以判断部分类型
+var number = 10;
+var boolean = true;
+var object = {};
+var func = function(){};
+var array = [];
+var date = getDate();
+var regexp = getRegExp();
+console.log( 'number' === typeof number );
+console.log( 'boolean' === typeof boolean );
+console.log( 'object' === typeof object );
+console.log( 'function' === typeof func );
+console.log( 'object' === typeof array );
+console.log( 'object' === typeof date );
+console.log( 'object' === typeof regexp );
+console.log( 'undefined' === typeof undefine
+```
+
+#### 4.1.3 组件
+
+官方文档：https://developers.weixin.qq.com/miniprogram/dev/component/
+参考代码内容实践基础组件及扩展能力
+
+#### 4.1.4 API
+
+官方文档：https://developers.weixin.qq.com/miniprogram/dev/api/
+
+参考代码内容接口部分
+
+业务中常用：
+
+- 基础：小程序应用级事件；
+
+- 页面交互：路由、跳转、转发；
+
+- 样式：导航栏、背景、tabBar；
+
+- 操作：下拉刷新、滚动、动画；
+
+- 其他：支付、LBS、设备、开放接口；
+
+ 
+
+#### 4.1.5 面试常见问题
+
+1. 框架相关
+   a. 为什么要分包？
+   	 ⅰ. 目前小程序分包大小有以下限制：
+
+    1. 整个小程序所有分包大小不超过 20M；
+
+    2. 单个分包/主包大小不能超过 2M；
+
+       ⅱ. 对小程序进行分包，可以优化小程序首次启动的下载时间，以及在多团队共同开发时可以更好的解耦协作；
+
+   b. 如何提升小程序SEO？
+
+   ​	ⅰ. 官方文档：https://developers.weixin.qq.com/miniprogram/dev/framework/search/seo.html
+   ​	ⅱ. 小程序里跳转的页面 (url) 可被直接打开；
+   ​	ⅲ. 页面跳转优先采用navigator组件；
+   ​	ⅳ. 清晰简洁的页面参数；
+   ​	ⅴ. 配置小程序sitemap；
+   ​	ⅵ. 必要的时候才请求用户进行授权、登录、绑定手机号等；
+   ​	ⅶ. 我们不收录 web-view 中的任何内容；
+   ​	ⅷ.  设置一个清晰的标题和页面缩略图；
+   c. 如何进行页面间通信？
+   ​	ⅰ. WXML 数据绑定；
+   ​	ⅱ. 事件：用于子组件向父组件传递数据，可以传递任意数据；
+      ⅲ. 父组件通过 this.selectComponent 方法获取子组件实例对象直接访问组件的任意数据和方法
+
+   ```js
+   // ⽗组件
+   Page({
+    data: {},
+    getChildComponent: function () {
+    const child = this.selectComponent('.my-component');
+    console.log(child)
+    }
+   })
+   
+   ```
+
+   ​	iv. 使用 [wx.navigateTo](https://developers.weixin.qq.com/miniprogram/dev/api/route/wx.navigateTo.html) 打开，这两个页面间将建立一条数据通道：
+
+   1. 被打开的页面可以通过 this.getOpenerEventChannel() 方法来获得一个 EventChannel 对象；
+   2. wx.navigateTo 的 success 回调中也包含一个 EventChannel 对象；
+   3. 这两个 EventChannel 对象间可以使用 emit 和 on 方法相互发送、监听事件；
+
+2. 性能相关
+
+   a. 小程序启动流程 官方文档：https://developers.weixin.qq.com/miniprogram/dev/framework/performance/tips/start_process.html
+   b. 小程序切换页面流程 官方文档：https://developers.weixin.qq.com/miniprogram/dev/framework/performance/tips/runtime_nav.html
+   c. 如何提升小程序性能
+   	ⅰ. 启动时性能优化
+
+   		1. [代码包体积优化](https://developers.weixin.qq.com/miniprogram/dev/framework/performance/tips/start_optimizeA.html)；
+   		1. [代码注入优化](https://developers.weixin.qq.com/miniprogram/dev/framework/performance/tips/start_optimizeB.html)；
+   		1. [首屏渲染优化](https://developers.weixin.qq.com/miniprogram/dev/framework/performance/tips/start_optimizeC.html)；
+   		1. [其他优化](https://developers.weixin.qq.com/miniprogram/dev/framework/performance/tips/start_optimizeD.html)；
+
+      ⅱ. 运行时性能优化；
+
+   1. [合理使用setState](https://developers.weixin.qq.com/miniprogram/dev/framework/performance/tips/runtime_setData.html)；
+   2. [渲染性能优化](https://developers.weixin.qq.com/miniprogram/dev/framework/performance/tips/runtime_render.html)；
+   3. [页面切换优化](https://developers.weixin.qq.com/miniprogram/dev/framework/performance/tips/runtime_nav.html)；
+   4. [资源加载优化](https://developers.weixin.qq.com/miniprogram/dev/framework/performance/tips/runtime_resource.html)；
+   5. [内存优化](https://developers.weixin.qq.com/miniprogram/dev/framework/performance/tips/runtime_memory.html)；
+
+### 4.2 微信小程序发布、上线流程&devTools
+
+#### 4.2.1. 协同工作 
+
+参考官网
+
+[https://developers.weixin.qq.com/miniprogram/dev/framework/quickstart/release.html#%E5%8D%8F%E5%90%8C%E5%B7%A5%E4%BD%9C](https://developers.weixin.qq.com/miniprogram/dev/framework/quickstart/release.html#协同工作)
+
+#### 4.2.2. dev tools 
+
+强烈建议阅读官网devtools，掌握基本的IDE操作
+
+https://developers.weixin.qq.com/miniprogram/dev/devtools/devtools.html
+
+#### 4.2.3. 面试常见问题 
+
+1. 域名相关
+
+​		a. 本地开发如何不校验域名，web-view(业务域名)、TLS 版本以及 HTTPS 证书？
+
+![](https://cdn.nlark.com/yuque/0/2022/png/2340337/1649438887342-ce56b79f-e453-42c8-837e-0d1d103f6298.png)
+
+
+
+​		b. 如何配置开发域名？ 小程序的安全域名信息，合法域名可在 [mp 管理后台](https://mp.weixin.qq.com/) 开发-开发管理-开发设置 中进行设置
+
+2. 如何提升开发效率
+
+​		a. 开发环境：
+
+​			ⅰ. 开启热重载；
+
+​			ⅱ. 开发环境下关闭域名校验；
+
+​			ⅲ. 请求开启Mock；
+
+​			ⅳ. 局部编译；
+
+​		b. 账号：
+
+​			ⅰ. 申请测试号，只需访问 [申请地址](https://mp.weixin.qq.com/wxamp/sandbox?doc=1) ，就可以开发调试；
+
+3. 如何分析小程序性能？
+
+​		a. 真机：使用微信安卓客户端（开发者），具体操作：https://developers.weixin.qq.com/miniprogram/dev/devtools/performancetool.html
+
+​		b. devTools：调试器中audits，类似于chrome中的lighthouse；
+
+​		c. 分析包依赖： 删除无依赖的文件；
+
+4. 如何进行埋点？
+
+​		a. 开发者工具上可以编辑和调试[自定义分析](https://mp.weixin.qq.com/debug/wxadoc/analysis/custom/)的数据上报功能，点击菜单栏中的 “工具 - 自定义分析” 即可弹窗打开自定义分析；
+
+5. 如何进行小程序上传、发布及自动化测试？
+
+​		a. devTools：自带发布集成；
+
+​		b. 使用[miniprogram-ci](https://www.npmjs.com/package/miniprogram-ci)；（除非集成进自动化部署外，其余不建议使用，记得打开安全设置 CLI/HTTP 调用功能）：https://developers.weixin.qq.com/miniprogram/dev/devtools/ci.html
+
+
 
 https://www.yuque.com/lpldplws/web/nl6k99?singleDoc# 《小程序开发框架解析》 密码：nxr5
 
