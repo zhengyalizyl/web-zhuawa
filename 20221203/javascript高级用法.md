@@ -46327,9 +46327,565 @@ https://developers.weixin.qq.com/miniprogram/dev/devtools/devtools.html
 
 ​		b. 使用[miniprogram-ci](https://www.npmjs.com/package/miniprogram-ci)；（除非集成进自动化部署外，其余不建议使用，记得打开安全设置 CLI/HTTP 调用功能）：https://developers.weixin.qq.com/miniprogram/dev/devtools/ci.html
 
-
+# **小程序开发框架解析**
 
 https://www.yuque.com/lpldplws/web/nl6k99?singleDoc# 《小程序开发框架解析》 密码：nxr5
+
+## 1. 课程目标
+
+1. 小程序原生开发对比，了解行业小程序开发支撑现状；
+
+2.  掌握多端小程序开发框架，配置开发环境；
+
+## 2. 课程大纲 
+
+- 行业小程序原生开发对比；
+
+- 小程序跨端框架介绍；
+
+## 3. 行业小程序对比 
+
+### 3.1  产品及定位 
+
+1. 微信：在微信内被便捷地获取和传播的连接用户与服务的方式，同时具有出色的使用体验；
+
+2. 支付宝：运行在支付宝客户端，可以被便捷地获取和传播，为终端用户提供更优的用户体验；
+
+3. 淘宝：服务移动开发者的平台，帮助开发者构建自己的业务阵地，并提供良好的用户体验；
+
+4. 百度：依托以百度App为代表的全域流量，通过百度AI开放式赋能，精准连接用户，业界首家开放生态，让开发者重回业务理解和创意赛道；
+
+总结：
+
+1. 小程序的目标是万事万物皆可小程序
+2. 超级APP的崛起为小程序提供生存土壤 -> 圈地运营；
+3. 云计算发展，Saas标准化服务输出，降低了品牌建站的成本-> FaaS；
+
+### 3.2. 官方文档 
+
+1. 微信：[微信公众平台-小程序](https://developers.weixin.qq.com/miniprogram/introduction/index.html?t=18092610)---[文档](https://developers.weixin.qq.com/miniprogram/dev/index.html)
+
+2. 支付宝：[蚂蚁金服开发平台-小程序](https://mini.open.alipay.com/channel/miniIndex.htm)---[文档](https://docs.alipay.com/mini/developer/getting-started)
+
+3. 淘宝：[淘宝开发者平台](https://open.taobao.com/?spm=a219a.14658873.1.1.3d0e4dc1qltrH6)---[文档](https://open.taobao.com/doc.htm?docId=73&docType=1)
+
+4. 百度：[智能小程序](https://smartprogram.baidu.com/mappconsole/main/login) --- [文档](https://smartprogram.baidu.com/docs/introduction/enter_application/)
+
+### 3.3. IDE 
+
+1. [微信IDE](https://developers.weixin.qq.com/miniprogram/dev/devtools/download.html)
+
+2. [支付宝IDE](https://docs.alipay.com/mini/ide/download)
+
+3. [淘宝IDE](https://miniapp.open.taobao.com/docV3.htm?spm=a219a.15212435.0.0.4a78669aoT4coY&docId=119188&docType=1)
+
+4. [百度IDE](https://smartprogram.baidu.com/docs/introduction/register_prepare/)
+
+### 3.4. 文件结构 
+
+1. 微信小程序
+
+```js
+## 微信小程序
+- pages/               页面目录
+  - page1/
+    - index.wxml  // 必须，页面结构
+    - index.js  // 必须，页面逻辑
+    - index.wxss  // 非必须，页面样式表
+    - index.json  // 非必须，页面配置
+- app.js  // 必须，小程序逻辑
+- app.json  // 必须，小程序公共配置
+- app.wxss  // 非必须，小程序公共样式表
+```
+
+2. 支付宝小程序
+
+   ```js
+   ## 支付宝小程序
+   - pages/          
+     - page1/
+       - index.axml  // 必须，页面结构    
+       - index.js  // 必须，页面逻辑    
+       - index.acss  // 非必须，页面样式表
+       - index.json  // 非必须，页面配置    
+   - app.json  // 必须，小程序公共设置  
+   - app.js  // 必须，小程序逻辑    
+   - app.acss  // 非必须，小程序公共样式表 
+   ```
+
+3. 手淘小程序
+
+   ```js
+   ## 手淘小程序：基于轻框架
+   - src/
+     - components/          组件目录，可以没有
+       - component1.html    组件文件
+       - component2.html
+     - pages/               页面目录
+       - page1/
+         - index.html       页面入口
+       - page2/
+         - index.html
+       - index/
+         - index.html
+   - manifest.json        描述项目基本信息，包括页面、tabBar等
+   - app.js               程序级应用入口
+   - package.json           项目工程文件
+   
+   ## 手淘小程序：不基于轻框架完全同支付宝小程序
+    
+   ```
+
+4. 百度小程序
+
+   ```js
+   ## 百度小程序
+   - pages/              
+     - page1/
+       - index.swan  // 模板文件
+       - index.js  // 页面逻辑
+       - index.css // 页面样式
+   - app.js        
+   - app.json  //  配置文件   
+   - app.css
+   - project.swan.json  
+   ```
+
+### 3.5生命周期
+
+1. 微信小程序
+
+   ```js
+   //index.js
+   Page({
+   
+     // {Object}：页面的初始数据
+     data: { 
+       text: "This is page data."
+     },
+     
+     // {Function}：生命周期回调—监听页面加载
+     onLoad: function(options) {
+       // Do some initialize when page load.
+     },
+     
+     // {Function}：生命周期回调—监听页面初次渲染完成
+     onReady: function() {
+       // Do something when page ready.
+     },
+     
+     // {Function}：生命周期回调—监听页面显示
+     onShow: function() {
+       // Do something when page show.
+     },
+     
+     // {Function}：生命周期回调—监听页面隐藏
+     onHide: function() {
+       // Do something when page hide.
+     },
+     
+     // {Function}：生命周期回调—监听页面卸载
+     onUnload: function() {
+       // Do something when page close.
+     },
+     
+     // {Function}：监听用户下拉动作
+     onPullDownRefresh: function() {
+       // Do something when pull down.
+     },
+     
+     // {Function}：页面上拉触底事件的处理函数
+     onReachBottom: function() {
+       // Do something when page reach bottom.
+     },
+     
+     // {Function}：用户点击右上角转发
+     onShareAppMessage: function () {
+       // return custom share data when user share.
+     },
+     
+     // {Function}：页面滚动触发事件的处理函数
+     onPageScroll: function() {
+       // Do something when page scroll
+     },
+     
+     // {Function}：当前是 tab 页时，点击 tab 时触发
+     onTabItemTap(item) {
+       console.log(item.index)
+       console.log(item.pagePath)
+       console.log(item.text)
+     },
+     // Event handler 其他：开发者可以添加任意的函数或数据到 Object 参数中，在页面的函数中用 this 可以访问
+     viewTap: function() {
+       this.setData({
+         text: 'Set some data for updating view.'
+       }, function() {
+         // this is setData callback
+       })
+     },
+     customData: {
+       hi: 'MINA'
+     }
+   })
+   
+   ```
+
+2. 支付宝小程序
+
+   ```js
+   //index.js
+   Page({
+     data: {
+       title: "Alipay"
+     },
+     onLoad(query) {
+       // 页面加载
+     },
+     onReady() {
+       // 页面加载完成
+     },
+     onShow() {
+       // 页面显示
+     },
+     onHide() {
+       // 页面隐藏
+     },
+     onUnload() {
+       // 页面被关闭
+     },
+     
+     // {Function}：点击标题触发
+     onTitleClick() {
+       // 标题被点击
+     },
+     onPullDownRefresh() {
+       // 页面被下拉
+     },
+     onReachBottom() {
+       // 页面被拉到底部
+     },
+     onShareAppMessage() {
+      // 返回自定义分享信息
+     },
+     viewTap() {
+       // 事件处理
+       this.setData({
+         text: 'Set data for updat.'
+       })
+     },
+     
+     // 其他：开发者可以添加任意的函数或属性到 object 参数中，在页面的函数中可以用 this 来访问
+     go() {
+       // 带参数的跳转，从 page/index 的 onLoad 函数的 query 中读取 xx
+       my.navigateTo({url:'/page/index?xx=1'})
+     },
+     customData: {
+       hi: 'alipay'
+     }
+   })
+   
+   ```
+
+   3. 淘宝小程序
+
+      ```js
+      // 不基于框架：跟支付宝小程序语法几乎完全一样
+      //index.js
+      Page({
+        data: {
+          title: "Alipay"
+        },
+        onLoad(query) {
+          // 页面加载
+        },
+        onReady() {
+          // 页面加载完成
+        },
+        onShow() {
+          // 页面显示
+        },
+        onHide() {
+          // 页面隐藏
+        },
+        onUnload() {
+          // 页面被关闭
+        },
+        
+        viewTap() {
+          // 事件处理
+          this.setData({
+            text: 'Set data for updat.'
+          })
+        },
+        go() {   
+      // 带参数的跳转，从 page/index 的 onLoad 函数的 query 中读取 xx
+          my.navigateTo('/page/index?xx=1')
+        },
+        customData: {
+          hi: 'alipay'
+        }
+      })
+      
+      // 基于框架，类Rax框架，html、js、css在同一文件中，通过sfc2mp转为支付宝小程序
+      <template>
+        <view class="demo-page">
+          <text class="title">欢迎来到{{title}}</text>
+          <button :class="btn" @click="goto">开启未来</button>
+        </view>
+      </template>
+      
+      <style>
+        .demo-page {
+          flex-direction: column;
+          justify-content: center;
+          align-items: center;
+        }
+      
+        .title {
+          font-size: 40px;
+          text-align: center;
+        }
+      
+        .btn {
+          width: 550px;
+          height: 86px;
+          margin-top: 75px;
+          border-radius: 43px;
+          background-color: #09ba07;
+          font-size: 30px;
+          color: #ffffff;
+        }
+      
+        .clickedBtn {
+          width: 550px;
+          height: 86px;
+          margin-top: 75px;
+          border-radius: 43px;
+          background-color: #09ba07;
+          font-size: 30px;
+          color: red;
+        }
+      </style>
+      
+      <script>
+        import page from '@core/page';
+      
+        export default {
+          data: {
+            title: '示例页面',
+            btn: 'btn',
+          },
+          methods: {
+            goto () {
+              this.btn = 'clickedBtn';
+      
+              my.navigateTo({
+                url: 'test?id=1'
+              });
+            }
+          },
+          beforeCreate() {
+            page.on('show', () => {});
+            page.on('hide', () => {});
+          },
+          created (){
+      
+          },
+          updated () {
+      
+          },
+          destroyed () {
+      
+          },
+        }
+      </script>
+      ```
+
+   4. 百度小程序
+
+   ```js
+   
+   Page({
+       data: {
+           name: 'swan'
+       },
+       onLoad: function () {
+   
+       },
+       onReady: function() {
+           // Do something when page ready.
+       },
+       onShow: function() {
+           // Do something when page show.
+       },
+       onHide: function() {
+           // Do something when page hide.
+       },
+       onUnload: function() {
+           // Do something when page close.
+       },
+       onPullDownRefresh: function() {
+           // Do something when pull down.
+       },
+       onReachBottom: function() {
+           // Do something when page reach bottom.
+       },
+       onShareAppMessage: function () {
+           // return custom share data when user share.
+       },
+       // {Function}：错误监听函数
+       onError: function (e) {
+         // return error info : e
+       },
+       
+       // 其他：开发者可以添加任意的函数或数据到 object 参数中，在页面的函数中用 this 可以访问
+       any: function () {
+         // return custom data
+       }
+   });
+   ```
+
+### 3.6 视图层
+
+#### 3.6.1 数据绑定
+
+1. 微信：指令以wx:开头
+
+   ```js
+   <view wx:if="{{condition}}"> </view>
+   ```
+
+2. 支付宝：指令以a:开头
+
+   ```js
+   <view a:if="{{view == 'WEBVIEW'}}"> WEBVIEW </view> 
+   <view a:elif="{{view == 'APP'}}"> APP </view> <view a:else> alipay </view>
+   ```
+
+3. 淘宝：完全同支付宝
+
+4. 百度
+
+   ```js
+   Page({
+       data: {
+           person: {name: 'Lebron James', pos: 'SF', age: 33},
+           teams: ['Cleveland Cavaliers', 'Miami Heat', 'Los Angeles Lakers'],
+           tag: 'basketball',
+           flag: true
+       }
+   });
+   
+   <view s-if="flag"></view> // 1.`s-` 开头 2.`flag`没有{{}}
+   <template is="team-card" data="{{ {teams} }}" /> // {{ {items} }}
+   ```
+
+#### 3.6.2 样式支持
+
+全部支持rpx逻辑单位
+
+### 3.7 组件
+
+目前以微信小程序支持最为完善
+
+1. 微信小程序
+
+- [picker-view](https://developers.weixin.qq.com/miniprogram/dev/component/picker-view.html)：滚动选择器
+
+- [functional-page-navigator](https://developers.weixin.qq.com/miniprogram/dev/component/functional-page-navigator.html)：跳转至插件功能页
+
+- [live-push](https://developers.weixin.qq.com/miniprogram/dev/component/live-pusher.html)：实时音视频录制
+
+- [ad](https://developers.weixin.qq.com/miniprogram/dev/component/ad.html)：banner广告
+
+- [official-account](https://developers.weixin.qq.com/miniprogram/dev/component/official-account.html)：公众号关注组件
+
+2. 支付宝小程序
+
+- 缺少movable-area
+
+- 缺少cover-view
+
+- 缺少rich-text
+
+- 缺少audio
+
+- 缺少video
+
+- 缺少camera
+
+- 缺少live-player
+
+- 缺少live-pusher
+
+- 缺少ad
+
+- 缺少open-data
+
+3. 淘宝
+
+- 缺少movable-area
+
+- 缺少cover-view
+
+- 缺少rich-text
+
+- 缺少camera
+
+- 缺少live-player
+
+- 缺少live-pusher
+
+- 缺少canvas
+
+- 缺少web-view
+
+- 缺少ad
+
+- 缺少open-data
+
+- 缺少offical-account
+
+4. 百度
+
+- [animation-view](https://smartprogram.baidu.com/docs/develop/component/base_animation-view/)：动画组件
+
+- 缺少live-pusher
+
+### 3.8. 总结 
+
+小程序底层方案都是一致的，只不过在支持程度等有所不同。
+
+以支付宝小程序为例：
+
+1. 小程序分别运行在 worker(JSEngine) 以及 render 渲染层中， render 可以有多个， worker 只有一个，方便 app 数据在页面间的共享和交互；（渲染层 & 逻辑层）
+
+2. worker 运行小程序的逻辑处理代码，包括事件处理，api 调用以及框架的生命周期管理；（逻辑层功能）
+
+3. render 运行小程序的渲染代码，主要包括模版／样式和框架的跨终端的 js 组件或 native 组件，获取逻辑层的数据进行渲染；（渲染层功能）
+
+4. worker 和所有的 render 都建立连接，将需要渲染的数据传递给对应的 render 进行渲染，worker 也会将 api 调用转给 native SDK 处理；（Hybrid通信）
+
+5. render 则将组件的触发事件送到对应的 worker 处理，同时接受 worker 的 setData 调用 React 重新渲染。 render 可以看作一个无状态的渲染终端，状态统统保留在 app 级别的 worker 里面；（渲染层&逻辑层交互）
+
+![](https://cdn.nlark.com/yuque/0/2022/png/2340337/1649835365830-c7fa7fb7-3c78-4d81-beb9-b9df55ab1cfa.png)
+
+## 4. 小程序跨端框架介绍
+
+### 4.1 原生小程序开发
+
+
+
+
+
+
+
+https://www.yuque.com/lpldplws/web/og6swa9wsde8lc8b?#《前端AST》 密码：lxee
+
+
+https://www.yuque.com/lpldplws/web/itd4rdqaqqioga10?#《webpack》 密码：nn2p 
+
+
 
 https://www.yuque.com/lpldplws/web/wsp422ie5fpedsn4?singleDoc# 《阿里前端面试官带你深度剖析面试真题&React Fiber源码解析》 密码：rgzl
 
