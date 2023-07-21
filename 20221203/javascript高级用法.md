@@ -46874,6 +46874,1209 @@ https://www.yuque.com/lpldplws/web/nl6k99?singleDoc# 《小程序开发框架解
 
 ### 4.1 原生小程序开发
 
+原生小程序适用于：需求明确只在指定小程序一端进行，保证最大程度的避免多端框架兼容带来的莫名bug。
+
+### 4.2. 多端小程序开发 
+
+Tips：只介绍React语言的跨端框架；
+
+#### 4.2.1. 编译时 
+
+用户编写的业务代码解析成AST树，然后通过语法分析强行将用户写的类React代码转换为可运行的小程序代码,代表：京东的Taro1/2、去哪儿的Nanachi，淘宝的Rax。
+
+以下以Rax为例
+
+##### 4.2.1.1. 概览
+
+![](https://cdn.nlark.com/yuque/0/2022/png/2340337/1649842560481-d7babadf-473b-4546-947d-6e4cfc8eddbd.png?x-oss-process=image%2Fresize%2Cw_1500%2Climit_0)
+
+编译时链路主要分为五个模块：
+
+1. CLI：整个链路的入口，用户编写的所有业务代码都经由 CLI 读取、处理和输出；
+
+2. loader：webpack loader，用于处理各种类型的文件，包括 app、page、component、script 以及静态资源等；
+
+3. compiler：用于进行 AST 转换并生成对应的小程序代码；
+
+4.  runtime：为生成的 js 代码提供了运行时的垫片支持；
+
+5. universal：多端统一的 universal 组件以及 API 的基础服务支持；
+
+###### 4.2.1.1.1. CLI 
+
+从命令行读取各种必要参数，然后传入 webpack 执行。利用 webpack 的依赖分析能力，遍历到所有有效代码并交由对应的 loader 进行处理。
+
+具体用途：
+
+1. CLI 依赖 webpack 对项目进行依赖分析，然后调用 loader对对应类型的文件进行处理
+
+2. CLI 对外提供 watch 和 build 两个指令
+
+   a. watch：监听代码变动并实时编译；
+
+   b. build：剔除部分调试用的代码（如 source map）并压缩代码，完成编译打包；
+
+   ```js
+   /**
+    * watch and copy constant dir file change
+    * @param {array} dirs
+    * @param {string} distDirectory
+    */
+   function watch(options = {}) {
+     const {
+       afterCompiled,
+       type = DEFAULT_TYPE,
+       entry = DEFAULT_ENTRY,
+       platform = DEFAULT_PLATFORM,
+       workDirectory = cwd,
+       distDirectory = join(cwd, DEFAULT_DIST),
+       skipClearStdout = false,
+       constantDir = DEFAULT_CONSTANT_DIR_ARR,
+       disableCopyNpm = false,
+       turnOffSourceMap = false,
+       turnOffCheckUpdate = false
+     } = options;
+   
+     watchConstantDir(constantDir, distDirectory);
+   
+     const needUpdate = checkNeedUpdate(turnOffCheckUpdate);
+   
+     let config = getWebpackConfig({
+       mode: 'watch',
+       entryPath: entry,
+       type,
+       workDirectory,
+       platform,
+       distDirectory,
+       constantDir,
+       disableCopyNpm,
+       turnOffSourceMap
+     });
+   
+     if (options.webpackConfig) {
+       config = mergeWebpack(config, options.webpackConfig);
+     }
+     spinner.shouldClear = !skipClearStdout;
+   
+     const compiler = webpack(config);
+   
+     const watchOpts = {
+       aggregateTimeout: 600
+     };
+     compiler.outputFileSystem = new MemFs();
+     compiler.watch(watchOpts, (err, stats) => {
+       handleCompiled(err, stats, { skipClearStdout });
+       afterCompiled && afterCompiled(err, stats);
+       if (needUpdate) {
+         console.log(chalk.black.bgYellow.bold('Update for miniapp related packages available, please reinstall dependencies.'));
+       }
+       console.log('Watching for changes...');
+     });
+   }
+   
+   /**
+    * watch and copy constant dir file change
+    * @param {array} dirs
+    * @param {string} distDirectory
+    */
+   function watchConstantDir(dirs, distDirectory) {
+     const watcher = chokidar.watch(dirs);
+     watcher.on('all', (event, path) => {
+       copyConstantDir(path, distDirectory);
+     });
+   }
+   
+   /**
+    * copy constant path to dist
+    * @param {string} path
+    * @param {string} distDirectory
+    */
+   function copyConstantDir(path, distDirectory) {
+     if (!path) {
+       return;
+     }
+     if (!existsSync(path)) {
+       mkdirSync(path);
+     }
+     copySync(path, join(distDirectory, getCurrentDirectoryPath(path, 'src')), {
+       filter: (filename) => !/\.ts$/.test(filename),
+     });
+   }
+   
+   function handleCompiled(err, stats, { skipClearStdout }) {
+     if (err) {
+       console.error(err.stack || err);
+       if (err.details) {
+         console.error(err.details);
+       }
+       return;
+     }
+     if (stats.hasErrors()) {
+       const errors = stats.compilation.errors;
+       if (!skipClearStdout) consoleClear(true);
+       spinner.fail('Failed to compile.\n');
+       for (let e of errors) {
+         console.log(chalk.red(`    ${errors.indexOf(e) + 1}. ${e.error.message} \n`));
+         if (process.env.DEBUG === 'true') {
+           console.log(e.error.stack);
+         }
+       }
+       console.log(chalk.yellow('Set environment `DEBUG=true` to see detail error stacks.'));
+     }
+   }
+   
+   ```
+
+   ```js
+   /**
+    * Start jsx2mp build.
+    * @param options
+    */
+   function build(options = {}) {
+     const {
+       afterCompiled,
+       type = DEFAULT_TYPE,
+       entry = DEFAULT_ENTRY,
+       platform = DEFAULT_PLATFORM,
+       workDirectory = cwd,
+       distDirectory = join(cwd, DEFAULT_DIST),
+       skipClearStdout = false,
+       constantDir = DEFAULT_CONSTANT_DIR_ARR,
+       disableCopyNpm = false,
+       turnOffCheckUpdate = false
+     } = options;
+   
+     // Clean the dist dir before generating
+     if (existsSync(distDirectory)) {
+       del.sync(distDirectory + '/**');
+     }
+   
+     constantDir.forEach(dir => copyConstantDir(dir, distDirectory));
+   
+     const needUpdate = checkNeedUpdate(turnOffCheckUpdate);
+   
+     let config = getWebpackConfig({
+       mode: 'build',
+       entryPath: entry,
+       platform,
+       type,
+       workDirectory,
+       distDirectory,
+       constantDir,
+       disableCopyNpm
+     });
+   
+     if (options.webpackConfig) {
+       config = mergeWebpack(config, options.webpackConfig);
+     }
+     spinner.shouldClear = !skipClearStdout;
+   
+     const compiler = webpack(config);
+     compiler.outputFileSystem = new MemFs();
+     compiler.run((err, stats) => {
+       handleCompiled(err, stats, { skipClearStdout });
+       afterCompiled && afterCompiled(err, stats);
+       if (needUpdate) {
+         console.log(chalk.black.bgYellow.bold('Update for miniapp related packages available, please reinstall dependencies.'));
+       }
+     });
+   }
+   
+   ```
+
+   ```js
+   // 依赖 webpack 对项目进行依赖分析，然后调用 loader对对应类型的文件进行处理
+   
+   const AppLoader = require.resolve('jsx2mp-loader/src/app-loader');
+   const PageLoader = require.resolve('jsx2mp-loader/src/page-loader');
+   const ComponentLoader = require.resolve('jsx2mp-loader/src/component-loader');
+   const ScriptLoader = require.resolve('jsx2mp-loader/src/script-loader');
+   const FileLoader = require.resolve('jsx2mp-loader/src/file-loader');
+   
+   
+   function getEntry(type, cwd, entryFilePath, options) {
+     const entryPath = dirname(entryFilePath);
+     const entry = {};
+     const { platform = 'ali', constantDir, mode, disableCopyNpm, turnOffSourceMap } = options;
+   
+     const loaderParams = {
+       platform: platformConfig[platform],
+       entryPath: entryFilePath,
+       constantDir,
+       mode,
+       disableCopyNpm,
+       turnOffSourceMap
+     };
+   
+     if (type === 'project') {
+       // ....
+       entry.app = AppLoader + '?' + JSON.stringify({ entryPath, platform: platformConfig[platform], mode, disableCopyNpm, turnOffSourceMap }) + '!./' + entryFilePath;
+       if (Array.isArray(appConfig.routes)) {
+         appConfig.routes.filter(({ targets }) => {
+           return !Array.isArray(targets) || targets.indexOf('miniapp') > -1;
+         }).forEach(({ source, component, window = {} }) => {
+           component = source || component;
+           entry['page@' + component] = PageLoader + '?' + JSON.stringify(Object.assign({ pageConfig: window }, loaderParams)) + '!' + getDepPath(component, entryPath);
+         });
+       } else if (Array.isArray(appConfig.pages)) {
+         // Compatible with pages.
+         appConfig.pages.forEach((pagePath) => {
+           entry['page@' + pagePath] = PageLoader + '?' + JSON.stringify(loaderParams) + '!' + getDepPath(pagePath, entryPath);
+         });
+       }
+     }
+     if (type === 'component') {
+       entry.component = ComponentLoader + '?' + JSON.stringify(loaderParams) + '!' + entryFilePath;
+     }
+     return entry;
+   }
+   
+   module.exports = (options = {}) => {
+    
+     const config = {
+       mode: 'production', // Will be fast
+       entry: getEntry(type, workDirectory, relativeEntryFilePath, options),
+       output: {
+         path: distDirectory
+       },
+       target: 'node',
+       context: workDirectory,
+       module: {
+         rules: [
+           {
+             test: /\.t|jsx?$/,
+             use: [
+               {
+                 loader: ScriptLoader,
+                 options: {
+                   mode: options.mode,
+                   entryPath: relativeEntryFilePath,
+                   platform: platformConfig[platform],
+                   constantDir,
+                   disableCopyNpm,
+                   turnOffSourceMap
+                 },
+               },
+               {
+                 loader: BabelLoader,
+                 options: getBabelConfig(),
+               }
+             ]
+           },
+           {
+             test: [/\.bmp$/, /\.gif$/, /\.jpe?g$/, /\.png$/, /\.webp$/],
+             loader: FileLoader,
+             options: {
+               entryPath: relativeEntryFilePath
+             },
+           },
+           {
+             test: /\.json$/,
+             use: [{
+               loader: ScriptLoader,
+               options: {
+                 mode: options.mode,
+                 entryPath: relativeEntryFilePath,
+                 platform: platformConfig[platform],
+                 constantDir,
+                 disableCopyNpm,
+                 turnOffSourceMap
+               },
+             }]
+           }
+         ],
+       },
+       resolve: {
+         extensions: getPlatformExtensions(platform, ['.js', '.jsx', '.ts', '.tsx', '.json']),
+         mainFields: ['main', 'module']
+       },
+     };
+   
+     return config;
+   };
+   ```
+
+   Q：在小程序原生开发框架中，入口文件 app.js 并没有声明依赖，而 pages 是在 app.json 中注册的，Rax入口文件是什么样的，它又是如何声明依赖的？
+   A：为了保持多端统一，Rax 采用同一套工程目录
+
+   ```js
+   ├── README.md                   # 项目说明
+   ├── build.json                  # 项目构建配置
+   ├── package.json
+   └── src                         # 源码目录
+       ├── app.js                  # 应用入口文件
+       ├── app.json                # 应用配置，包括路由配置，小程序 window 配置等
+       ├── components              # 应用的公共组件
+       │   └── Logo                # 组件
+       │       ├── index.css       # Logo 组件的样式文件
+       │       └── index.jsx       # Logo 组件 JSX 源码
+       ├── document                # 页面的 HTML 模板
+       │   └── index.jsx       
+       └── pages                   # 页面
+           └── Home                # home 页面
+               └── index.jsx
+   ```
+
+   app.json内容
+
+   ```js
+   {
+     "routes": [
+       {
+         "path": "/",
+         "source": "pages/Home/index"
+       }
+     ],
+     "window": {
+       "defaultTitle": "Rax App 1.0"
+     }
+   }
+   ```
+
+   CLI 读取其中的 routes 并将所有引用到的 pages 文件以及 app.js 作为 entry，以 pages 文件为入口，所有依赖文件将依次被遍历并交由对应 loader 进行处理。loader 处理完毕后最终的编译代码将生成到目的目录。
+
+###### 4.2.1.1.2. loader 
+
+Rax转小程序的loader统称为：jsx2mp-loader
+
+1. app-loader
+
+   a. 处理 rax 源码中的 app.js
+
+   b. 处理 app.json 中 的 `window` 属性并作支付宝/微信两端的配置抹平
+
+   ```js
+   module.exports = async function appLoader(content) {
+     const query = parse(this.request);
+     // Only handle app role file
+     if (query.role !== 'app') {
+       return content;
+     }
+   
+     if (!existsSync(outputPath)) mkdirpSync(outputPath);
+   
+     const compilerOptions = Object.assign({}, compiler.baseOptions, {
+       // ...options,
+     });
+   
+     const rawContentAfterDCE = eliminateDeadCode(rawContent);
+   
+     let transformed;
+     try {
+       transformed = compiler(rawContentAfterDCE, compilerOptions);
+     } catch (e) {
+       console.log(chalk.red(`\n[${platform.name}] Error occured when handling App ${this.resourcePath}`));
+       if (process.env.DEBUG === 'true') {
+         throw new Error(e);
+       } else {
+         const errMsg = e.node ? `${e.message}\nat ${this.resourcePath}` : `Unknown compile error! please check your code at ${this.resourcePath}`;
+         throw new Error(errMsg);
+       }
+     }
+   
+     const { style, assets } = await processCSS(transformed.cssFiles, sourcePath);
+     transformed.style = style;
+     transformed.assets = assets;
+   
+     const outputContent = {
+       code: transformed.code,
+       map: transformed.map,
+       css: transformed.style ? defaultStyle + transformed.style : defaultStyle,
+     };
+     const outputOption = {
+       outputPath: {
+         code: join(outputPath, platform.type === QUICKAPP ? 'app.ux' : 'app.js'),
+         css: join(outputPath, 'app' + platform.extension.css),
+       },
+       mode,
+       isTypescriptFile: isTypescriptFile(this.resourcePath),
+       type: 'app',
+       platform,
+       rootDir,
+     };
+   
+     output(outputContent, rawContent, outputOption);
+   
+     return [
+       `/* Generated by JSX2MP AppLoader, sourceFile: ${this.resourcePath}. */`,
+       generateDependencies(transformed.imported),
+     ].join('\n');
+   };
+   ```
+
+2. page-loader
+   a. 处理定义在 app.json 中 routes 属性内的 page 类型组件
+   b. 根据 jsx-compiler 中解析到的该组件所引用组件的信息，写入 json 文件中的usingComponents ，并将这些组件加入 webpack 依赖分析链并交由 component-loader 处理
+   c. 处理用户定义在 app.json 中 routes 数组内每一个页面的配置（即 window 配置项）并输出至对应页面的 json 文件中
+
+```js
+module.exports = async function pageLoader(content) {
+  const query = parse(this.request);
+  // Only handle page role file
+  if (query.role !== 'page') {
+    return content;
+  }
+
+  const compilerOptions = Object.assign({}, compiler.baseOptions, {
+   // ...options
+  });
+  const rawContentAfterDCE = eliminateDeadCode(content);
+
+  let transformed;
+  try {
+    transformed = compiler(rawContentAfterDCE, compilerOptions);
+  } catch (e) {
+    console.log(chalk.red(`\n[${platform.name}] Error occured when handling Page ${this.resourcePath}`));
+    if (process.env.DEBUG === 'true') {
+      throw new Error(e);
+    } else {
+      const errMsg = e.node ? `${e.message}\nat ${this.resourcePath}` : `Unknown compile error! please check your code at ${this.resourcePath}`;
+      throw new Error(errMsg);
+    }
+  }
+
+  const { style, assets } = await processCSS(transformed.cssFiles, sourcePath);
+  transformed.style = style;
+  transformed.assets = assets;
+
+  if (!existsSync(pageDistDir)) mkdirpSync(pageDistDir);
+
+  // ...
+  
+  let config = {
+    ...transformed.config
+  };
+  if (existsSync(pageConfigPath)) {
+    const pageConfig = readJSONSync(pageConfigPath);
+    delete pageConfig.usingComponents;
+    Object.assign(config, pageConfig);
+  }
+  
+  // ...
+
+  if (config.usingComponents) {
+    const usingComponents = {};
+    Object.keys(config.usingComponents).forEach(key => {
+      const value = config.usingComponents[key];
+      if (/^c-/.test(key)) {
+        const result = MINIAPP_PLUGIN_COMPONENTS_REG.test(value) ? value : removeExt(addRelativePathPrefix(relative(dirname(this.resourcePath), value)));
+        usingComponents[key] = normalizeOutputFilePath(result);
+      } else {
+        usingComponents[key] = normalizeOutputFilePath(value);
+      }
+    });
+    config.usingComponents = usingComponents;
+  }
+  
+  output(outputContent, content, outputOption);
+
+  // ...
+
+  return [
+    `/* Generated by JSX2MP PageLoader, sourceFile: ${this.resourcePath}. */`,
+    generateDependencies(dependencies),
+  ].join('\n');
+};
+```
+
+3. component-loader
+   a. 处理 component 类型组件并交由 jsx-compiler 处理然后产出编译后代码，并写入至指定目标文件夹位置
+   b. 根据 jsx-compiler 中解析到的该组件所引用组件的信息，写入 json 文件的 usingComponents 属性中，并将这些组件加入 webpack 依赖分析链并交由 component-loader 处理
+
+```js
+module.exports = async function componentLoader(content) {
+  const query = parse(this.request);
+  // Only handle component role file
+  if (query.role !== 'component') {
+    return content;
+  }
+
+  const compilerOptions = Object.assign({}, compiler.baseOptions, {
+   // ...options,
+  });
+
+  let transformed;
+  try {
+    const rawContentAfterDCE = eliminateDeadCode(content);
+    transformed = compiler(rawContentAfterDCE, compilerOptions);
+  } catch (e) {
+    console.log(chalk.red(`\n[${platform.name}] Error occured when handling Component ${this.resourcePath}`));
+    if (process.env.DEBUG === 'true') {
+      throw new Error(e);
+    } else {
+      const errMsg = e.node ? `${e.message}\nat ${this.resourcePath}` : `Unknown compile error! please check your code at ${this.resourcePath}`;
+      throw new Error(errMsg);
+    }
+  }
+
+  const { style, assets } = await processCSS(transformed.cssFiles, sourcePath);
+  transformed.style = style;
+  transformed.assets = assets;
+
+  const config = Object.assign({}, transformed.config);
+  
+  if (config.usingComponents) {
+    const usingComponents = {};
+    Object.keys(config.usingComponents).forEach(key => {
+      const value = config.usingComponents[key];
+
+      usingComponents[key] = normalizeOutputFilePath(value);
+    });
+    config.usingComponents = usingComponents;
+  }
+
+  const distFileDir = dirname(distFileWithoutExt);
+  if (!existsSync(distFileDir)) mkdirpSync(distFileDir);
+
+  output(outputContent, content, outputOption);
+
+  function isCustomComponent(name, usingComponents = {}) {
+    const matchingPath = join(dirname(resourcePath), name);
+    for (let key in usingComponents) {
+      if (
+        usingComponents.hasOwnProperty(key)
+        && usingComponents[key]
+        && usingComponents[key].indexOf(matchingPath) === 0
+      ) {
+        return true;
+      }
+    }
+    return false;
+  }
+```
+
+4. File loader
+
+   a. 处理图片等静态文件资源，将其拷贝至指定目标文件夹
+
+   ```js
+   
+   const { join, relative, dirname } = require('path');
+   const { copySync } = require('fs-extra');
+   
+   const loaderUtils = require('loader-utils');
+   
+   module.exports = function fileLoader(content) {
+     const { entryPath, outputPath } = loaderUtils.getOptions(this) || {};
+     const rootContext = this.rootContext;
+   
+     const relativeFilePath = relative(
+       join(rootContext, dirname(entryPath)),
+       this.resourcePath
+     );
+     const distSourcePath = join(outputPath, relativeFilePath);
+     copySync(this.resourcePath, distSourcePath);
+   
+     return '';
+   };
+   
+   ```
+
+5. script loader：负责依赖路径处理
+   a. npm包：搜集代码中使用到的 npm 依赖，获取 npm 包的真实地址 => 路径处理 => babel 编译 => 输出代码至目标文件夹
+   b. 来自 npm 包的第三方原生小程序库：用户使用绝对路径去使用第三方原生小程序库时，script-loader 需要读取 js 文件同目录下同名的 json 文件中的 usingComponents 字段并将其加入 webpack 的依赖分析链
+
+   ```js
+   module.exports = function scriptLoader(content) {
+     const query = parse(this.request);
+     if (query.role) {
+       return content;
+     }
+   
+     // ...
+     
+     if (isFromNodeModule(this.resourcePath)) {
+       if (disableCopyNpm) {
+         return isCommonJSON ? '{}' : content;
+      
+       const pkg = readJSONSync(sourcePackageJSONPath);
+       const npmName = pkg.name; // Update to real npm name, for that tnpm will create like `_rax-view@1.0.2@rax-view` folders.
+       const npmMainPath = join(sourcePackagePath, pkg.main || '');
+   
+       const isUsingMainMiniappComponent = pkg.hasOwnProperty(MINIAPP_CONFIG_FIELD) && this.resourcePath === npmMainPath;
+       // Is miniapp compatible component.
+       if (isUsingMainMiniappComponent || isRelativeMiniappComponent || isThirdMiniappComponent) {
+         // ...
+         
+         if (isThirdMiniappComponent) {
+           const source = dirname(this.resourcePath);
+           const target = dirname(normalizeNpmFileName(join(outputPath, 'npm', relative(rootNodeModulePath, this.resourcePath))));
+           outputDir(source, target);
+           outputFile(rawContent);
+         }
+   
+         return [
+           `/* Generated by JSX2MP ScriptLoader, sourceFile: ${this.resourcePath}. */`,
+           generateDependencies(dependencies),
+           content
+         ].join('\n');
+       } else {
+         outputFile(rawContent);
+       }
+     } else if (isFromConstantDir(this.resourcePath) && isThirdMiniappComponent) {
+       const dependencies = [];
+       outputFile(rawContent, false);
+   
+       // Find dependencies according to usingComponents config
+       const componentConfigPath = removeExt(this.resourcePath) + '.json';
+       const componentConfig = readJSONSync(componentConfigPath);
+       for (let key in componentConfig.usingComponents) {
+         const componentPath = componentConfig.usingComponents[key];
+         const absComponentPath = resolve(dirname(this.resourcePath), componentPath);
+         dependencies.push({
+           name: absComponentPath,
+           options: loaderOptions
+         });
+       }
+       return [
+         `/* Generated by JSX2MP ScriptLoader, sourceFile: ${this.resourcePath}. */`,
+         generateDependencies(dependencies),
+         content
+       ].join('\n');
+     } else if (!isAppJSon) {
+       outputFile(rawContent, false);
+     }
+   
+     return isJSON ? '{}' : transformCode(
+       content, mode,
+       [ require('@babel/plugin-proposal-class-properties') ]
+     ).code; // For normal js file, syntax like class properties can't be parsed without babel plugins
+   };
+   
+   
+   ```
+
+###### 4.2.1.1.3. compiler
+
+编译：是一种利用编译程序从源语言编写的源程序产生目标程序的过程或者动作，完整的流程是从高级语言转换成计算机可以理解的二进制语言的过程：Rax -> 小程序DSL
+
+编译在rax主要是  jsx-compiler：
+
+1. 词法分析（tokenizing）
+2. 语法分析（parsing）
+3. 代码生成（generate）
+
+![](https://cdn.nlark.com/yuque/0/2022/png/2340337/1649845326644-2a59ec7c-4384-4a7c-9b62-3ef2195dcf0a.png?x-oss-process=image%2Fresize%2Cw_1500%2Climit_0)
+
+Example:
+
+1. input
+
+   ```js
+   import { Component } from 'rax';
+   
+   export default class extends Component {
+     render() {
+       return (<view>hello world</view>);
+     }  
+   }
+   ```
+
+jsx compiler执行
+
+- type // app, page, component.
+
+- outputPath 
+
+- sourcePath 
+
+- resourcePath
+
+  ```js
+  const compile = require('jsx-compiler');
+  const { baseOptions } = compile;
+  
+  const output = compile(code, { ...baseOptions, type: 'component' });
+  ```
+
+2. output
+
+- ast：Babel 7格式的AST
+
+- imported：引入的模块和本地定义变量
+
+- exported：导出变量
+
+- template：miniapp识别模板
+
+- code：转义后的代码
+
+- map：source map
+
+- config：小程序配置
+
+- style：样式
+
+- usingComponents
+
+  ```js
+  {
+    ast: ASTNodeTree,
+    imported: {
+      rax: [
+        {
+          local: "Component",
+          default: false,
+          importFrom: "Component",
+          name: "rax",
+          external: true
+        }
+      ]
+    },
+    exported: ["default"],
+    code:
+      'import { createComponent as __create_component__, Component as __component__ } from "jsx2mp-runtime";\n\nconst __def__ = class extends __component__ {\n  render() {\n    return {};\n  }\n\n};\n\nComponent(__create_component__(__def__, {\n  events: []\n}));',
+    map: null,
+    config: {
+      component: true
+    },
+    style: "",
+    usingComponents: {},
+    template: "<view>hello world</view>"
+  }
+  ```
+
+###### 4.2.1.1.4. runtime 
+
+提供垫片，小程序 Page/Component与原生Rax支持还是有区别，使用 jsx2mp-runtime 来作了二者的桥接；
+
+感兴趣的同学可以自行查看：
+
+https://github.com/raxjs/miniapp/tree/master/packages/jsx2mp-runtime/src
+
+###### 4.2.1.1.5.  univeral 
+
+支持生态
+
+#### 4.2.2. 运行时 
+
+代表：有蚂蚁的Remax，京东的Taro 3，淘宝的Rax。 
+
+小程序运行时的起点：[kbone](https://wechat-miniprogram.github.io/kbone/docs/?spm=ata.13261165.0.0.24bd6f229wae2I)
+
+1. 小程序的技术底层依托于web技术，由于多线程架构的限制，对于有多端需求的项目来说，加一个功能或者改一个样式都可能需要改动两套代码（DOM、BOM API 无法打平）；
+
+目的：
+
+1 . 为了更好的复用组件，尽可能完整的支持 Web 端的特性；
+
+2. 在小程序端的渲染结果要尽可能接近 Web 端 h5 页面；
+
+方案：
+
+Web组件转小程序
+
+a. 限制大部分 Web 端特性，兼容性差，需要将 Web 端框架（比如 vue、react 等）给完整引进来 ；
+
+b. Web框架（vue、react）底层依赖DOM、BOM，需要提供适配；
+
+![](https://cdn.nlark.com/yuque/0/2022/png/2340337/1649848628285-66cd3647-e255-4323-ac8d-39e4dd2dec22.png)
+
+
+
+适配器：
+
+1. 在 appService 端运行的轻型 DOM 树；
+
+2. 提供基础的 DOM/BOM API；
+
+3. appService 端和 webView 端的交互通过适配器来进行；
+
+Rax类似Kbone：
+
+1. 采用driver，小程序的driver 只需复用 web 端的 driver-dom，因为底层的 document 和 window 变量都已经模拟好；
+
+2. 为开发者提供更贴近 web 的开发体验。这套方案意味着开发者除了使用 JSX 之外，也是支持直接使用 BOM/DOM API 创建视图，driver的API操作是可以引用的；
+
+- driver-miniapp
+
+![](https://cdn.nlark.com/yuque/0/2022/png/2340337/1649849039032-87c0bfa0-9df1-4957-b98b-e190ed14969a.png)
+
+
+
+```js
+/**
+ * Driver for Miniapp
+ **/
+
+function cached(fn) {
+  const cache = Object.create(null);
+  return function cachedFn(str) {
+    return cache[str] || (cache[str] = fn(str));
+  };
+}
+
+// opacity -> opa
+// fontWeight -> ntw
+// lineHeight|lineClamp -> ne[ch]
+// flex|flexGrow|flexPositive|flexShrink|flexNegative|boxFlex|boxFlexGroup|zIndex -> ex(?:s|g|n|p|$)
+// order -> ^ord
+// zoom -> zoo
+// gridArea|gridRow|gridRowEnd|gridRowSpan|gridRowStart|gridColumn|gridColumnEnd|gridColumnSpan|gridColumnStart -> grid
+// columnCount -> mnc
+// tabSize -> bs
+// orphans -> orp
+// windows -> ows
+// animationIterationCount -> onit
+// borderImageOutset|borderImageSlice|borderImageWidth -> erim
+const NON_DIMENSIONAL_REG = /opa|ntw|ne[ch]|ex(?:s|g|n|p|$)|^ord|zoo|grid|orp|ows|mnc|^columns$|bs|erim|onit/i;
+const EVENT_PREFIX_REG = /^on[A-Z]/;
+const CLASS_NAME = 'className';
+const CLASS = 'class';
+const STYLE = 'style';
+const CHILDREN = 'children';
+
+const TEXT_CONTENT_ATTR = 'textContent';
+
+const CREATE_COMMENT = 'createComment';
+const CREATE_TEXT_NODE = 'createTextNode';
+const SET_ATTRIBUTE = 'setAttribute';
+const REMOVE_ATTRIBUTE = 'removeAttribute';
+const EMPTY = '';
+
+const isDimensionalProp = cached(prop => !NON_DIMENSIONAL_REG.test(prop));
+const isEventProp = cached(prop => EVENT_PREFIX_REG.test(prop));
+
+
+function createBody(): HTMLElement {
+  return document.body;
+}
+
+function createEmpty(): Comment {
+  return document[CREATE_COMMENT](EMPTY);
+}
+
+function createText(text): Text {
+  return document[CREATE_TEXT_NODE](text);
+}
+
+function updateText(node: any, text: string) {
+  node[TEXT_CONTENT_ATTR] = text;
+}
+
+/**
+* @param {string} type node type
+* @param {object} props element properties
+*/
+function createElement(type: string, props: object) {
+  let style;
+  let attrs = {};
+  let events = [];
+
+  for (let prop in props) {
+    const value = props[prop];
+    if (prop === CHILDREN) continue;
+
+    if (value !== null) {
+      if (prop === STYLE) {
+        style = value;
+      } else if (isEventProp(prop)) {
+        events.push({
+          name: prop.slice(2).toLowerCase(),
+          handler: value
+        });
+      } else {
+        if (prop === CLASS_NAME) {
+          prop = CLASS;
+        }
+        attrs[prop] = value;
+      }
+    }
+  }
+
+  // @ts-ignore
+  const node = document._createElement({
+    tagName: type,
+    document,
+    attrs
+  });
+
+  if (style) {
+    setStyle(node, style);
+  }
+
+  events.forEach(({ name, handler }) => {
+    node.addEventListener(name, handler);
+  });
+
+  return node;
+}
+
+function appendChild(node: any, parent: any) {
+  return parent.appendChild(node);
+}
+
+function removeChild(node: any, parent: any) {
+  parent = parent || node.parentNode;
+  // Maybe has been removed when remove child
+  if (parent) {
+    parent.removeChild(node);
+  }
+}
+
+function replaceChild(newChild: any, oldChild: any, parent: any) {
+  parent = parent || oldChild.parentNode;
+  parent.replaceChild(newChild, oldChild);
+}
+
+function insertAfter(node: any, after: any, parent: any) {
+  parent = parent || after.parentNode;
+  const nextSibling = after.nextSibling;
+  if (nextSibling) {
+    // Performance improve when node has been existed before nextSibling
+    if (nextSibling !== node) {
+      insertBefore(node, nextSibling, parent);
+    }
+  } else {
+    appendChild(node, parent);
+  }
+}
+
+function insertBefore(node: any, before: any, parent: any) {
+  parent = parent || before.parentNode;
+  parent.insertBefore(node, before);
+}
+
+function addEventListener(node: any, eventName: string, eventHandler: any) {
+  return node.addEventListener(eventName, eventHandler);
+}
+
+function removeEventListener(node: any, eventName: string, eventHandler: any) {
+  return node.removeEventListener(eventName, eventHandler);
+}
+
+function removeAttribute(node: any, propKey: string) {
+  if (propKey === CLASS_NAME) propKey = CLASS;
+
+  if (propKey in node) {
+    node[propKey] = null;
+  }
+
+  node[REMOVE_ATTRIBUTE](propKey);
+}
+
+function setAttribute(node: any, propKey: string, propValue) {
+  if (propKey === CLASS_NAME) propKey = CLASS;
+
+  if (propKey in node) {
+    node[propKey] = propValue;
+  } else {
+    node[SET_ATTRIBUTE](propKey, propValue);
+  }
+}
+
+/**
+* @param {object} node target node
+* @param {object} style target node style value
+*/
+function setStyle(node: any, style: object) {
+  for (let prop in style) {
+    const value = style[prop];
+    let convertedValue;
+
+    if (typeof value === 'number' && isDimensionalProp(prop)) {
+      convertedValue = value + 'rpx';
+    } else {
+      convertedValue = value;
+    }
+
+    // Support CSS custom properties (variables) like { --main-color: "black" }
+    if (prop[0] === '-' && prop[1] === '-') {
+      // reference: https://developer.mozilla.org/en-US/docs/Web/API/CSSStyleDeclaration/setProperty.
+      // style.setProperty do not support Camel-Case style properties.
+      node.style.setProperty(prop, convertedValue);
+    } else {
+      node.style[prop] = convertedValue;
+    }
+  }
+}
+
+function beforeRender() {}
+
+function afterRender() {}
+
+/**
+* Remove all children from node.
+* @NOTE: Optimization at web.
+*/
+function removeChildren(node: any) {
+  node.textContent = EMPTY;
+}
+
+export default {
+  createBody,
+  createEmpty,
+  createText,
+  updateText,
+  createElement,
+  appendChild,
+  removeChild,
+  replaceChild,
+  insertAfter,
+  insertBefore,
+  addEventListener,
+  removeEventListener,
+  removeAttribute,
+  setAttribute,
+  setStyle,
+  beforeRender,
+  afterRender,
+  removeChildren
+}
+
+```
+
+- Rax事件系统：miniapp-render
+  miniapp-render is a DOM simulator designed for MiniApp which can provides DOM-related API for developers.
+  You can think of it as a lightweight jsDom running on appService.
+
+Rax 小程序运行时中，模拟 DOM/BOM API 的库为 miniapp-render，其支持的 API 如下：
+
+![](https://cdn.nlark.com/yuque/0/2022/png/2340337/1649849057263-cfe5bf56-a257-41ab-ae0f-919a35129e22.png)
+
+- 工程设计
+
+Rax 小程序运行时 follow 了 Rax Web 的设计，Web 端 Webpack 打包出的 JS Bundle 可以在小程序运行时中复用。我们通过插件将 miniapp-render 模拟出的 window 和 document 变量注入该 bundle，再生成一个固定的小程序项目骨架，在 app.js 中加载 JS Bundle 即可。
+
+![](https://cdn.nlark.com/yuque/0/2022/png/2340337/1649849399615-489c3eeb-430a-4827-a760-38eda6b85483.png?x-oss-process=image%2Fresize%2Cw_1500%2Climit_0)
+
+miniapp-render源码：有兴趣同学可以自行查阅：
+
+https://github.com/raxjs/miniapp/tree/master/packages/miniapp-render
+
+### 4.3. 框架选择 
+
+#### 4.3.1. API 设计与性能 
+
+- API设计
+
+1. 小程序端总会存在无法抹平以及需要单独处理的地方；
+
+2. 每个端独立的属性不应该入侵基础框架本身，保证基础框架的纯净有利于做更多的扩展；
+
+```js
+// Taro
+import Taro, { Component } from '@tarojs/taro'
+import { View, Text } from '@tarojs/components'
+
+export default class Index extends Component {
+  config = {
+    navigationBarTitleText: '首页'
+  }
+
+  componentWillMount () { }
+
+  componentDidMount () { }
+
+  componentWillUnmount () { }
+
+  componentDidShow () { }
+
+  componentDidHide () { }
+
+  render () {
+    return (
+      <View>
+        <Text>1</Text>
+      </View>
+    )
+  }
+}
+
+// Rax
+import { createElement, Component } from 'rax';
+import View from 'rax-view';
+import Text from 'rax-text';
+import { isMiniApp } from 'universal-api'; 
+import { registerNativeListeners, addNativeEventListener, removeNativeEventListener } from 'rax-app';
+
+function handlePageShow() {}
+
+class Index extends Component {
+  componentWillMount () { }
+
+  componentDidMount () { 
+    if (isMiniApp) {
+      addNativeEventListener('onShow', handlePageShow);
+    }
+  }
+
+  componentWillUnmount () {
+    if (isMiniApp) {
+      removeNativeEventListener('onShow', handlePageShow);
+    }
+  }
+
+  render () {
+    return (
+      <View>
+        <Text>1</Text>
+      </View>
+    )
+  }
+}
+
+if (isMiniApp) {
+  registerNativeListeners(Index, ['onShow']);
+}
+
+export default Index;
+```
+
+1. Rax 没有 componentDidShow componentDidHide 的概念，新增了和 W3C 标准类似的 addNativeEventLisenter removeEventListener 等 API；
+2. 组件实例上没有一个叫做 config 的静态属性用来设置页面的 title 等配置；
+
+react 本身是没有这些生命周期和配置的：Rax此处优势更明显；
+
+- 性能
+
+  ```js
+  // 小程序本身需要预置生命周期，而不能动态注册：
+  Page({
+    onShow() {}
+  });
+  
+  // 不生效
+  const config = {}
+  Page(config);
+  setTimeout(() => {
+    config.onShow = () => {};
+  }, 1000);
+  ```
+
+- Taro：不知道是否需要注册 onShow，将所有的原生事件全部注册监听；
+- Rax：引入了 registerNativeListeners ，需要先注册，才能监听；
+
+#### 4.3.2 多端组件协议设计
+
+1. Taro：将组件统一在项目中进行编译产出为小程序代码不同；
+2. Rax：支持在Rax 小程序项目和原生小程序项目中都能正常使用 Rax 小程序组件；
+
+- 支持渐进式接入或迁移至Rax：
+  ○ Rax 小程序组件工程的构建产物符合小程序语法，可以直接在原生小程序项目中使用；
+  ○ 如果想渐进式地使用 Rax 来开发小程序，可以以组件或者页面为单位迁移到 Rax ；
+
+- 多端统一的组件使用体验
+
+  ```js
+  // Wrong
+  import CustomComponent from 'custom-component/miniapp/index'
+  
+  // Correct，支持miniapp、web、weex等保持一致
+  import CustomComponent from 'custom-component'
+  ```
+
+#### 4.3.3. 基于webpack构建
+
+1. 基于插件体系，可定制扩展：Rax 工程以 [build-script](https://github.com/ice-lab/build-scripts) 为基础，通过插件体系支持各个场景；基于 webpack-chain 提供了灵活的 webpack 配置能力，用户可以通过组合各种插件实现工程需求；
+2. 命令简洁，体验统一：Rax 小程序的编译时方案通过 webpack loader 来处理自身逻辑。以 app/page/component 等文件角色分类的 webpack loader 会调用 jsx-compiler 进行代码的 AST 分析及处理，再将处理完的代码交由 loader 生成对应的小程序文件；运行时方案直接复用 Web 端的编译配置，再通过额外的 webpack 插件生成具体的小程序代码。
+
+补充：主流小程序框架对比
+
+![](https://cdn.nlark.com/yuque/0/2022/png/2340337/1649923172129-aca4f3a3-bd08-494f-856c-90362b91765e.png?x-oss-process=image%2Fresize%2Cw_1500%2Climit_0)
+
+
+
 
 
 
