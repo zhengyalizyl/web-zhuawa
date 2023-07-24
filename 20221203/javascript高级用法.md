@@ -49295,9 +49295,1316 @@ JavaScript 的弱类型一直被抓短，所以 TypeScript 甚至是 Facebook �
 
 https://www.yuque.com/lpldplws/web/pg3uab?singleDoc# 《flutter实战》 密码：qug7
 
+## 1. 课程目标 
+
+- 运行一个基础的flutter，掌握flutter的基本内容；
+
+## 2. 课程大纲 
+
+- 创建第一个flutter；
+
+- 后续学习路径；
+
+## 3. 创建第一个flutter组件 
+
+### 3.1. 基础demo介绍 
+
+#### 3.1.1 创建Flutter应用模板 
+
+通过 Android Studio 或 VS Code 创建一个新的 Flutter 工程，命名为 "first_flutter_app"。创建好后，就会得到一个默认的计数器应用示例。
+
+注意，默认计数器示例可能随着编辑器 Flutter 插件的版本变化而变化，本例中会介绍计数器示例的全部代码，所以不会对本示例产生影响。
+
+我们先运行创建的工程，效果如下图所示
+
+![](https://cdn.nlark.com/yuque/0/2022/png/2340337/1666459465812-e70efc22-d4d1-453b-9942-846dbf1360a6.png)
 
 
-https://www.yuque.com/lpldplws/web/og6swa9wsde8lc8b?#《前端AST》 密码：lxee
+
+
+
+htt该计数器示例中，每点击一次右下角带“+”号的悬浮按钮，屏幕中央的数字就会加1。
+在这个示例中，主要Dart代码是在 lib/main.dart 文件中，源码如下：
+
+```dart
+class MyApp extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      title: 'Flutter Demo',
+      theme: ThemeData(
+        primarySwatch: Colors.blue,
+      ),
+      home: MyHomePage(title: 'Flutter Demo Home Page'),
+    );
+  }
+}
+
+class MyHomePage extends StatefulWidget {
+  MyHomePage({Key? key, required this.title}) : super(key: key);
+  final String title;
+
+  @override
+  _MyHomePageState createState() => _MyHomePageState();
+}
+
+class _MyHomePageState extends State<MyHomePage> {
+  int _counter = 0;
+
+  void _incrementCounter() {
+    setState(() {
+      _counter++;
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: Text(widget.title),
+      ),
+      body: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: <Widget>[
+            Text('You have pushed the button this many times:'),
+            Text(
+              '$_counter',
+              style: Theme.of(context).textTheme.headline4,
+            ),
+          ],
+        ),
+      ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: _incrementCounter,
+        tooltip: 'Increment',
+        child: Icon(Icons.add),
+      ), // This trailing comma makes auto-formatting nicer for build methods.
+    );
+  }
+}
+```
+
+#### 3.1.2. 模板代码分析 
+
+下面我们分析一下生成的代码：
+
+##### 3.1.2.1. 导入包
+
+```dart
+import 'package:flutter/material.dart';
+```
+
+此行代码作用是导入了 Material UI 组件库。[Material](https://material.io/guidelines/)是一种标准的移动端和web端的视觉设计语言， Flutter 默认提供了一套丰富的 Material 风格的UI组件。
+
+##### 3.1.2.2 应用入口
+
+```dart
+void main() => runApp(MyApp());
+```
+
+与 C/C++、Java 类似，Flutter 应用中 main 函数为应用程序的入口。main 函数中调用了runApp 方法，它的功能是启动Flutter应用。runApp它接受一个 Widget参数，在本示例中它是一个MyApp对象，MyApp()是 Flutter 应用的根组件。读者现在只需知道 runApp 是 Flutter 应用的入口即可，关于 Flutter 应用的启动流程，我们会在本书后面原理篇中做详细介绍。
+
+- main函数使用了(=>)符号，这是 Dart 中单行函数或方法的简写。
+
+##### 3.1.2.应用结构
+
+```dart
+class MyApp extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      //应用名称  
+      title: 'Flutter Demo', 
+      theme: ThemeData(
+        //蓝色主题  
+        primarySwatch: Colors.blue,
+      ),
+      //应用首页路由  
+      home: MyHomePage(title: 'Flutter Demo Home Page'),
+    );
+  }
+}
+```
+
+MyApp类代表 Flutter 应用，它继承了 StatelessWidget类，这也就意味着应用本身也是一个widget；
+
+●在 Flutter 中，大多数东西都是 widget（后同“组件”或“部件”），包括对齐（Align）、填充（Padding）、手势处理（GestureDetector）等，它们都是以 widget 的形式提供；
+
+●Flutter 在构建页面时，会调用组件的build方法，widget 的主要工作是提供一个 build() 方法来描述如何构建 UI 界面（通常是通过组合、拼装其他基础 widget ）；
+
+●MaterialApp 是Material 库中提供的 Flutter APP 框架，通过它可以设置应用的名称、主题、语言、首页及路由列表等。MaterialApp也是一个 widget；
+
+●home 为 Flutter 应用的首页，它也是一个 widget；
+
+#### 3.1.3. 首页
+
+##### 3.1.3.1. 初识Widget
+
+```dart
+
+class MyHomePage extends StatefulWidget {
+  MyHomePage({Key? key, required this.title}) : super(key: key);
+  final String title;
+  
+  @override
+  _MyHomePageState createState() => _MyHomePageState();
+}
+
+class _MyHomePageState extends State<MyHomePage> {
+ ...
+}
+
+```
+
+MyHomePage 是应用的首页，它继承自StatefulWidget类，表示它是一个有状态的组件（Stateful widget）。关于 Stateful widget 我们将在第三章 “Widget简介” 一节仔细介绍，现在我们只需简单认为有状态的组件（Stateful widget） 和无状态的组件（Stateless widget）有两点不同：
+
+1. Stateful widget 可以拥有状态，这些状态在 widget 生命周期中是可以变的，而 Stateless widget 是不可变的；
+
+2. Stateful widget 至少由两个类组成：_MyHomePageState类是MyHomePage类对应的状态类。看到这里，读者可能已经发现：和MyApp 类不同， MyHomePage类中并没有build方法，取而代之的是，build方法被挪到了_MyHomePageState方法中，至于为什么这么做，先留个疑问，在分析完完整代码后再来解答。
+
+- 一个StatefulWidget类；
+
+- 一个 State类； StatefulWidget类本身是不变的，但是State类中持有的状态在 widget 生命周期中可能会发生变化；
+
+#### 3.1.4. state 
+
+##### 3.1.4.1. MyHomePageState 类解析 
+
+接下来，我们看看_MyHomePageState中都包含哪些东西：
+
+- 组件的状态。由于我们只需要维护一个点击次数计数器，所以定义一个_counter状态：
+
+```dart
+int _counter = 0; //用于记录按钮点击的总次数
+```
+
+_counter 为保存屏幕右下角带“+”号按钮点击次数的状态。
+
+- 设置状态的自增函数。
+
+```dart
+
+void _incrementCounter() {
+  setState(() {
+     _counter++;
+  });
+}
+```
+
+当按钮点击时，会调用此函数，该函数的作用是先自增_counter，然后调用setState 方法。setState方法的作用是通知 Flutter 框架，有状态发生了改变，Flutter 框架收到通知后，会执行 build 方法来根据新的状态重新构建界面， Flutter 对此方法做了优化，使重新执行变的很快，所以你可以重新构建任何需要更新的东西，而无需分别去修改各个 widget。
+
+- 建UI界面的build方法
+  构建UI界面的逻辑在 build 方法中，当MyHomePage第一次创建时，_MyHomePageState类会被创建，当初始化完成后，Flutter框架会调用 widget 的build方法来构建 widget 树，最终将 widget 树渲染到设备屏幕上。所以，我们看看_MyHomePageState的build方法中都干了什么事：
+
+  ```dart
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: Text(widget.title),
+      ),
+      body: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: <Widget>[
+            Text('You have pushed the button this many times:'),
+            Text(
+              '$_counter',
+              style: Theme.of(context).textTheme.headline4,
+            ),
+          ],
+        ),
+      ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: _incrementCounter,
+        tooltip: 'Increment',
+        child: Icon(Icons.add),
+      ), 
+    );
+  }
+  ```
+
+- Scaffold 是 Material 库中提供的页面脚手架，它提供了默认的导航栏、标题和包含主屏幕 widget 树（后同“组件树”或“部件树”）的body属性，组件树可以很复杂。本书后面示例中，路由默认都是通过Scaffold创建；
+- body的组件树中包含了一个Center 组件，Center 可以将其子组件树对齐到屏幕中心。此例中， Center 子组件是一个Column 组件，Column的作用是将其所有子组件沿屏幕垂直方向依次排列； 此例中Column子组件是两个 Text，第一个Text 显示固定文本 “You have pushed the button this many times:”，第二个Text 显示_counter状态的数值；_
+- _floatingActionButton是页面右下角的带“+”的悬浮按钮，它的onPressed属性接受一个回调函数，代表它被点击后的处理器，本例中直接将_incrementCounter方法作为其处理函数；
+
+现在，我们将整个计数器执行流程串起来：当右下角的floatingActionButton按钮被点击之后，会调用_incrementCounter方法。在_incrementCounter方法中，首先会自增_counter计数器（状态），然后setState会通知 Flutter 框架状态发生变化，接着，Flutter 框架会调用build方法以新的状态重新构建UI，最终显示在设备屏幕上。
+
+#### 3.1.4.2. 为什么要将 build 方法放在 State 中，而不是放在StatefulWidget中？
+
+现在，我们回答之前提出的问题，为什么build()方法放在State（而不是StatefulWidget）中 ？这主要是为了提高开发的灵活性。如果将build()方法放在StatefulWidget中则会有两个问题：
+
+1. 状态访问不便。
+   试想一下，如果我们的StatefulWidget有很多状态，而每次状态改变都要调用build方法，由于状态是保存在 State 中的，如果build方法在StatefulWidget中，那么build方法和状态分别在两个类中，那么构建时读取状态将会很不方便！试想一下，如果真的将build方法放在 StatefulWidget 中的话，由于构建用户界面过程需要依赖 State，所以build方法将必须加一个State参数，大概是下面这样：
+
+```dart
+ Widget build(BuildContext context, State state){
+      //state.counter
+      ...
+  }
+```
+
+这样的话就只能将State的所有状态声明为公开的状态，这样才能在State类外部访问状态！但是，将状态设置为公开后，状态将不再具有私密性，这就会导致对状态的修改将会变的不可控。但如果将build()方法放在State中的话，构建过程不仅可以直接访问状态，而且也无需公开私有状态，这会非常方便。
+
+2. 继承StatefulWidget不便。
+   例如，Flutter 中有一个动画 widget 的基类AnimatedWidget，它继承自StatefulWidget类。AnimatedWidget中引入了一个抽象方法build(BuildContext context)，继承自AnimatedWidget的动画 widget 都要实现这个build方法。现在设想一下，如果StatefulWidget 类中已经有了一个build方法，正如上面所述，此时build方法需要接收一个 State 对象，这就意味着AnimatedWidget必须将自己的 State 对象(记为_animatedWidgetState)提供给其子类，因为子类需要在其build方法中调用父类的build方法，代码可能如下：
+
+   ```dart
+   class MyAnimationWidget extends AnimatedWidget{
+       @override
+       Widget build(BuildContext context, State state){
+         //由于子类要用到AnimatedWidget的状态对象_animatedWidgetState，
+         //所以AnimatedWidget必须通过某种方式将其状态对象_animatedWidgetState
+         //暴露给其子类   
+         super.build(context, _animatedWidgetState)
+       }
+   }
+   ```
+
+这样很显然是不合理的，因为
+
+- AnimatedWidget的状态对象是AnimatedWidget内部实现细节，不应该暴露给外部。
+
+- 如果要将父类状态暴露给子类，那么必须得有一种传递机制，而做这一套传递机制是无意义的，因为父子类之间状态的传递和子类本身逻辑是无关的。
+
+综上所述，可以发现，对于StatefulWidget，将build方法放在 State 中，可以给开发带来很大的灵活性。
+
+### 3.2. widget介绍 
+
+#### 3.2.1. widget概念 
+
+我们知道在Flutter中几乎所有的对象都是一个 widget 。与原生开发中“控件”不同的是，Flutter 中的 widget 的概念更广泛，它不仅可以表示UI元素，也可以表示一些功能性的组件如：用于手势检测的 GestureDetector 、用于APP主题数据传递的 Theme 等等，而原生开发中的控件通常只是指UI元素。在后面的内容中，我们在描述UI元素时可能会用到“控件”、“组件”这样的概念，读者心里需要知道他们就是 widget ，只是在不同场景的不同表述而已。由于 Flutter 主要就是用于构建用户界面的，所以，在大多数时候，读者可以认为 widget 就是一个控件，不必纠结于概念。
+
+Flutter 中是通过 Widget 嵌套 Widget 的方式来构建UI和进行实践处理的，所以记住，Flutter 中万物皆为Widget。
+
+#### 3.2.2. widget接口
+
+在 Flutter 中， widget 的功能是“描述一个UI元素的配置信息”，它就是说， Widget 其实并不是表示最终绘制在设备屏幕上的显示元素，所谓的配置信息就是 Widget 接收的参数，比如对于 Text 来讲，文本的内容、对齐方式、文本样式都是它的配置信息。下面我们先来看一下 Widget 类的声明：
+
+```dart
+@immutable // 不可变的
+abstract class Widget extends DiagnosticableTree {
+  const Widget({ this.key });
+
+  final Key? key;
+
+  @protected
+  @factory
+  Element createElement();
+
+  @override
+  String toStringShort() {
+    final String type = objectRuntimeType(this, 'Widget');
+    return key == null ? type : '$type-$key';
+  }
+
+  @override
+  void debugFillProperties(DiagnosticPropertiesBuilder properties) {
+    super.debugFillProperties(properties);
+    properties.defaultDiagnosticsTreeStyle = DiagnosticsTreeStyle.dense;
+  }
+
+  @override
+  @nonVirtual
+  bool operator ==(Object other) => super == other;
+
+  @override
+  @nonVirtual
+  int get hashCode => super.hashCode;
+
+  static bool canUpdate(Widget oldWidget, Widget newWidget) {
+    return oldWidget.runtimeType == newWidget.runtimeType
+        && oldWidget.key == newWidget.key;
+  }
+  ...
+}
+```
+
+- @immutable 代表 Widget 是不可变的，这会限制 Widget 中定义的属性（即配置信息）必须是不可变的（final），为什么不允许 Widget 中定义的属性变化呢？这是因为，Flutter 中如果属性发生变化则会重新构建Widget树，即重新创建新的 Widget 实例来替换旧的 Widget 实例，所以允许 Widget 的属性变化是没有意义的，因为一旦 Widget 自己的属性变了自己就会被替换。这也是为什么 Widget 中定义的属性必须是 final 的原因；
+
+- widget类继承自DiagnosticableTree，DiagnosticableTree即“诊断树”，主要作用是提供调试信息；
+
+- Key: 这个key属性类似于 React/Vue 中的key，主要的作用是决定是否在下一次build时复用旧的 widget ，决定的条件在canUpdate()方法中；
+
+- createElement()：正如前文所述“一个 widget 可以对应多个Element”；Flutter 框架在构建UI树时，会先调用此方法生成对应节点的Element对象。此方法是 Flutter 框架隐式调用的，在我们开发过程中基本不会调用到；
+
+- debugFillProperties(...) 复写父类的方法，主要是设置诊断树的一些特性；
+
+- canUpdate(...)是一个静态方法，它主要用于在 widget 树重新build时复用旧的 widget ，其实具体来说，应该是：是否用新的 widget 对象去更新旧UI树上所对应的Element对象的配置；通过其源码我们可以看到，只要newWidget与oldWidget的runtimeType和key同时相等时就会用new widget去更新Element对象的配置，否则就会创建新的Element；
+
+有关 Key 和 widget 复用的细节将会在本书后面高级部分深入讨论，读者现在只需知道，为 widget 显式添加 key 的话可能（但不一定）会使UI在重新构建时变的高效，读者目前可以先忽略此参数，本书后面在用到时会详细解释 。
+
+另外Widget类本身是一个抽象类，其中最核心的就是定义了createElement()接口，在 Flutter 开发中，我们一般都不用直接继承Widget类来实现一个新组件，相反，我们通常会通过继承StatelessWidget或StatefulWidget来间接继承widget类来实现。
+
+#### 3.2.3. flutter中的四棵树 
+
+既然 Widget 只是描述一个UI元素的配置信息，那么真正的布局、绘制是由谁来完成的呢？Flutter 框架的的处理流程是这样的：
+
+1. 根据 Widget 树生成一个 Element 树，Element 树中的节点都继承自 Element 类。
+
+2. 根据 Element 树生成 Render 树（渲染树），渲染树中的节点都继承自RenderObject 类。
+
+3. 根据渲染树生成 Layer 树，然后上屏显示，Layer 树中的节点都继承自 Layer 类。
+
+真正的布局和渲染逻辑在 Render 树中，Element 是 Widget 和 RenderObject 的粘合剂，可以理解为一个中间代理。我们通过一个例子来说明，假设有如下 Widget 树：
+
+```dart
+Container( // 一个容器 widget
+  color: Colors.blue, // 设置容器背景色
+  child: Row( // 可以将子widget沿水平方向排列
+    children: [
+      Image.network('https://www.example.com/1.png'), // 显示图片的 widget
+      const Text('A'),
+    ],
+  ),
+);
+```
+
+如果 Container 设置了背景色，Container 内部会创建一个新的 ColoredBox 来填充背景，相关逻辑如下：
+
+```dart
+if (color != null)
+  current = ColoredBox(color: color!, child: current);
+```
+
+而 Image 内部会通过 RawImage 来渲染图片、Text 内部会通过 RichText 来渲染文本，所以最终的 Widget树、Element 树、渲染树结构如下图所示：
+
+![](https://cdn.nlark.com/yuque/0/2022/png/2340337/1666460113463-d13125b0-5e40-4260-b885-d7b8832347e4.png?x-oss-process=image%2Fresize%2Cw_971%2Climit_0)
+
+#### 3.2.4. StatelessWidget
+
+##### 3.2.4.1. 简介 
+
+StatelessWidget相对比较简单，它继承自widget类，重写了createElement()方法：
+
+```dart
+@override
+StatelessElement createElement() => StatelessElement(this);
+```
+
+StatelessElement 间接继承自Element类，与StatelessWidget相对应（作为其配置数据）。
+StatelessWidget用于不需要维护状态的场景，它通常在build方法中通过嵌套其他 widget 来构建UI，在构建过程中会递归的构建其嵌套的 widget 。我们看一个简单的例子：
+
+```dart
+class Echo extends StatelessWidget  {
+  const Echo({
+    Key? key,  
+    required this.text,
+    this.backgroundColor = Colors.grey, //默认为灰色
+  }):super(key:key);
+    
+  final String text;
+  final Color backgroundColor;
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Container(
+        color: backgroundColor,
+        child: Text(text),
+      ),
+    );
+  }
+}
+```
+
+上面的代码，实现了一个回显字符串的Echo widget 。
+按照惯例，widget 的构造函数参数应使用命名参数，命名参数中的必需要传的参数要添加required关键字，这样有利于静态代码分析器进行检查；在继承 widget 时，第一个参数通常应该是Key。另外，如果 widget 需要接收子 widget ，那么child或children参数通常应被放在参数列表的最后。同样是按照惯例， widget 的属性应尽可能的被声明为final，防止被意外改变。
+然后我们可以通过如下方式使用它：
+
+```dart
+Widget build(BuildContext context) {
+  return Echo(text: "hello world");
+}
+```
+
+![](https://cdn.nlark.com/yuque/0/2022/png/2340337/1666460166505-51e9c56f-1cf7-4945-a789-68b7e0a25ed2.png)
+
+##### 3.2.4.2 Context
+
+build方法有一个context参数，它是BuildContext类的一个实例，表示当前 widget 在 widget 树中的上下文，每一个 widget 都会对应一个 context 对象（因为每一个 widget 都是 widget 树上的一个节点）。实际上，context是当前 widget 在 widget 树中位置中执行”相关操作“的一个句柄(handle)，比如它提供了从当前 widget 开始向上遍历 widget 树以及按照 widget 类型查找父级 widget 的方法。下面是在子树中获取父级 widget 的一个示例：
+
+```dart
+class ContextRoute extends StatelessWidget  {
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: Text("Context测试"),
+      ),
+      body: Container(
+        child: Builder(builder: (context) {
+          // 在 widget 树中向上查找最近的父级`Scaffold`  widget 
+          Scaffold scaffold = context.findAncestorWidgetOfExactType<Scaffold>();
+          // 直接返回 AppBar的title， 此处实际上是Text("Context测试")
+          return (scaffold.appBar as AppBar).title;
+        }),
+      ),
+    );
+  }
+}
+```
+
+![](https://cdn.nlark.com/yuque/0/2022/png/2340337/1666460166503-07834a58-6382-470e-a1d3-d4f47a469b95.png)
+
+注意：对于BuildContext读者现在可以先作了解，随着本书后面内容的展开，也会用到 Context 的一些方法，读者可以通过具体的场景对其有个直观的认识。关于BuildContext更多的内容，我们也将在后面高级部分再深入介绍。
+
+#### 3.2.5 StatefulWidget 
+
+和StatelessWidget一样，StatefulWidget也是继承自widget类，并重写了createElement()方法，不同的是返回的Element 对象并不相同；另外StatefulWidget类中添加了一个新的接口createState()。
+
+下面我们看看StatefulWidget的类定义：
+
+```dart
+abstract class StatefulWidget extends Widget {
+  const StatefulWidget({ Key key }) : super(key: key);
+    
+  @override
+  StatefulElement createElement() => StatefulElement(this);
+    
+  @protected
+  State createState();
+}
+```
+
+- StatefulElement 间接继承自Element类，与StatefulWidget相对应（作为其配置数据）。StatefulElement中可能会多次调用createState()来创建状态（State）对象。
+
+- createState() 用于创建和 StatefulWidget 相关的状态，它在StatefulWidget 的生命周期中可能会被多次调用。例如，当一个 StatefulWidget 同时插入到 widget 树的多个位置时，Flutter 框架就会调用该方法为每一个位置生成一个独立的State实例，其实，本质上就是一个StatefulElement对应一个State实例。而在StatefulWidget 中，State 对象和StatefulElement具有一一对应的关系，所以在Flutter的SDK文档中，可以经常看到“从树中移除 State 对象”或“插入 State 对象到树中”这样的描述，此时的树指通过 widget 树生成的 Element 树。Flutter 的 SDK 文档中经常会提到“树” ，我们可以根据语境来判断到底指的是哪棵树。其实，无论是哪棵树，最终的目标都是为了描述 UI 的结构和绘制信息，所以在 Flutter 中遇到“树”的概念时，若无特别说明，我们都可以理解为 “一棵构成用户界面的节点树”，读者不必纠结于这些概念，还是那句话“得其神，忘其形”
+
+##### 3.2.5.1. State生命周期
+
+理解State的生命周期对flutter开发非常重要，为了加深读者印象，本节我们通过一个实例来演示一下 State 的生命周期。在接下来的示例中，我们仍然以计数器功能为例，实现一个计数器 CounterWidget 组件 ，点击它可以使计数器加1，由于要保存计数器的数值状态，所以我们应继承StatefulWidget，代码如下：
+
+```dart
+class CounterWidget extends StatefulWidget {
+  const CounterWidget({Key? key, this.initValue = 0});
+
+  final int initValue;
+
+  @override
+  _CounterWidgetState createState() => _CounterWidgetState();
+}
+
+```
+
+CounterWidget接收一个initValue整型参数，它表示计数器的初始值。下面我们看一下State的代码：
+
+```dart
+class _CounterWidgetState extends State<CounterWidget> {
+  int _counter = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    //初始化状态
+    _counter = widget.initValue;
+    print("initState");
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    print("build");
+    return Scaffold(
+      body: Center(
+        child: TextButton(
+          child: Text('$_counter'),
+          //点击后计数器自增
+          onPressed: () => setState(
+            () => ++_counter,
+          ),
+        ),
+      ),
+    );
+  }
+
+  @override
+  void didUpdateWidget(CounterWidget oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    print("didUpdateWidget ");
+  }
+
+  @override
+  void deactivate() {
+    super.deactivate();
+    print("deactivate");
+  }
+
+  @override
+  void dispose() {
+    super.dispose();
+    print("dispose");
+  }
+
+  @override
+  void reassemble() {
+    super.reassemble();
+    print("reassemble");
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    print("didChangeDependencies");
+  }
+}
+
+```
+
+接下来，我们创建一个新路由，在新路由中，我们只显示一个CounterWidget：
+
+```dart
+class StateLifecycleTest extends StatelessWidget {
+  const StateLifecycleTest({Key? key}) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    return CounterWidget();
+  }
+}
+```
+
+我们运行应用并打开该路由页面，在新路由页打开后，屏幕中央就会出现一个数字0，然后控制台日志输出：
+
+```dart
+initState
+didChangeDependencies
+build
+```
+
+可以看到，在StatefulWidget插入到 widget 树时首先initState方法会被调用。
+然后我们点击热重载，控制台输出日志如下:
+
+```dart
+reassemble
+didUpdateWidget 
+build
+```
+
+可以看到此时initState 和didChangeDependencies都没有被调用，而此时didUpdateWidget被调用。
+接下来，我们在 widget 树中移除CounterWidget，将 StateLifecycleTest 的 build方法改为：
+
+```dart
+ Widget build(BuildContext context) {
+  //移除计数器 
+  //return CounterWidget ();
+  //随便返回一个Text()
+  return Text("xxx");
+}
+```
+
+然后热重载，日志如下：
+
+```dart
+reassemble
+deactive
+dispose
+```
+
+我们可以看到，在CounterWidget从 widget 树中移除时，deactive和dispose会依次被调用。
+下面我们来看看各个回调函数：
+
+- initState：当 widget 第一次插入到 widget 树时会被调用，对于每一个State对象，Flutter 框架只会调用一次该回调，所以，通常在该回调中做一些一次性的操作，如状态初始化、订阅子树的事件通知等。不能在该回调中调用BuildContext.dependOnInheritedWidgetOfExactType（该方法用于在 widget 树上获取离当前 widget 最近的一个父级InheritedWidget，关于InheritedWidget我们将在后面章节介绍），原因是在初始化完成后， widget 树中的InheritFrom widget也可能会发生变化，所以正确的做法应该在在build（）方法或didChangeDependencies()中调用它;
+- didChangeDependencies()：当State对象的依赖发生变化时会被调用；例如：在之前build() 中包含了一个InheritedWidget （第七章介绍），然后在之后的build() 中Inherited widget发生了变化，那么此时InheritedWidget的子 widget 的didChangeDependencies()回调都会被调用。典型的场景是当系统语言 Locale 或应用主题改变时，Flutter 框架会通知 widget 调用此回调。需要注意，组件第一次被创建后挂载的时候（包括重创建）对应的didChangeDependencies也会被调用；
+- build()：此回调读者现在应该已经相当熟悉了，它主要是用于构建 widget 子树的，会在如下场景被调用：
+  a. 在调用initState()之后；
+  b. 在调用didUpdateWidget()之后；
+  c. 在调用setState()之后；
+  d. 在调用didChangeDependencies()之后；
+  e. 在State对象从树中一个位置移除后（会调用deactivate）又重新插入到树的其他位置之后；
+
+- reassemble()：此回调是专门为了开发调试而提供的，在热重载(hot reload)时会被调用，此回调在Release模式下永远不会被调用；
+- didUpdateWidget ()：在 widget 重新构建时，Flutter 框架会调用widget.canUpdate来检测 widget 树中同一位置的新旧节点，然后决定是否需要更新，如果widget.canUpdate返回true则会调用此回调。正如之前所述，widget.canUpdate会在新旧 widget 的 key 和 runtimeType 同时相等时会返回true，也就是说在在新旧 widget 的key和runtimeType同时相等时didUpdateWidget()就会被调用；
+- deactivate()：当 State 对象从树中被移除时，会调用此回调。在一些场景下，Flutter 框架会将 State 对象重新插到树中，如包含此 State 对象的子树在树的一个位置移动到另一个位置时（可以通过GlobalKey 来实现）。如果移除后没有重新插入到树中则紧接着会调用dispose()方法；
+- dispose()：当 State 对象从树中被永久移除时调用；通常在此回调中释放资源；
+  StatefulWidget 生命周期如图所示：
+
+![](https://cdn.nlark.com/yuque/0/2022/png/2340337/1666460339376-4c686467-7d9f-457c-bf2c-6d1d73e328b6.png)
+
+注意：在继承StatefulWidget重写其方法时，对于包含@mustCallSuper标注的父类方法，都要在子类方法中调用父类方法。
+
+#### 3.2.6. 在 widget 树中获取State对象 
+
+由于 StatefulWidget 的的具体逻辑都在其 State 中，所以很多时候，我们需要获取 StatefulWidget 对应的State 对象来调用一些方法，比如Scaffold组件对应的状态类ScaffoldState中就定义了打开 SnackBar（路由页底部提示条）的方法。我们有两种方法在子 widget 树中获取父级 StatefulWidget 的State 对象。
+
+##### 3.2.6.1. 通过Context获取 
+
+context对象有一个findAncestorStateOfType()方法，该方法可以从当前节点沿着 widget 树向上查找指定类型的 StatefulWidget 对应的 State 对象。下面是实现打开 SnackBar 的示例：
+
+```dart
+class GetStateObjectRoute extends StatefulWidget {
+  const GetStateObjectRoute({Key? key}) : super(key: key);
+
+  @override
+  State<GetStateObjectRoute> createState() => _GetStateObjectRouteState();
+}
+
+class _GetStateObjectRouteState extends State<GetStateObjectRoute> {
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: Text("子树中获取State对象"),
+      ),
+      body: Center(
+        child: Column(
+          children: [
+            Builder(builder: (context) {
+              return ElevatedButton(
+                onPressed: () {
+                  // 查找父级最近的Scaffold对应的ScaffoldState对象
+                  ScaffoldState _state = context.findAncestorStateOfType<ScaffoldState>()!;
+                  // 打开抽屉菜单
+                  _state.openDrawer();
+                },
+                child: Text('打开抽屉菜单1'),
+              );
+            }),
+          ],
+        ),
+      ),
+      drawer: Drawer(),
+    );
+  }
+}
+```
+
+一般来说，如果 StatefulWidget 的状态是私有的（不应该向外部暴露），那么我们代码中就不应该去直接获取其 State 对象；如果StatefulWidget的状态是希望暴露出的（通常还有一些组件的操作方法），我们则可以去直接获取其State对象。但是通过 context.findAncestorStateOfType 获取 StatefulWidget 的状态的方法是通用的，我们并不能在语法层面指定 StatefulWidget 的状态是否私有，所以在 Flutter 开发中便有了一个默认的约定：如果 StatefulWidget 的状态是希望暴露出的，应当在 StatefulWidget 中提供一个of 静态方法来获取其 State 对象，开发者便可直接通过该方法来获取；如果 State不希望暴露，则不提供of方法。这个约定在 Flutter SDK 里随处可见。所以，上面示例中的Scaffold也提供了一个of方法，我们其实是可以直接调用它的：
+
+```dart
+
+Builder(builder: (context) {
+  return ElevatedButton(
+    onPressed: () {
+      // 直接通过of静态方法来获取ScaffoldState
+      ScaffoldState _state=Scaffold.of(context);
+      // 打开抽屉菜单
+      _state.openDrawer();
+    },
+    child: Text('打开抽屉菜单2'),
+  );
+}),
+```
+
+又比如我们想显示 snack bar 的话可以通过下面代码调用：
+
+```dart
+Builder(builder: (context) {
+  return ElevatedButton(
+    onPressed: () {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("我是SnackBar")),
+      );
+    },
+    child: Text('显示SnackBar'),
+  );
+}),
+```
+
+上面示例运行后，点击”显示SnackBar“，效果如图所示：
+
+![](https://cdn.nlark.com/yuque/0/2022/png/2340337/1666460339385-81a6d46f-a569-4fb2-9824-3b37bbfa88f8.png)
+
+### 3.3. 状态管理
+
+#### 3.3.1. 介绍 
+
+响应式的编程框架中都会有一个永恒的主题——“状态(State)管理”，无论是在 React/Vue（两者都是支持响应式编程的 Web 开发框架）还是 Flutter 中，他们讨论的问题和解决的思想都是一致的。所以，如果你对React/Vue的状态管理有了解，可以跳过本节。言归正传，我们想一个问题，StatefulWidget的状态应该被谁管理？Widget本身？父 Widget ？都会？还是另一个对象？答案是取决于实际情况！以下是管理状态的最常见的方法：
+
+- Widget 管理自己的状态；
+
+- Widget 管理子 Widget 状态；
+
+- 混合管理（父 Widget 和子 Widget 都管理状态）；
+
+如何决定使用哪种管理方法？下面是官方给出的一些原则可以帮助你做决定：
+
+- 如果状态是用户数据，如复选框的选中状态、滑块的位置，则该状态最好由父 Widget 管理；
+
+- 如果状态是有关界面外观效果的，例如颜色、动画，那么状态最好由 Widget 本身来管理；
+
+- 如果某一个状态是不同 Widget 共享的则最好由它们共同的父 Widget 管理；
+
+在 Widget 内部管理状态封装性会好一些，而在父 Widget 中管理会比较灵活。有些时候，如果不确定到底该怎么管理状态，那么推荐的首选是在父 Widget 中管理（灵活会显得更重要一些）。
+
+接下来，我们将通过创建三个简单示例TapboxA、TapboxB和TapboxC来说明管理状态的不同方式。 这些例子功能是相似的 ——创建一个盒子，当点击它时，盒子背景会在绿色与灰色之间切换。状态 _active确定颜色：绿色为true ，灰色为false
+
+![](https://cdn.nlark.com/yuque/0/2022/png/2340337/1666460741511-93aa7710-ab34-4c28-aceb-1b0d68c9314f.png)
+
+#### 3.3.2. Widget管理自身状态
+
+_TapboxAState 类:
+
+- 管理TapboxA的状态。
+- 定义_active：确定盒子的当前颜色的布尔值。
+- 定义_handleTap()函数，该函数在点击该盒子时更新_active，并调用setState()更新UI。
+- 实现widget的所有交互式行为。
+
+```dart
+// TapboxA 管理自身状态.
+
+//------------------------- TapboxA ----------------------------------
+
+class TapboxA extends StatefulWidget {
+  TapboxA({Key? key}) : super(key: key);
+
+  @override
+  _TapboxAState createState() => _TapboxAState();
+}
+
+class _TapboxAState extends State<TapboxA> {
+  bool _active = false;
+
+  void _handleTap() {
+    setState(() {
+      _active = !_active;
+    });
+  }
+
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: _handleTap,
+      child: Container(
+        child: Center(
+          child: Text(
+            _active ? 'Active' : 'Inactive',
+            style: TextStyle(fontSize: 32.0, color: Colors.white),
+          ),
+        ),
+        width: 200.0,
+        height: 200.0,
+        decoration: BoxDecoration(
+          color: _active ? Colors.lightGreen[700] : Colors.grey[600],
+        ),
+      ),
+    );
+  }
+}
+```
+
+#### 3.3.3. 父Widget管理子Widget的状态
+
+对于父Widget来说，管理状态并告诉其子Widget何时更新通常是比较好的方式。 例如，IconButton是一个图标按钮，但它是一个无状态的Widget，因为我们认为父Widget需要知道该按钮是否被点击来采取相应的处理。
+在以下示例中，TapboxB通过回调将其状态导出到其父组件，状态由父组件管理，因此它的父组件为StatefulWidget。但是由于TapboxB不管理任何状态，所以TapboxB为StatelessWidget。
+ParentWidgetState 类:
+
+- 为TapboxB 管理_active状态。_
+- _实现_handleTapboxChanged()，当盒子被点击时调用的方法。
+- 当状态改变时，调用setState()更新UI。
+  TapboxB 类:
+- 继承StatelessWidget类，因为所有状态都由其父组件处理。
+- 当检测到点击时，它会通知父组件。
+
+```dart
+// ParentWidget 为 TapboxB 管理状态.
+
+//------------------------ ParentWidget --------------------------------
+
+class ParentWidget extends StatefulWidget {
+  @override
+  _ParentWidgetState createState() => _ParentWidgetState();
+}
+
+class _ParentWidgetState extends State<ParentWidget> {
+  bool _active = false;
+
+  void _handleTapboxChanged(bool newValue) {
+    setState(() {
+      _active = newValue;
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      child: TapboxB(
+        active: _active,
+        onChanged: _handleTapboxChanged,
+      ),
+    );
+  }
+}
+
+//------------------------- TapboxB ----------------------------------
+
+class TapboxB extends StatelessWidget {
+  TapboxB({Key? key, this.active: false, required this.onChanged})
+      : super(key: key);
+
+  final bool active;
+  final ValueChanged<bool> onChanged;
+
+  void _handleTap() {
+    onChanged(!active);
+  }
+
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: _handleTap,
+      child: Container(
+        child: Center(
+          child: Text(
+            active ? 'Active' : 'Inactive',
+            style: TextStyle(fontSize: 32.0, color: Colors.white),
+          ),
+        ),
+        width: 200.0,
+        height: 200.0,
+        decoration: BoxDecoration(
+          color: active ? Colors.lightGreen[700] : Colors.grey[600],
+        ),
+      ),
+    );
+  }
+}
+```
+
+#### 3.3.4. 混合状态管理
+
+对于一些组件来说，混合管理的方式会非常有用。在这种情况下，组件自身管理一些内部状态，而父组件管理一些其他外部状态。
+在下面 TapboxC 示例中，手指按下时，盒子的周围会出现一个深绿色的边框，抬起时，边框消失。点击完成后，盒子的颜色改变。 TapboxC 将其_active状态导出到其父组件中，但在内部管理其_highlight状态。这个例子有两个状态对象_ParentWidgetState和_TapboxCState。
+_ParentWidgetStateC类:
+
+- 管理_active 状态。_
+- 实现 _handleTapboxChanged() ，当盒子被点击时调用。
+- 当点击盒子并且_active状态改变时调用setState()更新UI。
+
+_TapboxCState 对象:
+
+- 管理_highlight 状态。_
+- GestureDetector监听所有tap事件。当用户点下时，它添加高亮（深绿色边框）；当用户释放时，会移除高亮。
+- _当按下、抬起、或者取消点击时更新_highlight状态，调用setState()更新UI。
+- 当点击时，将状态的改变传递给父组件。
+
+```dart
+//---------------------------- ParentWidget ----------------------------
+
+class ParentWidgetC extends StatefulWidget {
+  @override
+  _ParentWidgetCState createState() => _ParentWidgetCState();
+}
+
+class _ParentWidgetCState extends State<ParentWidgetC> {
+  bool _active = false;
+
+  void _handleTapboxChanged(bool newValue) {
+    setState(() {
+      _active = newValue;
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      child: TapboxC(
+        active: _active,
+        onChanged: _handleTapboxChanged,
+      ),
+    );
+  }
+}
+
+//----------------------------- TapboxC ------------------------------
+
+class TapboxC extends StatefulWidget {
+  TapboxC({Key? key, this.active: false, required this.onChanged})
+      : super(key: key);
+
+  final bool active;
+  final ValueChanged<bool> onChanged;
+  
+  @override
+  _TapboxCState createState() => _TapboxCState();
+}
+
+class _TapboxCState extends State<TapboxC> {
+  bool _highlight = false;
+
+  void _handleTapDown(TapDownDetails details) {
+    setState(() {
+      _highlight = true;
+    });
+  }
+
+  void _handleTapUp(TapUpDetails details) {
+    setState(() {
+      _highlight = false;
+    });
+  }
+
+  void _handleTapCancel() {
+    setState(() {
+      _highlight = false;
+    });
+  }
+
+  void _handleTap() {
+    widget.onChanged(!widget.active);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    // 在按下时添加绿色边框，当抬起时，取消高亮  
+    return GestureDetector(
+      onTapDown: _handleTapDown, // 处理按下事件
+      onTapUp: _handleTapUp, // 处理抬起事件
+      onTap: _handleTap,
+      onTapCancel: _handleTapCancel,
+      child: Container(
+        child: Center(
+          child: Text(
+            widget.active ? 'Active' : 'Inactive',
+            style: TextStyle(fontSize: 32.0, color: Colors.white),
+          ),
+        ),
+        width: 200.0,
+        height: 200.0,
+        decoration: BoxDecoration(
+          color: widget.active ? Colors.lightGreen[700] : Colors.grey[600],
+          border: _highlight
+              ? Border.all(
+                  color: Colors.teal[700],
+                  width: 10.0,
+                )
+              : null,
+        ),
+      ),
+    );
+  }
+}
+```
+
+#### 3.3.5. 全局状态管理 
+
+当应用中需要一些跨组件（包括跨路由）的状态需要同步时，上面介绍的方法便很难胜任了。比如，我们有一个设置页，里面可以设置应用的语言，我们为了让设置实时生效，我们期望在语言状态发生改变时，App中依赖应用语言的组件能够重新 build 一下，但这些依赖应用语言的组件和设置页并不在一起，所以这种情况用上面的方法很难管理。这时，正确的做法是通过一个全局状态管理器来处理这种相距较远的组件之间的通信。目前主要有两种办法：
+
+1. 实现一个全局的事件总线，将语言状态改变对应为一个事件，然后在APP中依赖应用语言的组件的initState 方法中订阅语言改变的事件。当用户在设置页切换语言后，我们发布语言改变事件，而订阅了此事件的组件就会收到通知，收到通知后调用setState(...)方法重新build一下自身即可。
+
+2. 使用一些专门用于状态管理的包，如 Provider、Redux，可以在 pub 上查看其详细信息。
+
+### 3.4. 路由管理 
+
+路由（Route）在移动开发中通常指页面（Page），这跟 Web 开发中单页应用的 Route 概念意义是相同的，Route 在 Android中 通常指一个 Activity，在 iOS 中指一个 ViewController。所谓路由管理，就是管理页面之间如何跳转，通常也可被称为导航管理。Flutter 中的路由管理和原生开发类似，无论是 Android 还是 iOS，导航管理都会维护一个路由栈，路由入栈（push）操作对应打开一个新页面，路由出栈（pop）操作对应页面关闭操作，而路由管理主要是指如何来管理路由栈。
+
+#### 3.4.1. 简单示例 
+
+1. 创建一个新路由，命名“NewRoute”
+
+   ```dart
+   class NewRoute extends StatelessWidget {
+     @override
+     Widget build(BuildContext context) {
+       return Scaffold(
+         appBar: AppBar(
+           title: Text("New route"),
+         ),
+         body: Center(
+           child: Text("This is new route"),
+         ),
+       );
+     }
+   }
+   ```
+
+新路由继承自StatelessWidget，界面很简单，在页面中间显示一句"This is new route"。
+
+2. 在_MyHomePageState.build方法中的Column的子widget中添加一个按钮（TextButton） 
+
+   ```dart
+   Column(
+     mainAxisAlignment: MainAxisAlignment.center,
+     children: <Widget>[
+       ... //省略无关代码
+       TextButton(
+         child: Text("open new route"),
+         onPressed: () {
+           //导航到新路由   
+           Navigator.push( 
+             context,
+             MaterialPageRoute(builder: (context) {
+               return NewRoute();
+             }),
+           );
+         },
+       ),
+     ],
+    )
+   ```
+
+![](https://cdn.nlark.com/yuque/0/2022/png/2340337/1666461078876-28b354b6-31c6-467e-a1c4-2b013afbf2cd.png)
+
+
+
+
+
+#### 3.4.2. MaterialPageRoute
+
+MaterialPageRoute继承自PageRoute类，PageRoute类是一个抽象类，表示占有整个屏幕空间的一个模态路由页面，它还定义了路由构建及切换时过渡动画的相关接口及属性。MaterialPageRoute 是 Material组件库提供的组件，它可以针对不同平台，实现与平台页面切换动画风格一致的路由切换动画：
+
+- 对于 Android，当打开新页面时，新的页面会从屏幕底部滑动到屏幕顶部；当关闭页面时，当前页面会从屏幕顶部滑动到屏幕底部后消失，同时上一个页面会显示到屏幕上。
+- 对于 iOS，当打开页面时，新的页面会从屏幕右侧边缘一直滑动到屏幕左边，直到新页面全部显示到屏幕上，而上一个页面则会从当前屏幕滑动到屏幕左侧而消失；当关闭页面时，正好相反，当前页面会从屏幕右侧滑出，同时上一个页面会从屏幕左侧滑入。
+  下面我们介绍一下MaterialPageRoute 构造函数的各个参数的意义：
+
+```dart
+ MaterialPageRoute({
+  WidgetBuilder builder,
+  RouteSettings settings,
+  bool maintainState = true,
+  bool fullscreenDialog = false,
+})
+```
+
+builder 是一个WidgetBuilder类型的回调函数，它的作用是构建路由页面的具体内容，返回值是一个widget。我们通常要实现此回调，返回新路由的实例；
+
+- settings 包含路由的配置信息，如路由名称、是否初始路由（首页）；
+
+- maintainState：默认情况下，当入栈一个新路由时，原来的路由仍然会被保存在内存中，如果想在路由没用的时候释放其所占用的所有资源，可以设置maintainState为 false；
+
+- fullscreenDialog表示新的路由页面是否是一个全屏的模态对话框，在 iOS 中，如果fullscreenDialog为true，新页面将会从屏幕底部滑入（而不是水平方向）；
+
+#### 3.4.3. navigator 
+
+Navigator是一个路由管理的组件，它提供了打开和退出路由页方法。Navigator通过一个栈来管理活动路由集合。通常当前屏幕显示的页面就是栈顶的路由。Navigator提供了一系列方法来管理路由栈，在此我们只介绍其最常用的两个方法：
+
+1. Future push(BuildContext context, Route route)
+
+将给定的路由入栈（即打开新的页面），返回值是一个Future对象，用以接收新路由出栈（即关闭）时的返回数据。
+
+2. bool pop(BuildContext context, [ result ])
+
+将栈顶路由出栈，result 为页面关闭时返回给上一个页面的数据。
+
+Navigator 还有很多其他方法，如Navigator.replace、Navigator.popUntil等，详情请参考API文档或SDK 源码注释，在此不再赘述。下面我们还需要介绍一下路由相关的另一个概念“命名路由”。
+
+3. 实例方法
+
+Navigator类中第一个参数为context的静态方法都对应一个Navigator的实例方法， 比如Navigator.push(BuildContext context, Route route)等价于Navigator.of(context).push(Route route) ，下面命名路由相关的方法也是一样的。
+
+#### 3.4.4. 路由传值
+
+很多时候，在路由跳转时我们需要带一些参数，比如打开商品详情页时，我们需要带一个商品id，这样商品详情页才知道展示哪个商品信息；又比如我们在填写订单时需要选择收货地址，打开地址选择页并选择地址后，可以将用户选择的地址返回到订单页等等。下面我们通过一个简单的示例来演示新旧路由如何传参。
+下面我们通过一个例子来演示：创建一个TipRoute路由，它接受一个提示文本参数，负责将传入它的文本显示在页面上，另外TipRoute中我们添加一个“返回”按钮，点击后在返回上一个路由的同时会带上一个返回参数，下面我们看一下实现代码
+
+```dart
+lass TipRoute extends StatelessWidget {
+  TipRoute({
+    Key key,
+    required this.text,  // 接收一个text参数
+  }) : super(key: key);
+  final String text;
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: Text("提示"),
+      ),
+      body: Padding(
+        padding: EdgeInsets.all(18),
+        child: Center(
+          child: Column(
+            children: <Widget>[
+              Text(text),
+              ElevatedButton(
+                onPressed: () => Navigator.pop(context, "我是返回值"),
+                child: Text("返回"),
+              )
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+```
+
+下面是打开新路由TipRoute的代码：
+
+```dart
+class RouterTestRoute extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: ElevatedButton(
+        onPressed: () async {
+          // 打开`TipRoute`，并等待返回结果
+          var result = await Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) {
+                return TipRoute(
+                  // 路由参数
+                  text: "我是提示xxxx",
+                );
+              },
+            ),
+          );
+          //输出`TipRoute`路由返回结果
+          print("路由返回值: $result");
+        },
+        child: Text("打开提示页"),
+      ),
+    );
+  }
+}
+
+```
+
+运行上面代码，点击RouterTestRoute页的“打开提示页”按钮，会打开TipRoute页，运行效果如图2-11所示下：
+
+![](https://cdn.nlark.com/yuque/0/2022/png/2340337/1666461293681-ca29f327-135a-4f34-9cb0-0ea71a103b2d.png)
+
+需要说明：
+
+1. 提示文案“我是提示xxxx”是通过TipRoute的text参数传递给新路由页的。我们可以通过等待Navigator.push(…)返回的Future来获取新路由的返回数据。
+
+2. 在TipRoute页中有两种方式可以返回到上一页；第一种方式是直接点击导航栏返回箭头，第二种方式是点击页面中的“返回”按钮。这两种返回方式的区别是前者不会返回数据给上一个路由，而后者会。下面是分别点击页面中的返回按钮和导航栏返回箭头后，RouterTestRoute页中print方法在控制台输出的内容：
+
+   ```dart
+   路由返回值: 我是返回值
+   路由返回值: null
+   ```
+
+#### 3.4.5. 命名路由 
+
+##### 3.4.5.1. 路由表 
+
+要想使用命名路由，我们必须先提供并注册一个路由表（routing table），这样应用程序才知道哪个名字与哪个路由组件相对应。其实注册路由表就是给路由起名字，路由表的定义如下：
+
+```dart
+Map<String, WidgetBuilder> routes;
+```
+
+它是一个Map，key为路由的名字，是个字符串；value是个builder回调函数，用于生成相应的路由widget。我们在通过路由名字打开新路由时，应用会根据路由名字在路由表中查找到对应的WidgetBuilder回调函数，然后调用该回调函数生成路由widget并返回。
+
+##### 3.4.5.2. 注册路由表 
+
+路由表的注册方式很简单，我们回到之前“计数器”的示例，然后在MyApp类的build方法中找到MaterialApp，添加routes属性，代码如下：
+
+```dart
+MaterialApp(
+  title: 'Flutter Demo',
+  theme: ThemeData(
+    primarySwatch: Colors.blue,
+  ),
+  //注册路由表
+  routes:{
+   "new_page":(context) => NewRoute(),
+    ... // 省略其他路由注册信息
+  } ,
+  home: MyHomePage(title: 'Flutter Demo Home Page'),
+);
+
+```
+
+现在我们就完成了路由表的注册。上面的代码中home路由并没有使用命名路由，如果我们也想将home注册为命名路由应该怎么做呢？其实很简单，直接看代码：
+
+```dart
+MaterialApp(
+  title: 'Flutter Demo',
+  initialRoute:"/", //名为"/"的路由作为应用的home(首页)
+  theme: ThemeData(
+    primarySwatch: Colors.blue,
+  ),
+  //注册路由表
+  routes:{
+   "new_page":(context) => NewRoute(),
+   "/":(context) => MyHomePage(title: 'Flutter Demo Home Page'), //注册首页路由
+  } 
+);
+
+```
+
+我们只需在路由表中注册一下MyHomePage路由，然后将其名字作为MaterialApp的initialRoute属性值即可，该属性决定应用的初始路由页是哪一个命名路由。
+
+##### 3.4.5.3. 通过路由名打开新路由页 
+
+要通过路由名称来打开新路由，可以使用Navigator 的pushNamed方法：
+
+```dart
+Future pushNamed(BuildContext context, String routeName,{Object arguments})
+```
+
+Navigator 除了pushNamed方法，还有pushReplacementNamed等其他管理命名路由的方法，读者可以自行查看API文档。接下来我们通过路由名来打开新的路由页，修改TextButton的onPressed回调代码，改为：
+
+```dart
+onPressed: () {
+  Navigator.pushNamed(context, "new_page");
+  //Navigator.push(context,
+  //  MaterialPageRoute(builder: (context) {
+  //  return NewRoute();
+  //}));  
+},
+```
+
+热重载应用，再次点击“open new route”按钮，依然可以打开新的路由页
+
+##### 3.4.5.4. 命名路由参数传递 
+
+在Flutter最初的版本中，命名路由是不能传递参数的，后来才支持了参数；下面展示命名路由如何传递并获取路由参数：
+
+我们先注册一个路由：
+
+```dart
+routes:{
+ "new_page":(context) => EchoRoute(),
+} ,
+```
+
+在路由页通过RouteSetting对象获取路由参数：
+
+```dart
+class EchoRoute extends StatelessWidget {
+
+  @override
+  Widget build(BuildContext context) {
+    //获取路由参数  
+    var args=ModalRoute.of(context).settings.arguments;
+    //...省略无关代码
+  }
+}
+```
+
+在打开路由时传递参数
+
+```dart
+Navigator.of(context).pushNamed("new_page", arguments: "hi");
+```
+
+#### 3.4.6. 路由生成钩子
+
+假设我们要开发一个电商App，当用户没有登录时可以看店铺、商品等信息，但交易记录、购物车、用户个人信息等页面需要登录后才能看。为了实现上述功能，我们需要在打开每一个路由页前判断用户登录状态！如果每次打开路由前我们都需要去判断一下将会非常麻烦，那有什么更好的办法吗？答案是有！
+MaterialApp有一个onGenerateRoute属性，它在打开命名路由时可能会被调用，之所以说可能，是因为当调用Navigator.pushNamed(...)打开命名路由时，如果指定的路由名在路由表中已注册，则会调用路由表中的builder函数来生成路由组件；如果路由表中没有注册，才会调用onGenerateRoute来生成路由。onGenerateRoute回调签名如下：
+
+```dart
+Route<dynamic> Function(RouteSettings settings)
+```
+
+有了onGenerateRoute回调，要实现上面控制页面权限的功能就非常容易：我们放弃使用路由表，取而代之的是提供一个onGenerateRoute回调，然后在该回调中进行统一的权限控制，如：
+
+```dart
+
+MaterialApp(
+  ... //省略无关代码
+  onGenerateRoute:(RouteSettings settings){
+	  return MaterialPageRoute(builder: (context){
+		   String routeName = settings.name;
+       // 如果访问的路由页需要登录，但当前未登录，则直接返回登录页路由，
+       // 引导用户登录；其他情况则正常打开路由。
+     }
+   );
+  }
+);
+```
+
+## 4. 后续学习路径
+
+●[《Flutter实战·第二版》](https://book.flutterchina.club/)
+● [awesome-flutter](https://github.com/Solido/awesome-flutter)
+● [flutter demo](https://github.com/CarGuo/gsy_github_app_flutter)
+
+
+
+ps://www.yuque.com/lpldplws/web/og6swa9wsde8lc8b?#《前端AST》 密码：lxee
 
 
 https://www.yuque.com/lpldplws/web/itd4rdqaqqioga10?#《webpack》 密码：nn2p 
