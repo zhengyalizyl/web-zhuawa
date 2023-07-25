@@ -50602,9 +50602,1516 @@ MaterialApp(
 ● [awesome-flutter](https://github.com/Solido/awesome-flutter)
 ● [flutter demo](https://github.com/CarGuo/gsy_github_app_flutter)
 
+# **Electron入门和实战(上)**
+
+https://www.yuque.com/tingxiaoting/fr28z2/vszo27?#《Electron入门和实战(上)》 密码：vt8b
+
+## 一、课程目标
+
+- 传统桌面端应用
+- electron 介绍
+- electron 核心技术
+- electron 开发体验
+- electron 入门内容介绍
+
+- - 快速创建应用
+  - electron 通信
+  - 小 demo
+
+## 二、课程内容
+
+### 2.1  传统桌面端应用
+
+桌面应用程序，又称为 GUI 程序（Graphical User Interface），我们电脑上使用的各种客户端程序都属于桌面应用程序。
+
+传统的桌面应用开发方式，一般是下面两种。
+
+1）原生开发：
+
+直接将语言编译成可执行文件，直接调用系统API，完成UI绘制等。这类开发技术，有着较高的运行效率，但一般来说，开发速度较慢，技术要求较高，例如：
+
+a. windows: 使用C++ / MFC开发Windows应用/QT； 
+
+b. macos: 使用Objective-C、swift开发MAC应用。 
+
+2）托管平台： 
+
+一开始就有本地开发和UI开发。一次编译后，得到中间文件，通过平台或虚机完成二次加载编译或解释运行。运行效率低于原生编译，但平台优化后，其效率也是比较可观的。就开发速度方面，比原生编译技术要快一些。例如：
+
+a. 使用C# / .NET Framework(只能开发Windows应用)； b. Java / Swing。不过，上面两种对前端开发人员太不友好了，基本是前端人员不会涉及的领域，但是在这个"大前端"的时代，前端开发者正在想方设法涉足各个领域，使用WEB技术开发客户端的方式横空出世——这就是本文正在介绍的“Electron”技术。  
+
+```js
+js 前端/后端/手机 app/GUI 程序
+
+nw.js electron
+```
+
+### 2.2 Eelctron介绍
+
+[Electron](https://links.jianshu.com/go?to=https%3A%2F%2Felectronjs.org%2F)是由Github开发，用HTML，CSS和JavaScript来构建跨平台桌面应用程序的一个开源库。 Electron通过将[Chromium](https://links.jianshu.com/go?to=https%3A%2F%2Fwww.chromium.org%2FHome)和[Node.js](https://links.jianshu.com/go?to=https%3A%2F%2Fnodejs.org%2F)合并到同一个运行时环境中，并将其打包为Mac，Windows和Linux系统下的应用来实现这一目的。通过Node它提供了通常浏览器所不能提供的能力。 
+
+Electron于2013年作为构建Github上可编程的文本编辑器[Atom](https://links.jianshu.com/go?to=https%3A%2F%2Fatom.io%2F)的框架而被开发出来（PS：据说这个Atom看起来很漂亮，但很难用...）。这两个项目在2014春季开源。
+
+### 2.3 都有谁在用 Electron？
+
+- vscode
+- postman
+- yuque
+- atom
+- 等
+
+### 2.4 什么时候使用 electron
+
+#### 特定领域软件
+
+- 财务软件
+- 开发者工具
+- 打印场景
+- 同时开发 web+桌面应用
+
+### 2.5 Electron核心技术
+
+![](https://cdn.nlark.com/yuque/0/2022/png/739887/1666714397698-e80e33df-330c-49f3-84ae-0c577f8104a7.png?x-oss-process=image%2Fresize%2Cw_990%2Climit_0)
+
+- **Chromium**: Chromium是 Google 为发展 Chrome 浏览器而启动的开源项目，Chromium 相当于 Chrome 的工程版或称实验版，新功能会率先在 Chromium 上实现，待验证后才会应用在Chrome 上，故 Chrome 的功能会相对落后但较稳定。**Chromium为Electron提供强大的UI能力**，可以在不考虑兼容性的情况下开发界面。
+- **Node.js**: 是一个让 JavaScript 运行在服务端的开发平台，Node 使用事件驱动，非阻塞I/O 模型而得以轻量和高效。**单单靠Chromium是不能具备直接操作原生GUI能力的，Electron内集成了Nodejs，这让其在开发界面的同时也有了操作系统底层 API 的能力**，Nodejs 中常用的 Path、fs、Crypto 等模块在 Electron 可以直接使用。
+
+- **Native API:** 为 **Electron** 提供原生系统的 **GUI** 支持，借此 **Electron** 可以调用原生应用程序接口。
+
+总结起来，**Chromium** 负责页面 **UI** 渲染，**Node.js** 负责业务逻辑，**Native API** 则提供原生能力和跨平台。
+
+### 2.6 Electron的开发体验
+
+#### 优势
+
+**兼容性：**虽然你还在用WEB技术进行开发，但是你不用再考虑兼容性问题了，你只需要关心你当前使用Electron的版本对应Chrome的版本，一般情况下它已经足够新来让你使用最新的API和语法了，你还可以手动升级Chrome版本。同样的，你也不用考虑不同浏览器带的样式和代码兼容问题。
+
+**NodeJS环境：**这可能是很多前端开发者曾经梦想过的功能，在WEB界面中使用Node.js提供的强大API，这意味着你在WEB页面直接可以操作文件，调用系统API，甚至操作[数据库](https://cloud.tencent.com/solution/database?from=10680)。当然，除了完整的 Node API，你还可以使用额外的百万个npm模块。
+
+**跨域：**你可以直接使用Node提供的request模块进行网络请求，这意味着你无需再被跨域所困扰。
+
+强大的扩展性：借助node-ffi，为应用程序提供强大的扩展性
+
+#### 劣势
+
+**应用体积过大：**由于内部包装了Chromium和Node.js，使得打包体积（使用electron-builder）在mac上至少是45M+起步，在windows上稍微好一点，不过也要35M+起步。不过相比早期打包体积100M+起步来说，已经好了不少。不过解压后安装依然是100M+起步。
+
+**支持度：**受限于Node.js和Native APIs的一些支持度的问题，它依然有所局限。一些功能依然无法实现。比如无法获取在系统文件夹里选中的文件，而必须调用web的File或者node的fs接口才可以访问系统文件。
+
+**性能：**应用性能依旧是个问题。所以做轻量级应用没问题，重量级应用尤其是CPU密集型应用的话很是问题。
+
+### 2.7 基本原理
+
+#### Chromium 架构
 
 
-ps://www.yuque.com/lpldplws/web/og6swa9wsde8lc8b?#《前端AST》 密码：lxee
+JavaScript 是单线程语言，但浏览器是多线程的，Chromium 作为 Chrome 的实验版，自然也是基于多线程工作机制。 
+
+![img](https://cdn.nlark.com/yuque/0/2022/png/739887/1667032451540-254e2645-c497-41cf-91b1-990c4211d4eb.png)
+
+
+
+Chromium 的**多进程模式**主要由三部分组成: 浏览器端(Browser)、渲染器端(Render)、浏览器与渲染器的通信方式(IPC)
+
+- **浏览器进程**
+
+浏览器进程 Browser 只有一个，当 Chrome 打开时，进程启动。 浏览器为每个渲染进程维护对应的 RenderProcessHost，负责浏览器与渲染器的交互。RenderViewHost 则是与 RenderView 对象进行交互，渲染网页的内容。浏览器与渲染器通过 IPC 进行通信。
+
+- **渲染进程管理**
+
+每个渲染进程都有一个全局 RenderProcess 对象，可以管理其与父浏览器进程之间的通信，并维护其全局状态。
+
+页面在**RenderView**中基于Webkit排版展示出来的。
+
+**ResourceDispatcher**，处理资源请求，当我们页面需要请求资源时， 通过ResourceDispatcher创建一个请求ID，转发到IPC，在Browser进程处理返回。
+
+- **view 管理**
+
+每个渲染器可以维护多个 RenderView 对象，当新开标签页或弹出窗口后，渲染进程就会创建一个 RenderView，RenderView 对象与它在浏览器进程中对应的 RenderViewHost 和 Webkit 嵌入层通信，渲染出网页网页内容(这里是我们日常主要关注的地方)。
+
+- **IPC 通信**
+
+RenderViewHost 和 RenderProcess 专门处理IPC通信
+
+#### Electron 架构解析
+
+**Electron** 架构参考了 **Chromium** 的多进程架构模式，即将主进程和渲染进程隔离，并且在 **Chromium** 多进程架构基础上做一定扩展。
+
+由于Electron使用了Chromium来展示web页面，所以Chromium的多进程架构也会被使用到Electron中，在Electron中也分为主进程和渲染进程，但是跟Chromium不一样的有两点：
+
+1. 在各个进程中暴漏了Native Api
+2. 引入了Node.js
+
+![img](https://cdn.nlark.com/yuque/0/2022/png/739887/1667041973895-51ed7d40-1cdc-4049-9274-2b450700c7e1.png)
+
+Electron 的主从进程模型是基本的常识。每个 Electron 应用有且只要一个主进程(Main Process)、以及一个或多个渲染进程(Renderer Process), 对应多个 Web 页面。除此之外还有 GPU 进程、扩展进程等等。可以通过 [Electron Application Architecture](https://link.juejin.cn?target=https%3A%2F%2Felectronjs.org%2Fdocs%2Ftutorial%2Fapplication-architecture%23main-and-renderer-processes) 了解 Electron 的基本架构。
+
+**主进程负责创建页面窗口、协调进程间通信、事件分发，****主进程在 Node.js 环境中运行**。为了安全考虑，原生 GUI 相关的 API 是无法在渲染进程直接访问的，它们必须通过 IPC 调用主进程。这种主从进程模型缺点也非常明显，即主进程单点故障。主进程崩溃或者阻塞，会影响整个应用的响应。比如主进程跑长时间的 CPU 任务，将阻塞渲染进程的用户交互事件。
+
+对我们的应用来说，目前有以下进程, 以及它们的职责:
+
+**① 主进程**
+
+- 进程间通信、窗口管理
+- 全局通用服务。
+- 一些只能或适合在主进程做的事情。例如浏览器下载、全局快捷键处理、托盘、session。
+- 维护一些必要的全局状态
+- 上面说的通用混合层也跑在这个进程。通过 Node C++ 插件暴露接口。
+
+**② 渲染进程**
+
+负责 Web 页面的渲染, 具体页面的业务处理，运行在**浏览器环境中**，也意味着**渲染器无权直接访问 require 或其他 Node.js API**。
+
+![](https://cdn.nlark.com/yuque/0/2022/png/739887/1666715955882-61613581-5847-476f-8820-39d91ed2dc15.png?x-oss-process=image%2Fresize%2Cw_719%2Climit_0)
+
+
+
+## 三、Electron具体内容介绍
+
+### 3.1 生命周期
+
+![img](https://cdn.nlark.com/yuque/0/2022/png/739887/1667043802034-21215927-09e6-444d-9a8e-fb66ba4c38e1.png)
+
+这里把这些事件分成三部分，App 事件、BrowserWindow 事件以及 Renderer 进程中的 Web 事件。
+
+### 3.2 快速入门
+
+**安装Electron**
+
+```js
+npm install --save-dev electron
+```
+
+#### 添加script脚本
+
+```js
+"main": "main.js",
+"start": "nodemon --exec electron ."
+```
+
+#### 添加nodemon.json文件
+
+```js
+{
+  "watch": ["main.js", "renderer.js"],
+  "options": {
+    	"extensions": ["js"]
+  	}
+	}
+}
+```
+
+#### 热更新
+
+```js
+npm install --save-dev electron-reloader
+```
+
+```js
+// 热加载
+try {
+  require('electron-reloader')(module,{});
+} catch (_) {}
+```
+
+#### **创建页面 index.html**
+
+````js
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8">
+    <!-- https://developer.mozilla.org/en-US/docs/Web/HTTP/CSP -->
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'">
+    <title>Hello World!</title>
+  </head>
+  <body>
+    <h1>Hello World!</h1>
+    We are using Node.js <span id="node-version"></span>,
+    Chromium <span id="chrome-version"></span>,
+    and Electron <span id="electron-version"></span>.
+  </body>
+</html>
+````
+
+#### 在窗口中打开页面
+
+需要 两个Electron模块：
+
+- [app](https://www.electronjs.org/zh/docs/latest/api/app) 模块，它控制应用程序的事件生命周期。
+
+- [BrowserWindow](https://www.electronjs.org/zh/docs/latest/api/browser-window) 模块，它创建和管理应用程序 窗口。
+
+```js
+
+//  main.js
+const { app, BrowserWindow } = require('electron')
+
+const createWindow = () => {
+  const win = new BrowserWindow({
+    width: 800,
+    height: 600,
+     webPreferences: {
+    // 在Electron5.0版本后，渲染进程默认是不能调用Node.js的API的，经过设置后才可以
+    	nodeIntegration: true,  //设置为true就可以在这个渲染进程中调用Node.js
+      contextIsolation: false,
+      preload: path.join(__dirname, 'preload.js'),
+  	}
+  })
+
+  win.loadFile('index.html')
+}
+
+// 只有在 app 模块的 ready 事件被激发后才能创建浏览器窗口
+app.whenReady().then(() => {
+	createWindow();
+	app.on('activate', function () {
+    // macos应用被重新激活
+    // On macOS it's common to re-create a window in the app when the
+    // dock icon is clicked and there are no other windows open.
+    if (BrowserWindow.getAllWindows().length === 0) createWindow();
+  });
+});
+
+// 窗口都关闭了 windows默认会退出应用 mac不会
+app.on('window-all-closed', () => {
+  if (process.platform !== 'darwin') {
+    app.quit();
+  }
+});
+```
+
+### 3.3 preload
+
+Electron 的主进程是一个拥有着完全操作系统访问权限的 Node.js 环境。 除了 [Electron 模组](https://www.electronjs.org/zh/docs/latest/api/app) 之外，你也可以使用 [Node.js 内置模块](https://nodejs.org/dist/latest/docs/api/) 和所有通过 npm 安装的软件包。 另一方面，出于安全原因，渲染进程默认跑在网页页面上，而并非 Node.js里。
+
+为了将 Electron 的不同类型的进程桥接在一起，我们需要使用被称为 **预加载** 的特殊脚本，**预加载脚本在渲染器进程加载之前加载**，并有权访问**两个渲染器全局** (例如 window 和 document) 和 Node.js 环境。
+
+在**非上下文隔离环境下**，预加载脚本与浏览器共享同一个全局 [Window](https://developer.mozilla.org/en-US/docs/Web/API/Window) 接口，并且可以访问 Node.js API，所以它通过在全局 window 中暴露任意 API 来增强渲染器，以便你的网页内容使用。
+
+创建一个名为 preload.js 的新脚本如下：
+
+```js
+window.addEventListener('DOMContentLoaded', () => {
+  const replaceText = (selector, text) => {
+    const element = document.getElementById(selector)
+    if (element) element.innerText = text
+  }
+
+  for (const dependency of ['chrome', 'node', 'electron']) {
+    replaceText(`${dependency}-version`, process.versions[dependency])
+  }
+})
+```
+
+需要在创建窗口的地方引入preload.js脚本
+
+```js
+// include the Node.js 'path' module at the top of your file
+const path = require('path')
+
+// modify your existing createWindow() function
+const createWindow = () => {
+  const win = new BrowserWindow({
+    width: 800,
+    height: 600,
+    webPreferences: {
+      preload: path.join(__dirname, 'preload.js')
+    }
+  })
+
+  win.loadFile('index.html')
+}
+// ...
+```
+
+#### 上下文隔离contextIsolation
+
+上下文隔离功能将确保您的 预加载脚本 和 Electron的内部逻辑 运行在所加载的 [webcontent](https://www.electronjs.org/zh/docs/latest/api/web-contents)网页 之外的另一个独立的上下文环境里。 **这对安全性很重要**，因为**它有助于阻止网站访问 Electron 的内部组件 和 您的预加载脚本可访问的高等级权限的API** 。
+
+这意味着，实际上，您的预加载脚本访问的 window 对象**并不是**网站所能访问的对象。 例如，如果您在预加载脚本中设置 window.hello = 'wave' 并且启用了上下文隔离，当网站尝试访问window.hello对象时将返回 undefined。
+
+自 Electron 12 以来，默认情况下已启用上下文隔离，并且它是 *所有应用程序***推荐的安全设置**。预加载脚本默认 沙盒化 ，**不再拥有完整 Node.js 环境的访问权**。 实际上，这意味着你只拥有一个 polyfilled 的 require 函数，这个函数只能访问一组有限的 API。
+
+| **可用的 API**        | **详细信息**                                                 |
+| --------------------- | ------------------------------------------------------------ |
+| Electron 模块         | 渲染进程模块                                                 |
+| Node.js 模块          | [events](https://nodejs.org/api/events.html)、[timers](https://nodejs.org/api/timers.html)、[url](https://nodejs.org/api/url.html) |
+| Polyfilled 的全局模块 | [Buffer](https://nodejs.org/api/buffer.html)、[process](https://www.electronjs.org/zh/docs/latest/api/process)、[clearImmediate](https://nodejs.org/api/timers.html#timers_clearimmediate_immediate)、[setImmediate](https://nodejs.org/api/timers.html#timers_setimmediate_callback_args) |
+
+#### 通过contextBridge桥接api
+
+预加载脚本像 Chrome 扩展的 [内容脚本](https://developer.chrome.com/docs/extensions/mv3/content_scripts/)（Content Script）一样，**会在渲染器的网页加载之前注入**。 如果你想向渲染器加入需要特殊权限的功能，你可以通过 [contextBridge](https://www.electronjs.org/zh/docs/latest/api/context-bridge) 接口定义 [全局对象](https://developer.mozilla.org/en-US/docs/Glossary/Global_object)。
+
+```js
+/*
+*  @electron-toolkit/preload
+ * 预加载脚本会在渲染器的网页加载之前注入。
+ * 如果你想向渲染器加入需要特殊权限的功能，你可以通过 contextBridge 接口定义 全局对象。
+ */
+const { contextBridge } = require('electron');
+// import { electronAPI } from '@electron-toolkit/preload';
+
+window.addEventListener('DOMContentLoaded', () => {
+  const replaceText = (selector, text) => {
+    const element = document.getElementById(selector);
+    element && (element.innerText = text);
+  };
+  for (const dependency of ['chrome', 'node', 'electron']) {
+    replaceText(`${dependency}-version`, process.versions[dependency]);
+  }
+});
+
+// window.electron = electronAPI;
+
+if (process.contextIsolated) {
+  contextBridge.exposeInMainWorld('versions', {
+    node: () => process.versions.node,
+    chrome: () => process.versions.chrome,
+    electron: () => process.versions.electron,
+  });
+}
+
+```
+
+```js
+/*
+*  @electron-toolkit/preload
+ * 预加载脚本会在渲染器的网页加载之前注入。
+ * 如果你想向渲染器加入需要特殊权限的功能，你可以通过 contextBridge 接口定义 全局对象。
+ */
+const { contextBridge } = require('electron');
+import { electronAPI } from '@electron-toolkit/preload'
+
+// Custom APIs for renderer
+const api = {}
+
+// Use `contextBridge` APIs to expose Electron APIs to
+// renderer only if context isolation is enabled, otherwise
+// just add to the DOM global.
+if (process.contextIsolated) {
+  try {
+    contextBridge.exposeInMainWorld('electron', electronAPI)
+    contextBridge.exposeInMainWorld('api', api)
+  } catch (error) {
+    console.error(error)
+  }
+} else {
+  // @ts-ignore (define in dts)
+  window.electron = electronAPI
+  // @ts-ignore (define in dts)
+  window.api = api
+}
+```
+
+### 3.4 进程间通信
+
+Electron 的主进程和渲染进程有着清楚的分工并且不可互换。 这代表着无论是从渲染进程直接访问 Node.js 接口，亦或者是从主进程访问 HTML 文档对象模型 (DOM)，都是不可能的。
+
+解决这一问题的方法是使用进程间通信 (IPC)。可以使用 Electron 的 ipcMain 模块和 ipcRenderer 模块来进行进程间通信。
+
+#### 3.4.1 主进程主动向渲染进程发送消息
+
+```js
+// 主进程（main.js）
+
+//主进程向渲染进程发送消息，'did-finish-load':当导航完成时发出事件，onload 事件也完成
+// 导航完成时触发
+win.webContents.on('did-finish-load', () => {
+  win.webContents.send('msg', '消息来自主进程')
+})
+```
+
+渲染进程(index.html)
+
+```js
+// renderer.js
+const {ipcRenderer} = require('electron')
+ipcRenderer.on('msg', (event, message) => {
+    console.log(message) // 消息来自主进程
+})
+```
+
+#### 3.4.2 渲染进程主动向主进程发送消息
+
+```js
+// 渲染进程(index.html)
+
+const {ipcRenderer} = require('electron')
+ipcRenderer.send('indexMsg','消息来自渲染进程')
+```
+
+```js
+// 主进程（main.js）
+const {ipcMain} = require('electron')
+ipcMain.on('indexMsg',(event,msg) => {
+    console.log(msg) //消息来自渲染进程
+})
+```
+
+#### **3.4.3 渲染进程向主进程发送消息并异步等待结果**
+
+```js
+// renderer.js
+const { ipcRenderer } = require('electron');
+// 渲染进程向主进程发送消息并异步等待结果
+async function notification() {
+  let res = await ipcRenderer.invoke('work-notification');
+  console.log(res);
+}
+notification();
+
+
+// main.js
+const { app, BrowserWindow, ipcMain, Notification } = require('electron');
+
+ ipcMain.handle('work-notification', async () => {
+    return await new Promise((resolve, reject) => {
+      let notification = new Notification({
+        title: '任务结束',
+        body: '是否开始休息',
+        actions: [{ text: '开始休息', type: 'button' }],
+        closeButtonText: '继续工作',
+      });
+      notification.show();
+      notification.on('action', () => resolve('rest'));
+      notification.on('close', () => resolve('work'));
+    });
+});
+```
+
+#### 3.4.4 渲染进程之间如何通信？ 
+
+没有直接的方法可以使用 ipcMain 和 ipcRenderer 模块在 Electron 中的渲染器进程之间发送消息。
+
+- 将主进程作为渲染器之间的消息代理。 这需要将消息从一个渲染器发送到主进程，然后主进程将消息转发到另一个渲染器。
+
+- 从主进程将一个 [MessagePort](https://www.electronjs.org/zh/docs/latest/tutorial/message-ports) 传递到两个渲染器。 这将允许在初始设置后渲染器之间直接进行通信。
+
+利用主进程做消息中转站 
+
+```js
+//主进程
+ipcMain.on('msg1', (event, message) => {
+  yourWindow.webContents.send('msg2', message);
+}
+
+//渲染进程1
+ipcRenderer.send('msg1', '来自渲染进程1的消息')
+
+//渲染进程2
+ipcRenderer.on('msg2', (event, message) => {
+    console.log(message)  //来自渲染进程1的消息
+  }
+)
+```
+
+**消息通信总结**
+
+```js
+ipcRenderer.invoke：渲染进程发送消息给主进程，这是一个promise，可以在其resolve中获取ipcMain.handle的返回值
+ipcMain.handle：接收invoke发送的信息，可以return值给ipcRenderer.invoke
+
+ipcRenderer.send：渲染进程发送消息给主进程
+ipcMain.on：接收send的信息
+
+ipcRenderer.on：接收主进程的消息
+webContents.send：主进程发送消息给渲染进程
+
+ipcRenderer.sendTo：可以通过webContentsId直接发送信息到对应的渲染进程窗口
+```
+
+### 3.5 调试您的Electron应用
+
+```js
+// main.js 开启开发者工具面板
+win.webContents.openDevTools();
+```
+
+使用VSCode调试
+
+添加文件 .vscode/launch.json，内容为
+
+````js
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Debug Main Process",
+      "type": "node",
+      "request": "launch",
+      "cwd": "${workspaceFolder}",
+      // 使用什么命令启动
+      "runtimeExecutable": "${workspaceFolder}/node_modules/.bin/electron", 
+      "windows": {
+        "runtimeExecutable": "${workspaceFolder}/node_modules/.bin/electron.cmd"
+      },
+        // 启动时的参数
+      "args" : ["."]
+    }
+  ]
+}
+````
+
+- request，必填项，有两种类型，分别是 launch 和 attach，前者的意思就是 VSCode 会打开这个程序然后进入调试，后者的意思是你已经打开了程序，然后接通 Node.js 的内部调试协议进行调试，如果你看过上面的“Node.js 的调试原理”一文，应该可以大致理解；
+
+### 3.6 倒计时demo
+
+安装
+
+```js
+npm install timer.js -D
+```
+
+```js
+// renderer.js
+const Timer = require('timer.js');
+const { ipcRenderer } = require('electron');
+
+ipcRenderer.on('msg', (event, message) => {
+  alert(message);
+});
+
+ipcRenderer.send('msg-from-render', '消息来自渲染进程');
+
+function StartWork() {
+  let workTimer = new Timer({
+    ontick: (ms) => {
+      updateTimer(ms);
+    },
+    onend: () => {
+      notification();
+    },
+  });
+  workTimer.start(10);
+}
+function updateTimer(ms) {
+  let timerCointainer = document.getElementById('timer-container');
+  let s = (ms / 1000).toFixed(0);
+  let ss = s % 60;
+  let mm = (s / 60).toFixed(0);
+
+  timerCointainer.innerText = `${mm
+    .toString()
+    .padStart(2, 0)}:${ss.toString().padStart(2, 0)}`;
+}
+async function notification() {
+  const ret = await ipcRenderer.invoke('work-notification');
+  console.log(ret);
+  if (ret === 'rest') {
+    setTimeout(() => {
+      alert('休息');
+    });
+  } else if (ret === 'work') {
+    StartWork();
+  }
+}
+
+StartWork();
+```
+
+```js
+const { app, BrowserWindow, ipcMain, Notification } = require('electron');
+
+// main.js
+function handleIPC() {
+ ipcMain.handle('work-notification', async () => {
+  return await new Promise((resolve, reject) => {
+    let notification = new Notification({
+      title: '任务结束',
+      body: '是否开始休息',
+      actions: [{ text: '开始休息', type: 'button' }],
+      closeButtonText: '继续工作',
+    });
+    notification.show();
+    notification.on('action', () => resolve('rest'));
+    notification.on('close', () => resolve('work'));
+  });
+});
+}
+```
+
+### 3.7 打包应用程序
+
+**打包工具**
+
+- electronforge https://www.electronforge.io/
+- electron-builder 功能更多
+- electron-packager
+
+#### 使用electronforge
+
+1. 将 Electron Forge 添加到您应用的开发依赖中，并使用其"import"命令设置 Forge 的脚手架：
+
+```js
+npm install --save-dev @electron-forge/cli
+npx electron-forge import
+```
+
+2. 使用 Forge 的 make 命令来创建可分发的应用程序：
+
+```js
+npm run make
+```
+
+Electron-forge 会创建 out 文件夹，您的软件包将在那里找到：
+
+![](https://cdn.nlark.com/yuque/0/2023/png/739887/1682997344726-74b5ec91-0394-4a8f-9d40-d0d5e60d61ce.png)
+
+**使用electron-builder 
+
+安装
+
+```js
+npm i electron-builder -D
+```
+
+package.json中添加打包配置
+
+```js
+ "build": {
+    "productName": "my_ele_demo",
+    "appId": "com.example.app",
+    "directories": {
+      "output": "./dist"
+    }
+  }
+```
+
+添加打包脚本
+
+```js
+"release": "electron-builder --mac --arm64" 
+```
+
+执行打包操作
+
+![](https://cdn.nlark.com/yuque/0/2022/png/739887/1666801307655-10ed887d-d2ec-499f-997f-d4a6058dfbd9.png)
+
+# Electron入门和实战(下)
+
+https://www.yuque.com/tingxiaoting/fr28z2/cie26y17r14fpkb3?singleDoc# 《Electron入门和实战(下)》 密码：wmgw
+
+## 基于webRTC+Electron实现远程控制 
+
+WebRTC（Web Real-Time Communications）是一项实时通讯技术，它允许网络应用或者站点，在不借助中间媒介的情况下，建立浏览器之间点对点（Peer-to-Peer）的连接，实现视频流和（或）音频流或者其他任意数据的传输。WebRTC 包含的这些标准使用户在无需安装任何插件或者第三方的软件的情况下，创建点对点（Peer-to-Peer）的数据分享和电话会议成为可能。
+
+**应用场景**
+
+- 直播
+
+- 游戏
+
+- 视频会议/在线教育
+
+- 屏幕共享、远程控制
+
+ **目标**： 
+
+能够远程控制用户电脑，提供点击和键入功能
+
+ **⻆⾊** 
+
+控制端：客服人员/研发人员
+
+傀儡端：用户
+
+**流程**
+
+1.  傀儡端告知控制端本机控制码 
+2.  控制端输入控制码连接傀儡端 
+3.  傀儡端将捕获的画面传至控制端 
+4.  控制端的鼠标和键盘指令传送至傀儡端 
+5.  傀儡端响应控制指令 
+
+**汇总：**
+
+**服务端**
+
+建立端与控制码的联系
+
+通过控制码找到用户
+
+**客户端**
+
+捕获画面、播放画面
+
+捕获指令
+
+响应指令
+
+![img](https://cdn.nlark.com/yuque/0/2023/png/739887/1673170150664-f7292163-d917-481a-bf87-eccb9611e2f7.png)
+
+## 技术点
+
+1. 怎么捕获画面
+
+   a. electron desktopCapturer 
+
+   b. https://www.electronjs.org/zh/docs/latest/api/desktop-capturer
+
+1. 怎么完成用户间连接、画面+指令传输？
+
+   a. webRTC web real-time communication
+
+   b.
+
+   <img src="https://cdn.nlark.com/yuque/0/2023/png/739887/1673170277659-006b44f2-7fc5-4a44-bcde-43e440bb3bb1.png" style="zoom:50%;" />
+
+1. c. RTCPeerConnection 接口代表一个由本地计算机到远端的 WebRTC 连接。该接口提供了创建，保持，监控，关闭连接的方法的实现。
+
+2. d. 一个基本的 RTCPeerConnection 使用需要协调本地机器以及远端机器的连接，它可以通过在两台机器间生成 Session Description 的数据交换协议来实现。呼叫方发送一个 offer(请求)，被呼叫方发出一个 answer（应答）来回答请求。双方 - 呼叫方以及被呼叫方，最开始的时候都要建立他们各自的
+
+3. e. https://developer.mozilla.org/zh-CN/docs/Web/API/RTCPeerConnection
+
+3. 怎么响应指令
+
+1. a. robotjs
+
+## 工程搭建
+
+```js
+npm create @quick-start/electron
+```
+
+## 工程介绍
+
+```js
+ const mainWindow = new BrowserWindow({
+    width: 900,
+    height: 670,
+    show: false, // 先隐藏
+    autoHideMenuBar: true,
+    ...(process.platform === 'linux' ? { icon } : {}),
+    webPreferences: {
+      preload: join(__dirname, '../preload/index.js'),
+      sandbox: false
+    }
+  })
+
+// 在加载页面时，渲染进程第一次完成绘制时，
+// 如果窗口还没有被显示，渲染进程会发出 ready-to-show 事件 。 
+// 在此事件后显示窗口将没有视觉闪烁：
+  mainWindow.on('ready-to-show', () => {
+    mainWindow.show()
+  })
+
+// .eslintrc.cjs
+'@typescript-eslint/explicit-function-return-type': 'off',
+```
+
+## renderer页面开发
+
+![img](https://cdn.nlark.com/yuque/0/2023/png/739887/1677294568668-1e5069f2-0663-4e33-817e-06d784b4dbb6.png)
+
+
+
+```js
+// renderer/src/App.tsx
+
+import { useState, useEffect } from 'react'
+import Versions from './components/Versions'
+
+function App(): JSX.Element {
+  const { ipcRenderer } = window.electron
+  const [remoteCode, setRemoteCode] = useState('')
+  const [localCode, setLocalCode] = useState('')
+  const [controlText, setControlText] = useState('')
+
+  // 登录状态在主进程维护
+  const login = async () => {
+    const code = await ipcRenderer.invoke('login')
+    setLocalCode(code)
+  }
+
+  useEffect(() => {
+    login()
+    // 监听ipc事件 监听状态变化
+    ipcRenderer.on('control-state-change', handleControlState)
+
+    return () => {
+      // 事件卸载
+      ipcRenderer.removeListener('control-state-change', handleControlState)
+    }
+  }, [])
+
+  const startControl = () => {
+    // 发起请求 控制控制码对应的用户
+    ipcRenderer.send('control', remoteCode)
+  }
+
+  const handleControlState = (e, name, type) => {
+    let text = ''
+
+    if (type === 1) {
+      // 控制别人
+      text = `正在远程控制${name}`
+    } else if (type === 2) {
+      // 被控制
+      text = `被${name}控制中`
+    }
+
+    setControlText(text)
+  }
+
+  return (
+    <div className="container">
+      <Versions></Versions>
+      {controlText ? (
+        <div>{controlText}</div>
+      ) : (
+        <>
+          <div>你的控制码{localCode}</div>
+          <input type="text" value={remoteCode} onChange={(e) => setRemoteCode(e.target.value)} />
+          <button onClick={startControl}>确认</button>
+        </>
+      )}
+    </div>
+  )
+}
+
+export default App
+```
+
+```js
+// 主进程改动
+// main/windows/main.ts
+import { BrowserWindow, shell } from 'electron'
+import * as path from 'path'
+import { is } from '@electron-toolkit/utils'
+
+let mainWindow
+
+export const create = () => {
+  mainWindow = new BrowserWindow({
+    width: 900,
+    height: 670,
+    show: false,
+    autoHideMenuBar: true,
+    ...(process.platform === 'linux'
+      ? {
+          icon: path.join(__dirname, '../../build/icon.png')
+        }
+      : {}),
+    webPreferences: {
+      preload: path.join(__dirname, '../preload/index.js'),
+      sandbox: false,
+      nodeIntegration: true,
+      contextIsolation: false
+    }
+  })
+
+  mainWindow.on('ready-to-show', () => {
+    mainWindow.show()
+  })
+
+  mainWindow.webContents.setWindowOpenHandler((details) => {
+    shell.openExternal(details.url)
+    return { action: 'deny' }
+  })
+
+  if (is.dev && process.env['ELECTRON_RENDERER_URL']) {
+    mainWindow.loadURL(process.env['ELECTRON_RENDERER_URL'])
+    mainWindow.webContents.openDevTools()
+  } else {
+    mainWindow.loadFile(path.join(__dirname, '../renderer/index.html'))
+  }
+}
+
+export const send = (channel, ...args) => {
+  mainWindow.webContents.send(channel, ...args)
+}
+
+// main/index.ts
+import { app, shell, BrowserWindow } from 'electron'
+import { join } from 'path'
+import { electronApp, optimizer, is } from '@electron-toolkit/utils'
+import { create as createMainWindow } from './windows/main'
+import handleIPC from './ipc'
+import robot from './robot'
+
+app.whenReady().then(() => {
+  electronApp.setAppUserModelId('com.electron')
+
+  app.on('browser-window-created', (_, window) => {
+    optimizer.watchWindowShortcuts(window)
+  })
+
+  createMainWindow()
+  handleIPC()
+  robot()
+
+  app.on('activate', function () {
+    if (BrowserWindow.getAllWindows().length === 0) createMainWindow()
+  })
+})
+
+app.on('window-all-closed', () => {
+  if (process.platform !== 'darwin') {
+    app.quit()
+  }
+})
+```
+
+## 主进程消息通信
+
+```js
+// main/ipc.ts
+
+import { ipcMain } from 'electron'
+import { send as sendMainWindow } from './windows/main'
+import { create as createControlWindow } from './windows/control'
+
+export default function () {
+  ipcMain.handle('login', async () => {
+    // mock 返回控制码
+    const code = Math.floor(Math.random() * (999999 - 100000)) + 100000
+
+    return code
+  })
+
+  ipcMain.on('control', async (e, remoteCode) => {
+    // 这里跟服务端交互 但是先mock返回
+    sendMainWindow('control-state-change', remoteCode, 1)
+    createControlWindow()
+  })
+}
+
+```
+
+**control端页面逻辑	**
+
+```js
+import { BrowserWindow, desktopCapturer } from 'electron'
+import * as path from 'path'
+import { is } from '@electron-toolkit/utils'
+
+let win
+
+export const create = () => {
+  win = new BrowserWindow({
+    width: 900,
+    height: 670,
+    show: false,
+    autoHideMenuBar: true,
+    webPreferences: {
+      sandbox: false,
+      nodeIntegration: true,
+      contextIsolation: false,
+      preload: path.join(__dirname, '../preload/index.js')
+    }
+  })
+  win.on('ready-to-show', () => {
+    win.show()
+  })
+
+  win.webContents.on('did-finish-load', () => {})
+
+  if (is.dev && process.env['ELECTRON_RENDERER_URL']) {
+    win.loadURL(`${process.env['ELECTRON_RENDERER_URL']}/pages/control/index.html`)
+    win.webContents.openDevTools()
+  } else {
+    win.loadFile(path.join(__dirname, '../renderer/index.html'))
+  }
+}
+```
+
+## WebRTC
+
+**WebRTC**（Web Real-Time Communications）是一项实时通讯技术，它允许网络应用或者站点，在不借助中间媒介的情况下，建立浏览器之间点对点（Peer-to-Peer）的连接，实现视频流和（或）音频流或者其他任意数据的传输。WebRTC 包含的这些标准使用户在无需安装任何插件或者第三方的软件的情况下，创建点对点（Peer-to-Peer）的数据分享和电话会议成为可能。
+
+-   getUserMedia
+
+- - 获取多媒体数据（视频、音频）
+  - 获取桌面视频流
+
+- RTCPeerConnection
+
+- - 建立P2P连接
+  - 传输多媒体数据
+
+- RTCDataChannel 传输数据
+- MediaStream API
+
+- - 媒体流内容
+  - 一个流对象可以包含多轨道 包含音频和视频轨道等
+  - 能通过WebRTC传输
+  - 通过<video>标签播放
+
+![img](https://cdn.nlark.com/yuque/0/2023/png/739887/1673170673864-a848c2da-bd36-4dd2-a9f0-ece33ac01b42.png)
+
+## 如何捕获媒体流
+
+navigator.mediaDevices.getUserMedia API 获取的可以用来从桌面捕获音频和视频的媒体源的信息。
+
+### 如何捕获桌面/窗口流
+
+- desktopCapturer.getSources(options)
+
+- - 返回 Promise<DesktopCapturerSource[]> - resolve 一个[DesktopCapturerSource](https://www.electronjs.org/zh/docs/latest/api/structures/desktop-capturer-source) 对象类型的数组，每个 DesktopCapturerSource 代表一个屏幕或一个可以被捕获的独立窗口。
+
+- navigator.mediaDevices.getUserMedia
+
+```js
+// 主进程
+// main/windows/control.ts
+
+ win.on('ready-to-show', () => {
+  win.show()
+  desktopCapturer.getSources({ types: ['screen'] }).then(async (sources) => {
+    win.webContents.send('SET_SOURCE', sources[0].id)
+  })
+})
+```
+
+### 渲染进程control
+
+```js
+<style>
+  * {
+    margin: 0;
+  }
+  #screen-video {
+    width: 100%;
+    height: 100%;
+    object-fit: fill;
+  }
+</style>
+
+// control/index.html
+<video id="screen-video"></video>
+<script type="module" src="./app.js"></script>
+
+
+// app.js
+import peer from './peer-control'
+
+peer.on('add-stream', (stream) => {
+  play(stream)
+})
+
+const video = document.getElementById('screen-video')
+
+function play(stream) {
+  video.srcObject = stream
+  video.onloadedmetadata = function () {
+    video.play()
+  }
+}
+
+```
+
+**peer-control**
+
+```js
+// 渲染进程
+// peer-control.js
+const { EventEmitter } = require('events')
+const peer = new EventEmitter()
+
+async function getScreenStream() {
+  const { ipcRenderer } = window.electron
+  ipcRenderer.on('SET_SOURCE', async (e, sourceId) => {
+    const stream = await navigator.mediaDevices.getUserMedia({
+      audio: false,
+      video: {
+        mandatory: {
+          chromeMediaSource: 'desktop',
+          chromeMediaSourceId: sourceId,
+          maxWidth: window.screen.width,
+          maxHeight: window.screen.height
+        }
+      }
+    })
+
+    peer.emit('add-stream', stream)
+  })
+}
+
+getScreenStream()
+
+export default peer
+```
+
+### 如何接收和响应指令
+
+程序可以控制键盘和鼠标
+
+**安装**
+
+```js
+yarn add robotjs
+```
+
+**robotjs介绍** 
+
+nodejs桌面自动化的库，可以控制键盘&鼠标
+
+- 用于控制鼠标、键盘
+- node.js、C++库
+- 支持mac、windows、linux
+
+**功能**
+
+- 鼠标移动：robot.moveMouse(x, y)
+- 鼠标点击：robot.mouseClick([button], [double])
+- 按键： robot.keyTap(key,[modifier])
+
+注意：robot使用C++开发的，在不同平台，不同node版本，需要编译后才可使用
+
+**手动编译**
+
+- process.versions.electron 查看electron版本
+- process.versions.node 查看node版本，在[abi_croosswalk](https://github.com/mapbox/node-pre-gyp/blob/master/lib/util/abi_crosswalk.json) 查找abi
+
+**自动编译** 
+
+```js
+yarn add electron-rebuild
+npx electron-rebuild
+```
+
+**响应键盘事件**
+
+- modifier(修饰键)处理： shift、ctrl、alt、meta(win/command)
+
+- 按键转换（vkey） 需要将数组转换为对应的键
+
+  ```js
+  npm install vkey
+  ```
+
+**监听键盘和鼠标事件**
+
+- window.onkeydown
+
+  ```js
+  // control/app.js
+  window.onkeydown = function (e) {
+    // data {keyCode, meta, alt, ctrl, shift}
+    console.log(e)
+    let data = {
+      keyCode: e.keyCode,
+      shift: e.shiftKey,
+      meta: e.metaKey,
+      control: e.ctrlKey,
+      alt: e.altKey
+    }
+    peer.emit('robot', 'key', data)
+  }
+  ```
+
+- window.onmouseup
+
+  - 鼠标位置缩放 按比例
+  - x1 = x*videoWidth /screenWidth*
+  - *y1 = y*videoHeight /screenHeight
+
+  ```js
+  
+  // control/app.js
+  
+  window.onmouseup = function (e) {
+    // data {clientX, clientY, screen: {width, height}, video: {width, height}}
+    let data = {}
+    data.clientX = e.clientX
+    data.clientY = e.clientY
+    data.video = {
+      width: video.getBoundingClientRect().width,
+      height: video.getBoundingClientRect().height
+    }
+    peer.emit('robot', 'mouse', data)
+  }
+  
+  ```
+
+**control**
+
+```js
+// peer-control.js
+
+peer.on('robot', (type, data) => {
+  console.log('robot', type, data)
+  if (type === 'mouse') {
+    data.screen = {
+      width: window.screen.width,
+      height: window.screen.height
+    }
+  }
+  setTimeout(() => {
+    ipcRenderer.send('robot', type, data)
+  }, 2000)
+})
+```
+
+### **main robot**
+
+```js
+// main/robot.ts
+import { ipcMain } from 'electron'
+import robot from 'robotjs'
+import vkey from 'vkey'
+
+function handleMouse(data) {
+  let { clientX, clientY, screen, video } = data
+  // data {clientX, clientY, screen: {width, height}, video: {width, height}}
+  let x = (clientX * screen.width) / video.width
+  let y = (clientY * screen.height) / video.height
+  console.log(x, y)
+  robot.moveMouse(x, y)
+  robot.mouseClick()
+}
+
+function handleKey(data) {
+  // data {keyCode, meta, alt, ctrl, shift}
+  const modifiers: string[] = []
+
+  if (data.meta) modifiers.push('meta')
+  if (data.shift) modifiers.push('shift')
+  if (data.alt) modifiers.push('alt')
+  if (data.ctrl) modifiers.push('ctrl')
+  // 按键转换
+  const key = vkey[data.keyCode].toLowerCase()
+  if (key[0] !== '<') {
+    //<shift>
+    robot.keyTap(key, modifiers)
+  }
+}
+
+export default function () {
+  ipcMain.on('robot', (e, type, data) => {
+    console.log('handle', type, data)
+    if (type === 'mouse') {
+      handleMouse(data)
+    } else if (type === 'key') {
+      handleKey(data)
+    }
+  })
+}
+
+// main.ts
+import robot from './robot'
+
+function createWindow(): void {
+  robot()
+}
+
+```
+
+### 视频流传输 RTCPeerConnection
+
+![](https://cdn.nlark.com/yuque/0/2023/png/739887/1673170694363-6bdf318e-157e-4fc8-b06d-766f435aaf1d.png?x-oss-process=image%2Fresize%2Cw_750%2Climit_0)
+
+
+
+
+
+
+
+![img](https://cdn.nlark.com/yuque/0/2023/png/739887/1673170694363-6bdf318e-157e-4fc8-b06d-766f435aaf1d.png)
+
+**RTCPeerConnection** 接口代表一个由本地计算机到远端的 WebRTC 连接。该接口提供了创建，保持，监控，关闭连接的方法的实现
+
+**最简单的建立传输过程**
+
+传输视频过程
+
+一个基本的 RTCPeerConnection 使用需要协调本地机器以及远端机器的连接，它可以通过在两台机器间生成 Session Description 的数据交换协议来实现。呼叫方发送一个 offer(请求)，被呼叫方发出一个 answer（应答）来回答请求。双方 - 呼叫方以及被呼叫方，最开始的时候都要建立他们各自的 RTCPeerConnection 对象
+
+offer是一个sdp 本质是一个协议
+
+
+
+![img](https://cdn.nlark.com/yuque/0/2023/png/739887/1673171827800-3bcc97dd-8f18-449c-a230-ac235cbd0869.png)
+
+控制端和傀儡端的p2p连接已经可以开始了
+
+**SDP**
+
+SDP（Session Description Protocol）是**一种会话描述协议**，用来描述多媒体 会话，**主要用于协商双方通讯过程，传递基本信息。**
+
+- SDP的格式包含多行，每行为<type>=<value>
+- <type>：字符，代表特定的属性，比如v，代表版本
+- <value>：结构化文本，格式与属性类型有关，UTF8编码
+
+**控制端**
+
+```js
+// renderer/pages/control/peer-control.js
+const EventEmitter = require('events') 
+const peer = new EventEmitter()
+// const {ipcRenderer, desktopCapturer} = require('electron')
+const { ipcRenderer ,desktopCapturer} = window.electron
+const pc = new window.RTCPeerConnection({})
+
+async function createOffer() {
+    let offer = await pc.createOffer({
+        offerToReceiveAudio: false,
+        offerToReceiveVideo: true
+    })
+    await pc.setLocalDescription(offer)
+    console.log('create-offer\n', JSON.stringify(pc.localDescription))
+    return pc.localDescription
+}
+createOffer().then((offer) => {
+    console.log('forward', 'offer', offer)
+    ipcRenderer.send('forward', 'offer', {type: offer.type, sdp: offer.sdp})
+})
+
+ipcRenderer.on('answer', (e, answer) => {
+    setRemote(answer)
+})
+
+ipcRenderer.on('candidate', (e, candidate) => {
+    addIceCandidate(candidate)
+})
+
+async function setRemote(answer) {
+    await pc.setRemoteDescription(answer)
+    console.log('create-answer', pc)
+}
+window.setRemote = setRemote
+
+pc.onicecandidate = (e) => {
+	console.log('candidate', JSON.stringify(e.candidate))
+    ipcRenderer.send('forward', 'control-candidate', e.candidate)
+	// 告知其他人
+}
+const candidates = []
+async function addIceCandidate(candidate) {
+    if(!candidate || !candidate.type) return
+    candidates.push(candidate)
+    if(pc.remoteDescription && pc.remoteDescription.type) {
+        for(let i = 0; i < candidates.length; i ++) {
+            await pc.addIceCandidate(new RTCIceCandidate(candidates[i]))
+        }
+        candidates = []
+    } 
+}
+window.addIceCandidate = addIceCandidate
+
+pc.onaddstream = (e) => {
+	console.log('addstream', e)
+	peer.emit('add-stream', e.stream)
+
+}
+
+let dc = pc.createDataChannel('robotchannel', {reliable: false});
+console.log('before-opened', dc)
+dc.onopen = function() {
+    console.log('opened')
+    peer.on('robot', (type, data) => {
+        dc.send(JSON.stringify({type, data}))
+    })
+}
+dc.onmessage = function(event) {
+    console.log('message', event)
+}
+dc.onerror = (e) => {console.log(e)}
+
+
+// 先把robot屏蔽
+// peer.on('robot', (type, data) => {
+//     console.log('robot', type, data)
+//     if(type === 'mouse') {
+//         data.screen = {
+//             width: window.screen.width, 
+//             height: window.screen.height
+//         }
+//     }
+//     setTimeout(() => {
+//     ipcRenderer.send('robot', type, data)
+//     }, 2000)
+//
+// })
+module.exports = peer
+
+```
+
+**傀儡端**
+
+```js
+import EventEmitter from 'events'
+import { ipcRenderer, desktopCapturer } from 'electron'
+let peer = new EventEmitter()
+window.peer = peer // 为了直接模拟过程，信令结束后，会删掉
+ipcRenderer.on('offer', (e, offer) => {
+  console.log('init pc', offer)
+  const pc = new window.RTCPeerConnection()
+
+  pc.ondatachannel = (e) => {
+    console.log('data', e)
+    e.channel.onmessage = (e) => {
+      console.log('onmessage', e, JSON.parse(e.data))
+      let { type, data } = JSON.parse(e.data)
+      console.log('robot', type, data)
+      if (type === 'mouse') {
+        data.screen = {
+          width: window.screen.width,
+          height: window.screen.height
+        }
+      }
+      ipcRenderer.send('robot', type, data)
+    }
+  }
+
+  async function getScreenStream() {
+    const sources = await desktopCapturer.getSources({ types: ['screen'] })
+    return new Promise((resolve, reject) => {
+      navigator.webkitGetUserMedia(
+        {
+          audio: false,
+          video: {
+            mandatory: {
+              chromeMediaSource: 'desktop',
+              chromeMediaSourceId: sources[0].id,
+              maxWidth: window.screen.width,
+              maxHeight: window.screen.height
+            }
+          }
+        },
+        (stream) => {
+          console.log('add-stream', stream)
+          resolve(stream)
+        },
+        reject
+      )
+    })
+  }
+
+  pc.onicecandidate = (e) => {
+    // 告知其他人
+    ipcRenderer.send('forward', 'puppet-candidate', e.candidate)
+  }
+
+  async function addIceCandidate(candidate) {
+    if (!candidate || !candidate.type) return
+    await pc.addIceCandidate(new RTCIceCandidate(candidate))
+  }
+  window.addIceCandidate = addIceCandidate
+
+  async function createAnswer(offer) {
+    let stream = await getScreenStream()
+    pc.addStream(stream)
+    await pc.setRemoteDescription(offer)
+    await pc.setLocalDescription(await pc.createAnswer())
+    console.log('create answer \n', JSON.stringify(pc.localDescription))
+    // send answer
+    return pc.localDescription
+  }
+  createAnswer(offer).then((answer) => {
+    ipcRenderer.send('forward', 'answer', { type: answer.type, sdp: answer.sdp })
+  })
+})
+export default peer
+
+```
+
+
+
+
+
+https://www.yuque.com/lpldplws/web/og6swa9wsde8lc8b?#《前端AST》 密码：lxee
 
 
 https://www.yuque.com/lpldplws/web/itd4rdqaqqioga10?#《webpack》 密码：nn2p 
