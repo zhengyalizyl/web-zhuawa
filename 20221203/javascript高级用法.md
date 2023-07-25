@@ -52107,7 +52107,884 @@ export default peer
 
 ```
 
+# 性能优化
 
+## **⼀. ⽹⻚性能衡量与指标**
+
+1. 衡量⽹⻚性能因素与指标
+
+​	a) ⽹⻚的加载
+
+​	b) ⽹⻚的交互
+
+2. ⽹⻚开发中的分段渲染与性能评估
+
+3. 混合开发中的性能评估
+
+## **⼆、前端性能优化的发展⽅向及细节路径**
+
+1. Core Web Vitals宗旨及其细节
+
+​	a) CWV 概念
+
+​	b) CWV 的分区模型
+
+​	c) 宗旨与实际⽅案
+
+参考⽂档：
+
+https://baijiahao.baidu.com/s?id=1677330875057509648&wfr=spider&for=pc
+
+2. 前端性能利器Performance的使⽤
+
+​	a) performance⾯板的合理使⽤
+
+​	b) Performance⼯具接⼝
+
+参考⽂档：
+
+https://developer.mozilla.org/zh-CN/docs/Learn/Performance
+
+3. 加载上的优化
+
+​	a) 异步加载
+
+​	b) 按需加载
+
+​	c) 新时代的异类 - bigpipe **三、 浏览器层⾯的优化点**
+
+4.  浏览器存储的优化⽅案
+
+5. .PWA 概念架构
+
+## **四. ⻚⾯性能纬度体系**
+
+i. 回到那道⾯试题 – 各阶段性能衡量纬度拓展
+
+ii. 性能体系的拆分独⽴ => 衡量标准
+
+## **五. MVVM框架层⾯的性能优化**
+
+i. 基础类优化
+
+1. 利⽤框架本身设计思路进⾏优化
+
+2. 利⽤第三⽅⼯具进⾏优化
+
+ii. 技巧类
+
+## **六. ⼤⼚可视化性能监控⽅案体系**
+
+a) 埋点上报 => 点到点 + 信息采集
+
+b) 数据处理 => 阈值设置 / 数据分类 / 数据重组
+
+c) 可视化展现
+
+​	i. ⾃研报表监控
+
+​	ii. grafana 
+
+d) 告警处理
+
+i. 告警触发
+
+ii. 触发分派 => 钉钉、企微、邮件
+
+# **设计模式**
+
+## **⼀、代码的最佳实践** **——** **设计模式**
+
+**1.** **系统性多赢**
+
+**2.** **代码编制的真正⼯程化**
+
+## **⼆、设计模式扮演的⻆⾊**
+
+**1. **帮助组织模块**
+
+帮助我们组织模块
+
+通过⼀些设计模式，组织模块间的组成结构
+
+**2.** **帮助设计沟通**
+
+有的设计模式可以帮助我们设计模块间的组成结构
+
+**3.** **提⾼代码质量**
+
+通过设计模式，让代码更加优雅
+
+## **三、设计原则**
+
+**1.** **开闭原则**(OCP)
+
+程序要对扩展开放，对修改关闭
+
+```js
+// 开闭原则（OCP: open closed principle）- 对拓展开放、对修改关闭
+// 目标：已有的场景下，对于需要拓展的功能进行开放、拒绝直接的功能修改
+
+// sprint1 - 母亲节活动，吃鸡要高亮 + LOL要弹出折扣
+// render
+if (game === 'PUBG') {
+    // 高亮
+} else {
+    // ....
+}
+
+// event
+if (game === 'LOL') {
+    // 弹出折扣框
+} else {
+    // 付款
+}
+
+// sprint2 - 要对部分游戏进行置灰下架 + 付款页面要显示停止发售（R）
+// render
+if (game === 'PUBG') {
+    // 高亮
+} else if (game === 'R'){
+    // 灰色
+} else {
+    // ....
+}
+
+// event
+if (game === 'LOL') {
+    // 弹出折扣框
+} else if (game === 'R'){
+    // break + 提示停止发售
+} else {
+    // 付款
+}
+
+// 重构 => 分配
+// render
+gameManager(game).setColor();
+
+// event
+gameManager(game).openDialog();
+
+// 游戏管理器
+function gameManager(game) {
+    return `${game}Manager`;
+}
+
+const LOLManager = {
+    setColor() {
+        // 正常
+    },
+    openDialog() {
+        // 折扣
+    }
+}
+
+const PUBGManager = {
+    setColor() {
+        // 高亮
+    },
+    openDialog() {
+        // 付款
+    }
+}
+
+// 重构2
+class Game {
+    constructor(name) {
+        this.name = name;
+    }
+
+    setColor() {
+        // 默认设置
+    }
+
+    openDialog() {
+        // 普通付款框
+    }
+}
+
+class LOL extends Game {
+    openDialog() {
+        // 弹出折扣框
+    }
+}
+
+class PUBG extends Game {
+    setColor() {
+        // 高亮
+    }
+}
+```
+
+**2.** **单⼀职责原则**(SRP)
+
+模块只做⼀件事情，模块的职责越单⼀越好
+
+```js
+// SRP - 通过解耦让每一个职责更加独立
+// 目标：一个功能只做一件事情
+
+// sprint
+// game store
+class PUBGManager {
+    openDialog() {
+        // 弹折扣框
+        // 计算折扣金额
+        setPrice();
+    }
+}
+
+const game = new PUBGManager();
+game.openDialog(); // 弹框 < = > 计算金额 两个功能耦合
+
+// 重构
+// gameManager.js - 业务
+class PUBGManager {
+    constructor(command) {
+        this.command = command;
+    }
+    openDialog(price) {
+        // 弹折扣框
+        // 计算折扣金额
+        this.command.setPrice(price);
+    }
+}
+
+// optManager.js - 底层库
+class PriceManager {
+    setPrice(price) {
+        // 计算金额
+    }
+    calcPrice(price) {}
+}
+// class PasswordManager {
+//     // ……
+// }
+
+// function OptManager (name){
+//     return `${name}Manager`
+// }
+
+// export {
+//     PriceManager,
+//     PasswordManager
+// }
+
+// main.js
+// import opt from './optManager'
+
+const exe = new PriceManager();
+const game1 = new PUBGManager(exe);
+game1.openDialog(15);
+exe.setPrice(10);
+ 
+```
+
+**3.** **依赖倒置原则**(DIP)
+
+上层模块不要依赖与具体的下层模块，应该依赖于抽象
+
+```js
+// DIP
+// 目标：面向抽象进行coding，而不是面向实现进行代码书写。降低需求与实现之间的耦合的
+
+// 需求：
+// sprint 1
+// 分享功能
+class Store {
+    constructor() {
+        this.share = new Share();
+    }
+}
+
+class Share {
+    shareTo() {
+        // 分享到不同平台
+    }
+}
+
+const store = new Store();
+store.share.shareTo('wx');
+
+// sprint2
+// 评分功能
+class Store {
+    constructor() {
+        this.share = new Share();
+        this.rate = new Rate();
+    }
+}
+
+class Share {
+    shareTo(pltf) {
+        // 分享到不同平台
+    }
+}
+
+class Rate {
+    star(stars) {
+        // 打分
+    }
+}
+
+const store1 = new Store();
+store1.rate.stars(5);
+
+// 重构
+// 目标：暴露挂载 => 动态挂载
+class Store {
+    // 维护模块名单
+    static modules = new Map();
+    // 支持外部注册名单
+    static inject(module) {
+        Store.modules.set(module.constructor.name, module);
+    }
+
+    constructor() {
+        // 遍历名单做初始化挂载
+        for(let module of Store.modules.values()) {
+            // 每个模块做初始化即可
+            module.init(this);
+        }
+    }
+}
+
+class Share {
+    init(store) {
+        store.share = this;
+    }
+    shareTo(pltf) {
+        // 分享到不同平台
+    }
+}
+
+class Rate {
+    init(store) {
+        store.rate = this;
+    }
+    star(stars) {
+        // 打分
+    }
+}
+
+// 依次注册完所有模块
+const rate = new Rate();
+Store.inject(rate);
+
+const store2 = new Store();
+store2.rate.star(4);
+```
+
+**4.** **接⼝隔离原则**(ISP)
+
+接⼝要细化，功能要单⼀，⼀个接⼝不要调⽤太多⽅法，使其能⼒单⼀
+
+```js
+// ISP
+// 目标：多个专业的接口比单个胖接口好用
+
+// 需求
+// 已经可以开发游戏了，但是实现游戏中台 - 快速生产游戏
+// PUBG LOL  => run shot mega
+class Game {
+    constructor(name) {
+        this.name = name;
+    }
+    run() {
+        // 跑
+    }
+    shot() {
+        // 开枪
+    }
+    mega() {
+        // 开大
+    }
+}
+
+class PUBG extends Game {
+    constructor() {
+        // pubg constructor
+    }
+}
+class LOL extends Game {
+    constructor() {
+        // lol constructor
+    }
+}
+
+pubg = new PUBG('pubg');
+pubg.run();
+pubg.shot();
+bubg.mega();
+
+// 重构 - 用多个接口来替代他，每个接口服务于一个子模块
+class Game {
+    constructor(name) {
+        this.name = name;
+    }
+    run() {
+        // 跑
+    }
+}
+
+class FPS {}
+class MOBA {}
+
+class PUBG extends Game {
+    constructor() {
+        // pubg constructor
+    }
+    shot() {}
+}
+class LOL extends Game {
+    constructor() {
+        // lol constructor
+    }
+    mega() {}
+}
+```
+
+**5.** **⾥⽒替换原则**(LSP)
+
+它主要关注于继承，它的意义是任何使⽤⽗类的地⽅都可以⽤⼦类去替换
+
+```js
+// 里氏替换原则
+// 子类能够覆盖父类进行拓展，但不可改变父类
+
+// sprint 1
+class Game {
+    start() {
+        // 开机逻辑
+    }
+    shutdown() {
+        // 关机逻辑
+    }
+}
+
+class MobileGame extends Game {
+    // 墓碑机制
+    tombStone() {
+
+    }
+}
+
+class PCGame extends Game {
+    // 加速器
+    speed() {
+        
+    }
+}
+```
+
+## **三、设计原则**
+
+**1.** **创建型**
+
+⼯⼚模式、建造者模式、单例模式
+
+```js
+// 元素创建型
+// 功能：创建元素
+// 目的：规范元素的创建步骤
+
+// 1. 工厂模式 - 大批量 | 同类型
+// 隐藏创建过程、暴露共同接口
+// 需求：游戏商店里下载初始化游戏，并且可以运行游戏
+class Shop {
+    create(name) {
+        return new Game(name, {version: yy});
+    }
+}
+
+class Game {
+    constructor(name, ...arg) {
+        this.name = name;
+    }
+    init() {}
+    run() {}
+}
+
+const shop = new Shop();
+const pubg = shop.create('pubg');
+const pubg2 = new Game('pubg');
+// 创建商店时快速生产游戏
+
+// 2. 建造者模式 过程 | 顺序
+// 拆分简单模块、独立执行 => 注重过程与搭配
+// 需求：优惠套餐单元，商品 + 皮肤 进行打折售卖
+class Product {
+    constructor(name) {
+        this.name = name;
+    }
+    init() {
+        console.log(this.name + 'product');
+    }
+}
+class Skin {
+    constructor(name) {
+        this.name = name;
+    }
+    init() {
+        console.log(this.name + 'skin');
+    }
+}
+
+class Shop {
+    constructor() {
+        this.package = '';
+    }
+    create(name) {
+        this.package = new PackageBuilder(name);
+    }
+    getGamePackage() {
+        return this.package.getPackage();
+    }
+}
+
+class PackageBuilder {
+    constructor(name) {
+        this.game = new Product(name);
+        this.skin = new Skin(name);
+    }
+    getPackage() {
+        return this.game.init() + this.skin.init();
+    }
+}
+
+// 3. 单例模式 唯一性
+// 全局只有一个实例
+class PlayStation {
+    constructor() {
+        this.state = 'off';
+    }
+    play() {
+        if(this.state === 'on') {
+            console.log('别闹，已经在happy了');
+            return;
+        }
+        this.state = 'on';
+        console.log('准备开始happy');
+    }
+    shutdown() {
+        if(this.state === 'off') {
+            console.log('已经关闭');
+            return;
+        }
+        this.state = 'off';
+        console.log('已经关机，请放心');
+    }
+    // static instance = undefined;
+    // static getInstance() {
+    //     return function() {
+    //         if (!PlayStation.instance) {
+    //             PlayStation.instance = new PlayStation();
+    //         }
+    //         return PlayStation.instance;
+    //     }();
+    // }
+}
+
+// main.js
+PlayStation.instance = undefined;
+PlayStation.getInstance = (function() {
+    return function() {
+        if (!PlayStation.instance) {
+            PlayStation.instance = new PlayStation();
+        }
+        return PlayStation.instance;
+    }();
+})
+
+const ps1 = PlayStation.getInstance();
+ps1.play();
+
+const ps2 = PlayStation.getInstance();
+ps2.shutdown();
+// 全局只要一个实例，防止属性的混乱
+
+// 模式场景
+// 1. 批量生产同类型应用来满足频繁使用同一种类型需求时 - 工厂模式
+// 2. 我们需要模块化拆分一个大的模块，同时模块间独立解耦顺序分工 - 建造者模式
+// 3. 全局只需要一个实例，并且注重统一一体化 - 单例模式
+
+// 实际应用
+// Button Producer：生成不同类型的按钮 => 本质相同，根据传参区分不同类型的属性元素 => 工厂
+// 全局应用 router store => 只需要一个实例 => 单例模式
+// 页头组件Header: 包含了title | button | breadcum => 生产多重不同类型的元素、彼此又有顺序 => 建造者模式
+```
+
+**2.** **结构型**
+
+适配器模式、装饰器模式、代理模式
+
+```js
+// 结构型
+// 功能：优化结构的实现方式
+
+// 适配器模式 - adapter
+// 适配独立模块，保证模块间的独立解耦以及连接兼容
+
+// 买了一个PS，插头是港行的，插座国标
+class HKDevice {
+    getPlug() {
+        // 港行双圆柱插头
+    }
+}
+
+class Target {
+    constructor() {
+        this.plug = new HKDevice();
+    }
+    // 适配器
+    getPlug() {
+        return Target.adapter(this.plug.getPlug());
+    }
+    static adapter(oldPlug) {
+        return oldPlug + '+ 港行双圆柱转换器';
+    }
+}
+
+const target = new Target();
+target.getPlug();
+
+// 装饰器模式
+// 动态地将责任附加在对象之上，从而扩展其能力
+// 设备升级
+class Device {
+    create() {
+        console.log('Playstation4');
+    }
+}
+
+class Phone {
+    create() {
+        console.log('iphone24');
+    }
+}
+
+class Decorator {
+    constructor(device) {
+        this.device = device;
+    }
+    create() {
+        this.device.create();
+        this.update(device);
+    }
+    update(device) {
+        console.log(device + 'pro');
+    }
+}
+
+const device = new Device();
+device.create();
+
+const newDevice = new Decorator(device);
+newDevice.create();
+
+// 代理模式
+// 使用代理人来替代原始对象从而集约整体操作流程
+
+// 游戏防沉迷机制
+class Game {
+    play() {
+        return "playing";
+    }
+}
+
+class Player {
+    constructor(age) {
+        this.age = age;
+    }
+}
+
+class GameProxy {
+    constructor(player) {
+        this.player = player;
+    }
+    play() {
+        return this.player.age < 16
+            ? 'too young'
+            : new Game().play();
+    }
+}
+
+const player = new Player(18);
+const game = new GameProxy(player);
+
+game.play();
+
+// 模式场景
+// 中间转换参数、保持模块独立的前提下，做已有方案的兼容 - 适配器模式
+// 附着于多个元素上，提供批量动态能力赋予的功能 - 装饰器模式
+// 将代理人对象与调用对象分离，使用时通过代理人来启动目标对象的方法 - 代理模式
+
+// 实际应用
+// 1. 两个模块： 筛选器和表格需要做一个联动。筛选器数据不能直接传入表格，需要数据结构的转换
+// => 模块之间独立，传递参数需要转换 => 适配器模式
+// 2. 目前有button | title | icon三个组件。希望开发一个模块，让三个组件同时具备相同的能力
+// => 统一能力的替身，且可以动态添加改变 => 装饰器模式
+// 3. ul中有多个li，每个li上的点击事件 => 利用冒泡做代理，事件绑定在ul上
+// => 绑定一个监听即可以完成所有节点被点击行为的捕捉 => 代理模式
+```
+
+**3.** **⾏为型**
+
+命令模式、模板模式、观察者模式
+
+```js
+// 行为型
+// 不同对象模块间的责任划分和算法抽象化
+
+// 命令模式
+// 请求以命令的方式包裹在对象中，并传给调用对象
+
+// 在游戏中对于角色的控制
+// 接受者
+class Receiver {
+    execute() {
+        // 执行操作
+    }
+}
+
+// 触发者
+class Operator {
+    constructor(command) {
+        this.command = command;
+    }
+    run() {
+        this.command.execute();
+    }
+}
+
+// 指令器
+class Command {
+    constructor(receiver) {
+        this.receiver = receiver;
+    }
+    execute() {
+        this.receiver.execute();
+    }
+}
+
+const linker = new Receiver();
+const order = new Command(linker);
+const player = new Operator(order);
+
+player.run();
+
+// 模板模式
+// 在模板中，定义好每个方法的执行步骤。方法本身关注于自己的事情
+class Device {
+    constructor(executePipeLine) {
+        // executePipeLine...
+    }
+    powerOn() {
+        // 打开电源
+    }
+    login() {
+        // 登录
+    }
+    clickIcon() {
+        // 点击开始游戏
+    }
+    enterGame() {
+        // 进入游戏
+    }
+    play() {
+        this.powerOn();
+        this.login();
+        this.clickIcon();
+        this.enterGame();
+    }
+}
+
+// 观察者模式
+// 当一个属性发生状态改变时，观察者会连续引发所有状态的改变
+
+class MediaCenter {
+    constructor() {
+        this.state = '';
+        this.observers = [];
+    }
+    attach(observer) {
+        this.observers.push(observer);
+    }
+    getState() {
+        return this.state;
+    }
+    setState() {
+        this.state = state;
+        this.notifyAllobservers();
+    }
+    notifyAllobservers() {
+        this.observers.forEach(ob => {
+            ob.update();
+        })
+    }
+}
+
+class observer {
+    constructor(name, center) {
+        this.name = name;
+        this.center = center;
+        this.center.attach(this);
+    }
+    update() {
+        // 更新当前状态
+    }
+}
+
+const center = new MediaCenter();
+const ps = new observer('ps', center);
+const tv = new observer('tv', center);
+
+center.setState('on');
+
+// 职责链
+// 1. 链式调用 2. 职责独立 3. 顺序执行
+class Action {
+    constructor(name) {
+        this.name = name;
+        this.nextAction = null;
+    }
+    setNextAction(action) {
+        this.nextAction = action;
+    }
+    handle() {
+        // 请假内容
+        if (this.nextAction !== null) {
+            this.nextAction.handle();
+        }
+    }
+}
+
+const leader = new Action('leader');
+const cto = new Action('cto');
+const boss = new Action('boss');
+
+leader.setNextAction(cto);
+cto.setNextAction(boss);
+
+leader.handle();
+
+// 模式场景
+// 发出指令，中间层传递命令本身，命中包含执行对象 - 命令模式
+// 通过模板定义执行顺序，做独立操作 - 模板模式
+// 通过观察者，可以让被观察值进行统一变化，触发相应依赖值统一更新的 - 观察者模式
+// 独立指责的单元通过链式执行，逐步操作流程 - 职责链
+
+// 实际应用
+// 1. 提交表单，逐行进行校验。链式调用validate => 职责链
+// 2. echarts：canvas、config、init、draw(),顺序严格按照规划执行 => 模板模式
+// 3. 调度器接受到大的对象，将内容封装到指令命令中，通过不同的方法做集成。=> 命令模式
+// 4. 输入框输入值和隔壁下拉框的备选项联动 => 观察选中值，设置输入框类型 => 观察者模式
+```
+
+## **四、模式设计实战**
+
+**系统设计类题⽬**
 
 
 
