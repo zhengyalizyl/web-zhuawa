@@ -52986,6 +52986,1082 @@ leader.handle();
 
 **系统设计类题⽬**
 
+# 微前端
+
+https://www.yuque.com/g/aliang-khvnv/kb/gss67kry0e7m6ehg/collaborator/join?token=fotRM4sX09Xqy4qa# 《微前端(上)》
+
+微前端背景 
+
+2014年：Martin Fowler和James Lewis共同提出了 微服务 的概念。微服务是⼀种开发软件的架 
+
+构和组织⽅法，其中软件由通过明确定义的API进⾏通信的 ⼩型独⽴服务 组成。 
+
+微服务的主要思路是： 
+
+● 将应⽤ 分解 为⼩的、互相连接的微服务，⼀个微服务完成某个 特定功能 。 
+
+● 每个微服务都有⾃⼰的业务逻辑和适配器，不同的微服务，可以使⽤ 不同的技术 去实现。 
+
+● 使⽤ 统⼀的⽹关 进⾏调⽤。 
+
+可以看到微服务的主要思路是化繁为简，通过更加细致的划分，使得服务内部更加内聚，服务之间 
+
+耦合性降低，有利于项⽬的团队开发和后期维护。把微服务的概念应⽤到前端， 前端微服务/微前 
+
+端服务 就诞⽣了，简称其为微前端。 
+
+微前端的概念是由ThoughtWorks在2016年提出的。 
+
+2018年: 第⼀个微前端⼯具single-spa在github上开源。 
+
+2019年: 基于single-spa的qiankun问世。 
+
+2020年：Module Federation(webpack5）把项⽬中模块分为本地模块和远程模块，远程模块不 
+
+属于当前构建，在运⾏时从所谓的容器加载。加载远程模块是异步操作。当使⽤远程模块时，这些 
+
+异步操作将被放置在远程模块和⼊⼝之间的下⼀个chunk的加载操作中，从⽽实现微前端的构建。
+
+本期课程两部分 
+
+第⼀部分主要讲解微前端解决的问题，微前端的特点，如何实现微前端，并以qiankun为例，教⼤家我们 
+
+的应⽤如何接⼊微前端。 
+
+第⼆部分主要讲解微前端的核⼼实现原理，并⼿把⼿从0-1实现简单的微前端框架。 
+
+## 课程⽬标 
+
+1. 微前端概念； 
+
+2. 现有⽅案介绍； 
+
+3. 掌握使⽤qiankun搭建微应⽤ 
+
+## 微前端是什么？ 
+
+![micro-frontends](/Volumes/F/zyl-study/web-zhuawa/20221203/micro-frontends.jpg)
+
+微前端是⼀种架构⻛格，它允许可独⽴交付的前端应⽤程序被组合成⼀个更⼤的整体。 
+
+## 课程⼤纲 
+
+1. 微前端背景 
+
+2. 微前端的价值 
+
+3. 微前端解决⽅案 
+
+4. 基于qiankun的实践 
+
+## 微前端背景 
+
+1.  微前端是什么？ 
+
+微前端是⼀种架构⻛格，它允许可独⽴交付的前端应⽤程序被组合成⼀个更⼤的整体。 
+
+微前端三要素：⽆技术栈限制，应⽤单独开发，多应⽤整合
+
+2. 现在web应⽤⾯临的问题
+
+代码分布情况： 
+
+1. 多个系统在⼀个仓库应⽤中，不同⼦应⽤独⽴SPA模式 
+
+2. 系统分为多个仓库，独⽴上线部署，采⽤MPA模式 
+
+带来的问题： 
+
+● DX(developer experience) 
+
+​     ○ 业务领域的代码库不够独⽴和⾼度可重⽤ 
+
+​	○ 相同的产品功能由多个团队开发 / 产品功能难以保持统⼀ 
+
+​	○ 新的产品理念⽆法在不同的应⽤中快速复⽤ / 实现 
+
+​	○ 快速迭代新⼦业务 / ⼲净移除将被淘汰的⼦业务 
+
+● UX(user experience)(在考虑DX的情况下) 
+
+​	○ 性能体验 
+
+​	○ ⻚⾯跳转等⽤户体验问题
+
+## 微前端价值 
+
+1. 微前端的特点
+
+![micro-frontends-value](/Volumes/F/zyl-study/web-zhuawa/20221203/micro-frontends-value.jpg)
+
+● 技术栈⽆关 主框架不限制接⼊应⽤的技术栈，⼦应⽤可⾃主选择技术栈
+
+● 独⽴开发/部署 各个团队之间仓库独⽴，单独部署，互不依赖 
+
+● 增量升级 当⼀个应⽤庞⼤之后，技术升级或重构相当麻烦，⽽微应⽤具备渐进式升级的特性 
+
+● 独⽴运⾏时 微应⽤之间运⾏时互不依赖，有独⽴的状态管理 
+
+● 提升效率 应⽤越庞⼤，越难以维护，协作效率越低下。微应⽤可以很好拆分，提升效率
+
+2. 微前端的意义 
+
+   ![micro-frontends-meaning](/Volumes/F/zyl-study/web-zhuawa/20221203/micro-frontends-meaning.jpg)
+
+
+
+任何新技术的产⽣都是为了解决现有场景和需求下的技术痛点，微前端也不例外： 
+
+1. 拆分和细化：当下前端领域，单⻚⾯应⽤（SPA）是⾮常流⾏的项⽬形态之⼀，⽽随着时间的推移 
+
+以及应⽤功能的丰富，单⻚应⽤变得不再单⼀⽽是越来越庞⼤也越来越难以维护，往往是改⼀处⽽
+
+动全身，由此带来的发版成本也越来越⾼。微前端的意义就是将这些庞⼤应⽤进⾏拆分，并随之解 
+
+耦，每个部分可以单独进⾏维护和部署，提升效率。 
+
+2. 整合历史系统：在不少的业务中，或多或少会存在⼀些历史项⽬，这些项⽬⼤多以采⽤⽼框架类似 
+
+（Backbone.js，Angular.js 1）的B端管理系统为主，介于⽇常运营，这些系统需要结合到新框架中 
+
+来使⽤还不能抛弃，对此我们也没有理由浪费时间和精⼒重写旧的逻辑。⽽微前端可以将这些系统
+
+进⾏整合，在基本不修改来逻辑的同时来同时兼容新⽼两套系统并⾏运⾏ 
+
+## 微前端的能⼒ 
+
+![micro-frontends-capility](/Volumes/F/zyl-study/web-zhuawa/20221203/micro-frontends-capility.jpg)
+
+
+
+## 微前端解决⽅案 
+
+1 技术⽅案介绍 
+
+1.1 基于 iframe 完全隔离的⽅案 
+
+介绍：略 
+
+优点： 
+
+1. ⾮常简单，⽆需任何改造 
+
+2. 完美隔离，JS、CSS 都是独⽴的运⾏环境 
+
+3. 不限制使⽤，⻚⾯上可以放多个 iframe 来组合业务 
+
+缺点： 
+
+1. 每次进来都要加载，状态不能保留 
+2. 完全的隔离导致与⼦应⽤的通信不⽅便(postMessage，hash等) 
+3. 布局限制，⽐如⼦应⽤⾥有⼀个 Modal，显示的时候只能在那⼀⼩块地⽅展示，不能全屏展示 
+4. ⽆法进⾏资源共享，整个应⽤全量资源加载，加载太慢 
+
+1.2 webpack module federation 
+
+host: 引⽤了其他应⽤的应⽤ 
+
+remote: 被其他应⽤所使⽤的应⽤ 
+
+介绍： 
+
+![micro-frontends- solution](/Volumes/F/zyl-study/web-zhuawa/20221203/micro-frontends- solution.jpg)
+
+
+
+优点： 
+
+1. 基于webpack，改造和学习成本低 
+
+缺点： 
+
+1. 样式隔离需要⾃⼰实现 
+
+2. 跨技术栈⽆统⼀⽅案，需要⾃⼰实现：https://github.com/module-federation/module-federation-examples/blob/master/react-in-vue/layout/src/ReactButton.js 
+
+3. ⼊⼝⽂件的缓存问题
+
+1.3 web components 
+
+介绍：
+
+● Custom elements（⾃定义元素）：⼀组JavaScript API，允许您定义custom elements及其⾏ 
+
+为，然后可以在您的⽤户界⾯中按照需要使⽤它们
+
+Shadow DOM（影⼦DOM）：⼀组JavaScript API，⽤于将封装的“影⼦”DOM树附加到元素（与
+
+主⽂档DOM分开呈现）并控制其关联的功能。通过这种⽅式，您可以保持元素的功能私有，这样它 
+
+们就可以被脚本化和样式化，⽽不⽤担⼼与⽂档的其他部分发⽣冲突。 
+
+HTML templates（HTML模板）： <template> 和 <slot> 元素使您可以编写不在呈现⻚⾯中显示 
+
+的标记模板。然后它们可以作为⾃定义元素结构的基础被多次重⽤ 
+
+1. 技术栈⽆关：Web Components是浏览器原⽣组件，那即是在任何框架中都可以使⽤。 
+
+2. 独⽴开发：使⽤Web Components开发的应⽤⽆需与其他应⽤间产⽣任何关联。 
+
+3. 应⽤间隔离： Shadow DOM的特性，各个引⼊的微应⽤间可以达到相互隔离的效果。 
+
+可以使⽤web components开发⼦应⽤，整个⼦应⽤都是使⽤web components开发的 
+
+缺点： 
+
+**1.** 语法强制（技术栈⽆关，但限制了开发时使⽤的技术栈） 
+
+**2.** 有部分兼容性问题: stencil
+
+```js
+class CustomButton extends HTMLElement {
+ connectedCallback() {
+ this.innerHTML = `<button type="button">⾃定义按钮</button>`;
+ }
+ disconnectedCallback() { alert('1') } }
+window.customElements.define('custom-button', CustomButton);
+```
+
+
+
+1.4服务端拼接
+
+![micro-frontend-1](/Volumes/F/zyl-study/web-zhuawa/20221203/micro-frontend-1.jpg)
+
+
+
+```html
+ <html lang="en" dir="ltr">
+ <head>
+ <meta charset="utf-8">
+ <title>Feed me</title>
+ </head>
+ <body>
+ <h1>🍽 Feed me</h1>
+ <!--# include file="$PAGE.html" -->
+ </body>
+</html> 
+```
+
+```nginx
+server {
+ listen 8080;
+ server_name localhost;
+ root /usr/share/nginx/html;
+ index index.html;
+ ssi on;
+ # Redirect / to /browse
+ rewrite ^/$ http://localhost:8080/browse redirect;
+ # Decide which HTML fragment to insert based on the URL
+ location /browse {
+ set $PAGE 'browse';
+ }
+ location /order {
+ set $PAGE 'order';
+ }
+ location /profile {
+ set $PAGE 'profile'
+ }
+ # All locations should render through index.html
+ error_page 404 /index.html;
+}
+```
+
+1.5 esm+import map
+
+将⼦模块通过esm的⽅式引⼊，并通过import map进⾏环境配置，也可以实现想要的结果 
+
+优点： 
+
+1. 浏览器原⽣⽀持，⽆需额外⼯具 
+
+缺点： 
+
+1. 部分浏览器兼容性不好 
+
+## 微前端框架
+
+### single-spa
+
+https://single-spa.js.org/ 
+
+single-spa 就做了两件事情： 
+
+加载微应⽤（加载⽅法还得⽤户⾃⼰来实现） 
+
+管理微应⽤的状态（初始化、挂载、卸载）
+
+single-spa 仅仅是⼀个⼦应⽤⽣命周期的调度者。single-spa 借鉴了组件⽣命周期的思想，它为应⽤设 
+
+置了针对路由的⽣命周期。当应⽤匹配路由/处于激活状态时，应⽤会把⾃身的内容挂载到⻚⾯上；反之 
+
+则卸载。典型的 single-spa 由 html ⻚⾯、应⽤注册脚本、应⽤脚本⾃身构成。 
+
+single-spa ⼜约定应⽤脚本包含以下⽣命周期： 
+
+load：当应⽤匹配路由时就会加载脚本（⾮函数，只是⼀种状态） 
+
+bootstrap：引导函数（对接 html，应⽤内容⾸次挂载到⻚⾯前调⽤） 
+
+mount：挂载函数 
+
+unmount：卸载函数（须移除事件绑定等内容） 
+
+unload：⾮必要（
+
+unload 之后会重新启动 bootstrap 流程；借助 unload 可实现热更新）
+
+![micro-frontend-1](/Volumes/F/zyl-study/web-zhuawa/20221203/micro-frontend-1.jpg)
+
+### qiankun
+
+iankun 是⼀个基于 single-spa 的微前端实现库，旨在帮助⼤家能更简单、⽆痛的构建⼀个⽣产可⽤微前端架构系统。 
+
+qiankun 孵化⾃蚂蚁⾦融科技，在经过⼀批线上应⽤的充分检验及打磨后，我们将其微前端内核抽取出来并开源，希望能同时帮助社区有类似需求的系统更⽅便的构建⾃⼰的微前端系统，同时也希望通过区的帮助将 qiankun 打磨的更加成熟完善。 
+
+⽬前 qiankun 已在蚂蚁内部服务了超过 2000+ 线上应⽤，在易⽤性及完备性上，绝对是值得信赖的。
+
+通过 import-html-entry 包解析 HTML 获取资源路径，然后对资源进⾏解析、加载。
+
+通过对执⾏环境的修改，它实现了 JS 沙箱、样式隔离 等特性。
+
+![micro-frontend-2](/Volumes/F/zyl-study/web-zhuawa/20221203/micro-frontend-2.jpg)
+
+
+
+### EMP 
+
+https://emp2.netlify.app/develop/
+
+![micro-frontend-3](/Volumes/F/zyl-study/web-zhuawa/20221203/micro-frontend-3.jpg)
+
+基于module federation的微前端⽅案 
+
+## 前端微应⽤实践 
+
+采⽤ React 作为主应⽤基座，接⼊Vue技术栈的微应⽤。 
+
+我们先使⽤ create-react-app⽣成⼀个 React 的项⽬，初始化主应⽤。 
+
+create-react-app 是 React 官⽅提供的脚⼿架⼯具，⽤于快速搭建⼀个 React 项⽬。 
+
+将普通的项⽬改造成 qiankun 主应⽤基座，需要进⾏三步操作： 
+
+1. 创建微应⽤容器 - ⽤于承载微应⽤，渲染显示微应⽤； 
+
+2. 注册微应⽤ - 设置微应⽤激活条件，微应⽤地址等等； 
+
+3. 启动 qiankun； 
+
+**主应⽤依赖包**
+
+```js
+npm i react-router-dom -S
+npm i antd -S
+```
+
+**创建微应⽤容器**
+
+我们先在主应⽤中创建微应⽤的承载容器，这个容器规定了微应⽤的显示区域，微应⽤将在该容器 内渲染并显示。 
+
+我们先设置路由，路由⽂件规定了主应⽤⾃身的路由匹配规则，代码实现如下
+
+index.js
+
+```js
+import antd/dist/reset.css;
+```
+
+App.js
+
+```js
+import { BrowserRouter as Router, Link } from 'react-router-dom'
+import { Menu } from 'antd'
+import './App.css'
+const menus = [
+ {
+ key: 'Home',
+ label: <Link to="/">主⻚</Link>,
+ },
+ {
+ key: 'app-vue1',
+ label: <Link to="/app-vue1">vue微应⽤1</Link>,
+ },
+ {
+ key: 'app-vue2',
+ label: <Link to="/app-vue2">vue微应⽤2</Link>,
+ }, ];
+function App() {
+ let style = {
+ width: '100vw',
+ height: '100vh',
+ }
+ return (
+ <Router>
+ <div className="App">
+ <Menu
+ style={{
+ width: 256,
+ }}
+ theme="dark"
+ mode="inline"
+ items={menus}
+ ></Menu>
+ <h1>主应⽤启动成功</h1>
+ <div id="micro-container" style={style}></div>
+ </div>
+ </Router>
+ ) }
+
+```
+
+**注册微应⽤**
+
+在构建好了主框架后，我们需要使⽤ qiankun 的 registerMicroApps ⽅法注册微应⽤，代码实现 如下：
+
+```js
+// micro-app.js
+export const MicroApps = [
+ {
+ name: "vue1App",
+ entry: "//localhost:3001",
+ container: "#micro-container",
+ activeRule: "/app-vue1",
+ },
+ {
+ name: "vue2App",
+ entry: "//localhost:3002",
+ container: "#micro-container",
+ activeRule: "/app-vue2",
+ }, ];
+```
+
+我们在注册好了微应⽤，通过 start 函数后，我们需要在合适的地⽅调⽤ start 启动主应⽤。
+
+index.js
+
+````js
+import React from "react";
+import ReactDOM from "react-dom/client";
+import { registerMicroApps, start } from "qiankun";
+import "./index.css";
+import App from "./App";
+import reportWebVitals from "./reportWebVitals";
+import { MicroApps } from "./micro-app";
+registerMicroApps(MicroApps);
+start();
+const root = ReactDOM.createRoot(document.getElementById("root"));
+root.render(
+ <React.StrictMode>
+ <App />
+ </React.StrictMode>
+);
+// If you want to start measuring performance in your app, pass a function
+// to log results (for example: reportWebVitals(console.log))
+// or send to an analytics endpoint. Learn more: https://bit.ly/CRA-vitals
+reportWebVitals();
+````
+
+**接入微应用**
+
+我们现在的主应⽤基座只有⼀个主⻚，现在我们需要接⼊微应⽤。 
+
+qiankun 内部通过 import-entry-html 加载微应⽤，要求微应⽤需要导出⽣命周期钩⼦函数（⻅下图）。 
+
+![micro-frontend-4](/Volumes/F/zyl-study/web-zhuawa/20221203/micro-frontend-4.jpg)
+
+从上图可以看出，qiankun 内部会校验微应⽤的⽣命周期钩⼦函数，如果微应⽤没有导出这三个⽣命周期钩⼦函数，则微应⽤会加载失败。 
+
+如果我们使⽤了脚⼿架搭建微应⽤的话，我们可以通过 webpack 配置在⼊⼝⽂件处导出这三个⽣命周期 钩⼦函数。如果没有使⽤脚⼿架的话，也可以直接在微应⽤的 window 上挂载这三个⽣命周期钩⼦函数。
+
+**接入vue微应用**
+
+使⽤ vue-cli 先创建⼀个 Vue 的项⽬，在命令⾏运⾏如下命令： 
+
+```bash
+npm install -g @vue/cli
+vue create micro-sub-app-vue // 选择vue2
+```
+
+**配置微应⽤**
+
+在主应⽤注册好了微应⽤后，我们还需要对微应⽤进⾏⼀系列的配置。⾸先，我们在 Vue 的⼊⼝⽂件 main.js 中，导出 qiankun 主应⽤所需要的三个⽣命周期钩⼦函数，代码实现如下：
+
+Main.js
+
+```js
+import './public-path';
+import Vue from 'vue';
+import App from './App.vue';
+Vue.config.productionTip = false;
+let instance = null;
+function render() {
+ instance = new Vue({
+ render: (h) => h(App),
+ }).$mount('#app'); }
+render();
+// 独⽴运⾏时
+if (!window.__POWERED_BY_QIANKUN__) {
+ render(); }
+export async function bootstrap() {
+ console.log('[vue1] vue1 app bootstraped'); }
+export async function mount(props) {
+ console.log('[vue1] props from main framework mount', props);
+ render(props); }
+export async function unmount() {
+ instance.$destroy();
+ instance = null; }
+```
+
+在配置好了⼊⼝⽂件 main.js 后，我们还需要配置 webpack，使 main.js 导出的⽣命周期钩⼦函 数可以被 qiankun 识别获取。 
+
+我们直接配置 vue.config.js 即可，代码实现如下：
+
+```js
+const { name } = require("./package");
+module.exports = {
+ devServer: {
+ // 配置下⾯内容 否则主应⽤访问会报跨域
+ headers: {
+ // 配置跨域请求头，解决开发环境的跨域问题
+ "Access-Control-Allow-Origin": "*",
+ },
+ port: "3001",
+ },
+ configureWebpack: {
+ output: {
+ library: `${name}-[name]`,
+ libraryTarget: "umd", // 把微应⽤打包成 umd 库格式
+ chunkLoadingGlobal: `webpackJsonp_${name}`,
+ },
+ }, }
+```
+
+我们需要重点关注⼀下 output 选项，当我们把 libraryTarget 设置为 umd 后，我们的 library 就暴露为所有的模块定义下都可运⾏的⽅式了，主应⽤就可以获取到微应⽤的⽣命周期钩⼦函数了。 
+
+在 vue.config.js 修改完成后，我们重新启动 Vue 微应⽤，然后打开主应⽤基座 http://localhost:3000。我们点击左侧菜单切换到微应⽤，此时我们的 Vue 微应⽤被正确加载！ 
+
+到这⾥，Vue 微应⽤就接⼊成功了！ 
+
+Public-path.js
+
+```js
+if (window.__POWERED_BY_QIANKUN__) {
+ window.__webpack_public_path__ = window.__INJECTED_PUBLIC_PATH_BY_QIANKUN
+__
+}
+```
+
+**参考链接**
+
+qiankun https://qiankun.umijs.org/zh 
+
+# **微前端（下）**
+
+### **1. 课程目标**
+
+1. qiankun整体运行流程
+
+2. 微前端实现方案
+
+### **2. 课程大纲**
+
+1. qiankun整体流程
+
+2. 微前端方案实现
+
+3. DIY微前端核心能力
+
+### **3 微前端方案实现**
+
+- 基于 iframe 完全隔离的方案、使用纯的Web Components构建应用
+
+- EMP基于webpack module federation
+
+- qiankun、icestark 自己实现JS以及样式隔离
+
+### **4. qiankun整体运行流程**
+
+![micro-frontend-5](/Volumes/F/zyl-study/web-zhuawa/20221203/micro-frontend-5.jpg)
+
+
+
+### **5 DIY微前端核心能力**
+
+**应用注册** **registerMicroApps(apps, lifeCycles?)**
+
+- 参数
+
+- - apps - Array<RegistrableApp> - 必选，微应用的一些注册信息
+
+- - lifeCycles - LifeCycles - 可选，全局的微应用生命周期钩子
+
+- 类型
+
+- - RegistrableApp
+
+- - - name - string - 必选，微应用的名称，微应用之间必须确保唯一。
+
+- - - entry - string - 必选，微应用的入口。
+
+- - - container - string | HTMLElement - 必选，微应用的容器节点的选择器或者 Element 实例
+
+- - - activeRule - string | (location: Location) => boolean | Array<string | (location: Location) => boolean> - 必选，微应用的激活规则
+
+- - LifeCyclest
+
+- - - type Lifecycle = (app: RegistrableApp) => Promise<any>;
+
+- - - beforeMount - Lifecycle | Array<Lifecycle> - 可选
+
+- - - beforeUnmount - Lifecycle | Array<Lifecycle> - 可选
+
+- - - afterUnmount - Lifecycle | Array<Lifecycle> - 可选
+
+**监听路由变化**
+
+hash模式
+
+history模式
+
+**如何实现前端路由？**
+
+要实现前端路由，需要解决两个核心问题：
+
+如何改变 URL 却不引起页面刷新？
+
+如何检测 URL 变化了？
+
+下面分别使用 hash 和 history 两种实现方式回答上面的两个核心问题。
+
+**hash 实现**
+
+hash 是 URL 中 hash (#) 及后面的那部分，常用作锚点在页面内进行导航，改变 URL 中的 hash 部分不会引起页面刷新
+
+通过 hashchange 事件监听 URL 的变化，改变 URL 的方式只有这几种：
+
+通过浏览器前进后退改变 URL
+
+通过标签改变 URL
+
+通过window.location改变URL
+
+这几种情况改变 URL 都会触发 hashchange 事件
+
+```js
+// 监听路由变化
+
+window.addEventListener('hashchange', onHashChange)
+```
+
+**history 实现**history 提供了 pushState 和 replaceState 两个方法，这两个方法改变 URL 的 path 部分不会引起页面刷新
+
+history 提供类似 hashchange 事件的 popstate 事件，但 popstate 事件有些不同：
+
+- 通过浏览器前进后退改变 URL 时会触发 popstate 事件，
+
+- 通过pushState/replaceState或标签改变 URL 不会触发 popstate 事件。好在我们可以拦截 pushState
+
+/replaceState的调用和标签的点击事件来检测 URL 变化，所以监听 URL 变化可以实现，只是没有 hashchange 那么方便。
+
+```js
+// 监听浏览器前进后退改变URL
+
+window.addEventListener("popstate", onPopState);
+```
+
+![micro-frontend-6](/Volumes/F/zyl-study/web-zhuawa/20221203/micro-frontend-6.jpg)
+
+
+
+### **路由劫持**
+
+- 路由变化时匹配子应用
+
+- 子应用生命周期
+
+- 加载子应用
+
+**生命周期**
+
+- 主应用
+
+- - beforeLoad: 挂载子应用前
+
+- - mounted: 挂载子应用后
+
+- - ummounted: 卸载子应用后
+
+- 子应用
+
+- - bootstrap： bootstrap 只会在微应用初始化的时候调用一次，下次微应用重新进入时会直接调用 mount 钩子，不会再重复触发 bootstrap。
+
+- - mount: 应用每次进入都会调用 mount 方法，通常我们在这里触发应用的渲染方法unmount: 应用每次 切出/卸载 会调用的方法，通常在这里我们会卸载微应用的应用实例
+
+**资源加载**
+
+- 加载样式表
+
+- 加载js资源
+
+- 执行js代码
+
+**预加载**
+
+### **具体实现**
+
+**依赖包**
+
+```js
+"import-html-entry": "^1.12.0",
+"path-to-regexp": "^6.2.1",
+"qiankun": "^2.7.4"
+```
+
+**start入口**
+
+```js
+import { IAppInfo, ILifeCycle } from './types';
+import { setAppList, getAppList } from './appList/index';
+import { setLifeCycle } from './lifeCycle/index';
+import { hackRoute, reRoute } from './route/index';
+export const registerMicroApps = (
+ appList: IAppInfo[],
+ lifeCycle?: ILifeCycle
+) => {
+ appList && setAppList(appList);
+ lifeCycle && setLifeCycle(lifeCycle);
+};
+export const start = () => {
+     const list = getAppList();
+ if (!list.length) {
+ throw new Error('请先注册应用');
+ }
+ hackRoute();
+ reRoute(window.location.href);
+};
+```
+
+**存储appList**
+
+```js
+// appList/index
+import { IAppInfo } from '../types';
+let appList: IAppInfo[] = [];
+export const setAppList = (list: IAppInfo[]): void => {
+ appList = list;
+};
+export const getAppList = () => {
+ return appList;
+};
+// 存储全局应用信息
+```
+
+**存储lifeCycle 以及生命周期方法的实现**
+
+```js
+import { ILifeCycle, IInternalAppInfo, IAppInfo } from '../types';
+import { EAppStatus } from '../enum';
+import { loadHTML } from '../loader'
+let lifeCycle: ILifeCycle = {};
+export const setLifeCycle = (lifeCycles: ILifeCycle): void => {
+ lifeCycle = lifeCycles;
+};
+export const getLifeCycle = () => {
+ return lifeCycle;
+};
+// 存储全局生命周期
+// 卸载
+export const runUnMounted = async (app: IInternalAppInfo) => {
+ app.status = EAppStatus.UNMOUNTING;
+ await app.unmounted?.(app);
+ app.status = EAppStatus.NOT_MOUNTED;
+ await runLifeCycle('unmounted', app);
+};
+// 初始化 只执行一次
+export const runBootstrap = async (app: IInternalAppInfo) => {
+ if (app.status !== EAppStatus.LOADED) {
+ return app;
+ }
+ app.status = EAppStatus.BOOTSTRAPING;
+     await app.bootstrap?.(app);
+ app.status = EAppStatus.NOT_MOUNTED;
+};
+// 挂载 可多次执行
+export const runMounted = async (app: IInternalAppInfo) => {
+ app.status = EAppStatus.MOUNTING;
+ await app.mounted?.(app);
+ app.status = EAppStatus.MOUNTED;
+ // 处理对应子应用生命周期
+ await runLifeCycle('mounted', app);
+};
+// 加载前
+export const runBeforeLoad = async (app: IInternalAppInfo) => {
+ app.status = EAppStatus.LOADING;
+ await runLifeCycle('beforeLoad', app);
+ // 加载子应用资源
+ // app = await loadHTML(app)
+ app.status = EAppStatus.LOADED;
+};
+const runLifeCycle = async (name: keyof ILifeCycle, app: IAppInfo) => {
+ // lifeCycles - LifeCycles - 可选，全局的微应用生命周期钩子
+ const fn = lifeCycle[name];
+ if (fn instanceof Array) {
+ await Promise.all(fn.map((item) => item(app)));
+ } else {
+ await fn?.(app);
+ }
+};
+```
+
+**TS相关类型-枚举**
+
+```js
+export enum EAppStatus {
+ NOT_FOUND = 'NOT_FOUND',
+ NOT_LOADED = 'NOT_LOADED',
+ LOADING = 'LOADING',
+ LOADED = 'LOADED',
+ BOOTSTRAPPING = 'BOOTSTRAPPING',
+ NOT_MOUNTED = 'NOT_MOUNTED',
+ MOUNTING = 'MOUNTING',
+ UNMOUNTED = 'UNMOUNTED',
+ MOUNTED = 'MOUNTED',
+ UNMOUNTING = 'UNMOUNTING',
+}
+```
+
+**TS相关类型**
+
+```js
+export interface IAppInfo {
+ name: string
+ entry: string
+ container: string
+ activeRule: string
+}
+export type Lifecycle = (app: IAppInfo) => Promise<any>
+export interface ILifecycle {
+ beforeLoad?: Lifecycle | Lifecycle[]
+ mounted?: Lifecycle | Lifecycle[]
+ unmounted?: Lifecycle | Lifecycle
+}
+export interface IInternalAppInfo extends IAppInfo {
+ status: EAppStatus
+ bootstrap?: Lifecycle
+ mount?: Lifecycle
+ unmount?: Lifecycle
+ proxy: any
+}
+export type EventType = 'hashchange' | 'popstate'
+```
+
+**路由拦截实现**
+
+```js
+import { EventType } from '../types'
+import {
+ runBoostrap,
+ runBeforeLoad,
+ runMounted,
+ runUnmounted,
+} from '../lifeCycle'
+import { getAppListStatus } from '../utils'
+const capturedListeners: Record<EventType, Function[]> = {
+ hashchange: [],
+ popstate: [],
+}
+// 劫持和 history 和 hash 相关的事件和函数
+// 然后我们在劫持的方法里做一些自己的事情
+// 比如说在 URL 发生改变的时候判断当前是否切换了子应用
+const originalPush = window.history.pushState
+const originalReplace = window.history.replaceState
+let historyEvent: PopStateEvent | null = null
+let lastUrl: string | null = null
+export const reroute = (url: string) => {
+ if (url !== lastUrl) {
+ const { actives, unmounts } = getAppListStatus()
+ Promise.all(
+ unmounts
+ .map(async (app) => {
+ await runUnmounted(app)
+ })
+ .concat(
+ actives.map(async (app) => {
+ await runBeforeLoad(app)
+      await runBoostrap(app)
+ await runMounted(app)
+ })
+ )
+ ).then(() => {
+ callCapturedListeners()
+ })
+ }
+ lastUrl = url || location.href
+}
+const handleUrlChange = () => {
+ reroute(location.href)
+}
+export const hackRoute = () => {
+ window.history.pushState = (...args) => {
+ originalPush.apply(window.history, args)
+ historyEvent = new PopStateEvent('popstate')
+ args[2] && reroute(args[2] as string)
+ }
+ window.history.replaceState = (...args) => {
+ originalReplace.apply(window.history, args)
+ historyEvent = new PopStateEvent('popstate')
+ args[2] && reroute(args[2] as string)
+ }
+ window.addEventListener('hashchange', handleUrlChange)
+ window.addEventListener('popstate', handleUrlChange)
+ window.addEventListener = hackEventListener(window.addEventListener)
+ window.removeEventListener = hackEventListener(window.removeEventListener)
+}
+const hasListeners = (name: EventType, fn: Function) => {
+ return capturedListeners[name].filter((listener) => listener === fn).length
+}
+const hackEventListener = (func: Function): any => {
+ return function (name: string, fn: Function) {
+ if (name === 'hashchange' || name === 'popstate') {
+ if (!hasListeners(name, fn)) {
+ capturedListeners[name].push(fn)
+ return
+ } else {
+ capturedListeners[name] = capturedListeners[name].filter(
+ (listener) => listener !== fn
+ )
+ }
+ }
+ return func.apply(window, arguments)
+ }
+}
+export function callCapturedListeners() {
+ if (historyEvent) {
+ Object.keys(capturedListeners).forEach((eventName) => {
+ const listeners = capturedListeners[eventName as EventType]
+ if (listeners.length) {
+ listeners.forEach((listener) => {
+ // @ts-ignore
+ listener.call(this, historyEvent)
+ })
+ }
+ })
+ historyEvent = null
+ }
+}
+export function cleanCapturedListeners() {
+ capturedListeners['hashchange'] = []
+ capturedListeners['popstate'] = []
+}
+```
+
+**loader 加载器**
+
+```js
+import { IInternalAppInfo } from '../types'
+import { importEntry } from 'import-html-entry'
+import { ProxySandbox } from './sandbox'
+export const loadHTML = async (app: IInternalAppInfo) => {
+ const { container, entry } = app
+ const { template, getExternalScripts, getExternalStyleSheets } =
+ await importEntry(entry)
+ const dom = document.querySelector(container)
+ if (!dom) {
+ throw new Error('容器不存在')
+ }
+ dom.innerHTML = template
+ await getExternalStyleSheets()
+ const jsCode = await getExternalScripts()
+ jsCode.forEach((script) => {
+ const lifeCycle = runJS(script, app)
+ if (lifeCycle) {
+ app.bootstrap = lifeCycle.bootstrap
+ app.mount = lifeCycle.mount
+ app.unmount = lifeCycle.unmount
+ }
+ })
+ return app
+}
+const runJS = (value: string, app: IInternalAppInfo) => {
+ if (!app.proxy) {
+ app.proxy = new ProxySandbox()
+ // @ts-ignore
+ window.__CURRENT_PROXY__ = app.proxy.proxy
+ }
+     app.proxy.active()
+ const code = `
+ return (window => {
+ ${value}
+ return window['${app.name}']
+ })(window.__CURRENT_PROXY__)
+ `
+ return new Function(code)()
+}
+```
+
+**ProxySandbox**
+
+```js
+export class ProxySandbox {
+ proxy: any
+ running = false
+ constructor() {
+ const fakeWindow = Object.create(null)
+ const proxy = new Proxy(fakeWindow, {
+ set: (target: any, p: string, value: any) => {
+ if (this.running) {
+ target[p] = value
+ }
+ return true
+ },
+ get(target: any, p: string): any {
+ switch (p) {
+ case 'window':
+ case 'self':
+ case 'globalThis':
+ return proxy
+ }
+ if (
+ !window.hasOwnProperty.call(target, p) &&
+ window.hasOwnProperty(p)
+ ) {
+ // @ts-ignore
+ const value = window[p]
+ if (typeof value === 'function') return value.bind(window)
+ return value
+ }
+ return target[p]
+ },
+ has() {
+ return true
+ },
+ })
+ this.proxy = proxy
+ }
+ active() {
+ this.running = true
+ }
+ inactive() {
+ this.running = false
+ }
+}
+```
+
+**预加载**
+
+```js
+export const prefetch = async (app: IInternalAppInfo) => {
+ requestIdleCallback(async () => {
+ const { getExternalScripts, getExternalStyleSheets } = await importEntry(
+ app.entry
+ )
+ requestIdleCallback(getExternalStyleSheets)
+ requestIdleCallback(getExternalScripts)
+ })
+}
+```
+
 
 
 https://www.yuque.com/lpldplws/web/og6swa9wsde8lc8b?#《前端AST》 密码：lxee
@@ -53013,7 +54089,7 @@ https://www.yuque.com/lpldplws/web/avn0gl?singleDoc# 《小程序课程课后习
 
 https://www.yuque.com/lpldplws/web/tsii7l?singleDoc# 《现代hybrid发展史&flutter 与 dart 开发入门》 密码：ov0l
 
-https://www.yuque.com/g/aliang-khvnv/kb/gss67kry0e7m6ehg/collaborator/join?token=fotRM4sX09Xqy4qa# 《微前端(上)》
+
 
 https://github.com/umijs/qiankun/pull/1061
 
