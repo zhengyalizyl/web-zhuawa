@@ -54923,9 +54923,9 @@ function foo(){
 
 ## 8 实战AST DEMO 
 
- 聊聊Babel 
+聊聊Babel 
 
- 用途 
+用途 
 
 ● 转译 esnext、typescript等到目标环境支持的js
 
@@ -54984,10 +54984,1709 @@ console.log(transToLet(code));
 
 ## 10 脚手架
 
-
+# webpack
 
 
 https://www.yuque.com/lpldplws/web/itd4rdqaqqioga10?#《webpack》 密码：nn2p 
+
+## webpack 核心概念 
+
+#### Entry 
+
+入口起点(entry point)指示 webpack 应该使用哪个模块,来作为构建其内部依赖图的开始。
+
+进入入口起点后,webpack 会找出有哪些模块和库是入口起点（直接和间接）依赖的。
+
+每个依赖项随即被处理,最后输出到称之为 bundles 的文件中。
+
+#### Output 
+
+output 属性告诉 webpack 在哪里输出它所创建的 bundles,以及如何命名这些文件,默认值为 ./dist。
+
+基本上,整个应用程序结构,都会被编译到你指定的输出路径的文件夹中。
+
+#### Module 
+
+模块,在 Webpack 里一切皆模块,一个模块对应着一个文件。Webpack 会从配置的 Entry 开始递归找出所有依赖的模块。
+
+#### Chunk 
+
+代码块,一个 Chunk 由多个模块组合而成,用于代码合并与分割。
+
+#### Loader 
+
+loader 让 webpack 能够去处理那些非 JavaScript 文件（webpack 自身只理解 JavaScript）。
+
+loader 可以将所有类型的文件转换为 webpack 能够处理的有效模块,然后你就可以利用 webpack 的打包能力,对它们进行处理。
+
+本质上,webpack loader 将所有类型的文件,转换为应用程序的依赖图（和最终的 bundle）可以直接引用的模块。
+
+#### Plugin 
+
+loader 被用于转换某些类型的模块,而插件则可以用于执行范围更广的任务。
+
+插件的范围包括,从打包优化和压缩,一直到重新定义环境中的变量。插件接口功能极其强大,可以用来处理各种各样的任务。
+
+#### webpack 构建流程 
+
+Webpack 的运行流程是一个串行的过程,从启动到结束会依次执行以下流程 :
+
+1. 初始化参数：从配置文件和 Shell 语句中读取与合并参数,得出最终的参数。
+
+2. 开始编译：用上一步得到的参数初始化 Compiler 对象,加载所有配置的插件,执行对象的 run 方法开始执行编译。
+
+3. 确定入口：根据配置中的 entry 找出所有的入口文件。
+
+4. 编译模块：从入口文件出发,调用所有配置的 Loader 对模块进行翻译,再找出该模块依赖的模块,再递归本步骤直到所有入口依赖的文件都经过了本步骤的处理。
+
+5. 完成模块编译：在经过第 4 步使用 Loader 翻译完所有模块后,得到了每个模块被翻译后的最终内容以及它们之间的依赖关系。
+
+6. 输出资源：根据入口和模块之间的依赖关系,组装成一个个包含多个模块的 Chunk,再把每个 Chunk 转换成一个单独的文件加入到输出列表,这步是可以修改输出内容的最后机会。
+
+7. 输出完成：在确定好输出内容后,根据配置确定输出的路径和文件名,把文件内容写入到文件系统。
+
+在以上过程中,Webpack 会在特定的时间点广播出特定的事件,插件在监听到感兴趣的事件后会执行特定的逻辑,并且插件可以调用 Webpack 提供的 API 改变 Webpack 的运行结果。
+
+## 一、入门webpack配置 
+
+### 1. 初始化项目 
+
+新建一个目录，初始化
+
+```js
+npmn  init -y
+```
+
+webpack是运行在node环境中的,我们需要安装以下两个npm包
+
+```js
+npm i webpack -D
+npm i webpack-cli -D
+```
+
+- npm i -D 为npm install --save-dev的缩写
+- npm i -S 为npm install --save的缩写
+
+### 2 .开始我们自己的配置
+
+上面一个简单的例子只是webpack自己默认的配置，下面我们要实现更加丰富的自定义配置 新建一个build文件夹,里面新建一个webpack.config.js
+
+```js
+// webpack.config.js
+
+const path = require('path');
+module.exports = {
+    mode:'development', // 开发模式 自动优化打包速度 添加一些调试辅助工具
+    entry: path.resolve(__dirname,'../src/main.js'),    // 入口文件
+    output: {
+        filename: 'output.js',      // 打包后的文件名称
+        path: path.resolve(__dirname,'../dist'),  // 打包后的目录
+        clean: true,
+    }
+}
+```
+
+更改我们的打包命令 
+
+````js
+"scripts": {
+    "build": "webpack --config build/webpack.config.js"
+  },
+````
+
+面试题：webpack打包产出特点？分为几大块？每块的作用？
+
+1. 整体为立即执行函数 =》 每个模块都是IIFE =》 避免泄露 =》 webpack通过立即执行函数进行模块化隔离
+
+2. 定义了若干全局变量用来存储和归类模块（缓存模块）+ webpack的模块化功能区域 + 主入口import的执行 +主功能代码逻辑（压缩版）
+
+### 3 配置html模板
+
+#### 3.1 基础配置 
+
+js文件打包好了,但是我们不可能每次在html文件中手动引入打包好的js
+
+这里可能有的朋友会认为我们打包js文件名称不是一直是固定的嘛(output.js)？这样每次就不用改动引入文件名称了呀？实际上我们日常开发中往往会这样配置:
+
+```js
+module.exports = {
+    mode:'development', // 开发模式
+    entry: path.resolve(__dirname,'../src/main.js'),    // 入口文件
+    output: {
+        filename: '[name].[hash:8].js',      // 打包后的文件名称
+        path: path.resolve(__dirname,'../dist')  // 打包后的目录
+      }
+}
+```
+
+这时候生成的dist目录文件如下 
+
+![](https://cdn.nlark.com/yuque/0/2022/png/739887/1670518101565-6a67763a-8498-49a1-ad75-f46d986b8d34.png)
+
+
+
+新建一个build同级的文件夹public,里面新建一个index.html，通过HtmlWebpackPlugin生成HTML
+**HtmlWebpackPlugin**
+简化HTML文件的创建，该插件为你生成一个HTML文件， 在 body 中使用 script 标签引入你所有 webpack 生成的 bundle，插件中引入的script中包含哈希值，伴随着每次编译而改变。
+
+```js
+const path = require('path');
+const HtmlWebpackPlugin = require('html-webpack-plugin');
+
+module.exports = {
+  mode: 'development', // 开发模式
+  entry: path.resolve(__dirname, '../src/main.js'), // 入口文件
+  output: {
+    filename: '[name].[hash:8].js', // 打包后的文件名称
+    path: path.resolve(__dirname, '../dist'), // 打包后的目录
+    clean: true,
+  },
+  plugins: [
+    new HtmlWebpackPlugin({
+      template: path.resolve(__dirname, '../public/index.html'),
+    }),
+  ],
+};
+```
+
+生成的内容如下
+
+![](https://cdn.nlark.com/yuque/0/2022/png/739887/1670600088459-09f40068-59d6-40b8-8bf6-420b6f5cd947.png?x-oss-process=image%2Fresize%2Cw_750%2Climit_0)
+
+#### 3.2 自定义HTML注入变量
+
+插件没有配置loader时默认支持的ejs模板引擎
+
+```js
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title><%= htmlWebpackPlugin.options.title %></title>
+  </head>
+  <body>
+    <div id="root"></div>
+  </body>
+</html>
+
+```
+
+[可查看更多配置](https://github.com/jaketrent/html-webpack-template/blob/86f285d5c790a6c15263f5cc50fd666d51f974fd/index.html)
+
+#### 3.3 htmlWebpackPlugin配置项
+
+- template 页面模板
+- filename HTML页面名称
+- chunks 页面需要引入的js文件
+- title 页面标题
+- inject script文件插入到HTML中的位置 默认true
+- minify: true, // development 默认不压缩 production 默认压缩
+  [更多配置项](https://github.com/jantimon/html-webpack-plugin#options)
+
+```js
+ plugins: [
+    new HtmlWebpackPlugin({
+      template: path.resolve(__dirname, '../public/index.html'),
+      filename: 'index.html',
+      chunks: ['main'],
+      title: 'main',
+      inject: 'body', // script文件插入到HTML中的位置 默认true 
+    }),
+    new HtmlWebpackPlugin({
+      filename: 'header.html',
+      chunks: ['header'],
+      title: 'header22',
+      minify: true, // development 默认不压缩 production 默认压缩
+    }),
+  ],
+```
+
+#### 3.4 多入口文件如何开发
+
+生成多个html-webpack-plugin实例来解决这个问题
+
+```js
+// webpack.config.js
+
+const path = require('path');
+const HtmlWebpackPlugin = require('html-webpack-plugin');
+
+module.exports = {
+  mode: 'development', // 开发模式
+  // entry: path.resolve(__dirname, '../src/main.js'), // 入口文件
+  entry: {
+    main: path.resolve(__dirname, '../src/main.js'),
+    header: path.resolve(__dirname, '../src/header.js'),
+  },
+  output: {
+    filename: '[name].[hash:8].js', // 打包后的文件名称
+    path: path.resolve(__dirname, '../dist'), // 打包后的目录
+    clean: true,
+  },
+  plugins: [
+    new HtmlWebpackPlugin({
+      template: path.resolve(__dirname, '../public/index.html'),
+      filename: 'index.html',
+      chunks: ['main'],
+    }),
+    new HtmlWebpackPlugin({
+      template: path.resolve(__dirname, '../public/header.html'),
+      filename: 'header.html',
+      chunks: ['header'],
+    }),
+  ],
+};
+```
+
+此时会发现生成以下目录 
+
+![](https://cdn.nlark.com/yuque/0/2022/png/739887/1670601044216-07ecc389-f6fb-4bcd-abe7-c3105aaae88c.png?x-oss-process=image%2Fresize%2Cw_750%2Climit_0)
+
+
+
+#### **3.5 devServer**
+
+```js
+yarn add webpack-dev-server -D
+// 
+"scripts": {
+  "build": "webpack serve --config build/webpack.config.js"
+}
+```
+
+### 4 引用CSS 
+
+#### 4.1 基础用法 
+
+我们的入口文件是js，所以我们在入口js中引入我们的css文件 
+
+```js
+import css from './less/index.css';
+console.log(css);
+
+let body = document.getElementsByTagName('body')[0];
+let style = document.createElement('style');
+style.innerText = css[0][1];
+body.appendChild(style);
+```
+
+webpack只使用css-loader效果，css-loader打包处理css文件，分析各个css文件之间的依赖关系，返回解析的css内容
+
+```js
+module: {
+  rules: [
+    {
+      test: /\.css$/,
+      use: ['css-loader'], // 从右往左解析原则
+    },
+  ],
+}
+```
+
+css-loader产物
+
+![](https://cdn.nlark.com/yuque/0/2022/png/739887/1670656891715-e92bf644-6253-4198-af74-eaf13b5943ba.png?x-oss-process=image%2Fresize%2Cw_979%2Climit_0)
+
+如果没有style-loader，需要自己挂载css-loader解析的内容
+
+```js
+import css from './less/index.css';
+console.log(css);
+
+let body = document.getElementsByTagName('body')[0];
+let style = document.createElement('style');
+style.innerText = css[0][1];
+body.appendChild(style);
+```
+
+使用style-loader，将css-loader生成的css代码挂载到页面得header部分
+
+```js
+module: {
+  rules: [
+    {
+      test: /\.css$/,
+      use: ['style-loader', 'css-loader'], // 从右往左解析原则
+    },
+  ],
+},
+```
+
+![](https://cdn.nlark.com/yuque/0/2022/png/739887/1670657076468-319f33e2-8b7e-4f4b-b807-64bbaf440d18.png?x-oss-process=image%2Fresize%2Cw_792%2Climit_0)
+
+
+
+#### 4.2 使用less或者sass等css预处理语言
+
+如果我们使用less来构建样式，则需要多安装两个
+
+```js
+npm i -D less less-loader
+```
+
+配置文件如下
+
+```js
+module: {
+  rules: [
+    {
+      test: /\.css$/,
+      use: ['style-loader', 'css-loader'], // 从右往左解析原则
+    },
+    {
+      test: /\.less$/,
+      use: ['style-loader', 'css-loader', 'less-loader'],
+    },
+  ],
+},
+```
+
+浏览器打开html如下
+
+![](https://cdn.nlark.com/yuque/0/2022/png/739887/1670657591456-1b1b98d0-a3ec-48ac-a8b6-eaf648108d9e.png)
+
+#### 4.2 拆分css
+
+因为CSS的下载和JS可以并行,当一个HTML文件很大的时候，我们可以把CSS单独提取出来加载。这也是性能优化手段之一。 webpack4.0以后，官方推荐使用mini-css-extract-plugin插件来打包css文件，此时需要去掉style-loader，两者冲突。
+
+```js
+const MiniCssExtractPlugin = require('mini-css-extract-plugin');
+
+plugins: [
+ new MiniCssExtractPlugin({
+    filename: '[name].[hash].css',
+    chunkFilename: '[id].css',
+  }),
+],
+module: {
+  rules: [
+    {
+      test: /\.css$/,
+      use: [MiniCssExtractPlugin.loader, 'css-loader'], // 从右往左解析原则
+    },
+    {
+      test: /\.less$/,
+      use: [MiniCssExtractPlugin.loader, 'css-loader', 'less-loader'],
+    },
+  ],
+},
+
+```
+
+![](https://cdn.nlark.com/yuque/0/2022/png/739887/1670659704925-6be496ec-3737-4b74-abb5-2e7d9372c263.png?x-oss-process=image%2Fresize%2Cw_682%2Climit_0)
+
+### 5 打包 图片、字体、媒体、等文件
+
+file-loader就是将文件在进行一些处理后（主要是处理文件名和路径、解析文件url），并将文件移动到输出的目录中 url-loader 一般与file-loader搭配使用，功能与 file-loader 类似，如果文件小于限制的大小。则会返回 base64 编码，否则使用 file-loader 将文件移动到输出的目录中
+
+```js
+
+// webpack.config.js
+module.exports = {
+  // 省略其它配置 ...
+  module: {
+    rules: [
+      // ...
+      {
+        test: /\.(jpe?g|png|gif)$/i, //图片文件
+        use: [
+          {
+            loader: 'url-loader',
+            options: {
+              limit: 10240,
+              fallback: {
+                loader: 'file-loader',
+                options: {
+                    name: 'img/[name].[hash:8].[ext]'
+                }
+              }
+            }
+          }
+        ]
+      },
+      {
+        test: /\.(mp4|webm|ogg|mp3|wav|flac|aac)(\?.*)?$/, //媒体文件
+        use: [
+          {
+            loader: 'url-loader',
+            options: {
+              limit: 10240,
+              fallback: {
+                loader: 'file-loader',
+                options: {
+                  name: 'media/[name].[hash:8].[ext]'
+                }
+              }
+            }
+          }
+        ]
+      },
+      {
+        test: /\.(woff2?|eot|ttf|otf)(\?.*)?$/i, // 字体
+        use: [
+          {
+            loader: 'url-loader',
+            options: {
+              limit: 10240,
+              fallback: {
+                loader: 'file-loader',
+                options: {
+                  name: 'fonts/[name].[hash:8].[ext]'
+                }
+              }
+            }
+          }
+        ]
+      },
+    ]
+  }
+}
+```
+
+### 6 用babel转义js文件
+
+为了使我们的js代码兼容更多的环境我们需要安装依赖
+
+- 注意 babel-loader与babel-core的版本对应关系
+  1. babel-loader 8.x 对应babel-core 7.x
+  2. babel-loader 7.x 对应babel-core 6.x 
+
+Babel其实是几个模块化的包：
+
+- @babe-l/core：babel核心库
+- babel-loader：webpack的babel插件，让我们可以在webpack中运行babel
+- @babel/preset-env：将ES6转换为向后兼容的JavaScript，一组预先设定的插件 默认支持所有最新的JS（ES2015，ES2016等）特定
+- @babel/plugin-transform-runtime：处理async，await、import()等语法关键字的帮助函数
+
+```js
+yarn add @babel/core babel-loader @babel/preset-env @babel/plugin-transform-runtime -D
+```
+
+配置如下
+
+```js
+// webpack
+module: {
+  rules: [
+    {
+      test: /\.css$/,
+      use: [MiniCssExtractPlugin.loader, 'css-loader'], // 从右往左解析原则
+    },
+    {
+      test: /\.less$/,
+      use: [MiniCssExtractPlugin.loader, 'css-loader', 'less-loader'],
+    },
+    {
+      test: /(\.jsx|\.js)$/,
+      use: ['babel-loader'],
+      exclude: /node_modules/,
+    },
+  ],
+}
+
+// .babelrc
+{
+  "presets": ["@babel/preset-env"], // 一组预先设定的插件 默认支持所有最新的JS（ES2015，ES2016等）特定
+  "plugins": ["@babel/plugin-transform-runtime"]
+}
+```
+
+上面的babel-loader只会将 ES6/7/8语法转换为ES5语法，但是对新api并不会转换 例如(promise、Generator、Set、Maps、Proxy等)，可使用@babel/plugin-transform-runtime来解决问题。
+
+```js
+// main.js
+function test() {
+  return new Promise((resolve, reject) => {
+    setTimeout(() => {
+      resolve(1111);
+    }, 0);
+  });
+}
+
+async function main() {
+  const result = await test();
+  console.log(result);
+}
+
+main();
+
+```
+
+上面的实践是我们对webpack的功能有了一个初步的了解，但是要想熟练应用于开发中，我们需要一个系统的实战。让我们一起摆脱脚手架尝试自己搭建一个vue开发环境  
+
+## 二、区分开发环境与生产环境
+
+安装 webpack-merge 用于配置合并
+
+```js
+yarn add -D webpack-merge
+```
+
+提取webpack.common.js
+
+```js
+// webpack.common.js
+
+const path = require('path');
+const HtmlWebpackPlugin = require('html-webpack-plugin');
+const MiniCssExtractPlugin = require('mini-css-extract-plugin');
+const { VueLoaderPlugin } = require('vue-loader'); // vue加载器
+const FileListPlugion = require('../plugin/index');
+
+module.exports = {
+  // entry: path.resolve(__dirname, '../src/main.js'), // 入口文件
+  entry: {
+    main: path.resolve(__dirname, '../src/main.js'),
+    header: path.resolve(__dirname, '../src/header.js'),
+  },
+  output: {
+    filename: '[name].[hash:8].js', // 打包后的文件名称
+    path: path.resolve(__dirname, '../dist'), // 打包后的目录
+    clean: true,
+  },
+  plugins: [
+    new HtmlWebpackPlugin({
+      template: path.resolve(__dirname, '../public/index.html'),
+      filename: 'index.html',
+      chunks: ['main'],
+      title: 'main',
+      inject: 'body', // script文件插入到HTML中的位置 默认true
+    }),
+    new HtmlWebpackPlugin({
+      filename: 'header.html',
+      chunks: ['header'],
+      title: 'header22',
+      minify: true, // development 默认不压缩 production 默认压缩
+    }),
+    new MiniCssExtractPlugin({
+      filename: '[name].[hash].css',
+      chunkFilename: '[id].css',
+    }),
+    new FileListPlugion(),
+    new VueLoaderPlugin(),
+  ],
+  resolve: {
+    // 别名
+    alias: {
+      '@': path.resolve(__dirname, '../src'),
+    },
+  },
+  module: {
+    rules: [
+      {
+        test: /\.vue$/,
+        use: ['vue-loader'], // 解析.vue模板
+        include: [path.resolve(__dirname, '../src')],
+      },
+      {
+        test: /\.css$/,
+        use: [MiniCssExtractPlugin.loader, 'css-loader'], // 从右往左解析原则
+      },
+      {
+        test: /\.less$/,
+        use: [MiniCssExtractPlugin.loader, 'css-loader', 'less-loader'],
+      },
+      {
+        test: /(\.jsx|\.js)$/,
+        use: [
+          'babel-loader',
+          // path.resolve(__dirname, '../loader/drop-console.js'),
+        ],
+        exclude: /node_modules/,
+      },
+    ],
+  },
+};
+```
+
+#### **webpack.dev.js 开发环境配置文件**
+
+```js
+// 开发环境主要实现的是热更新,不要压缩代码，完整的sourceMap
+
+const { merge } = require('webpack-merge');
+const common = require('./webpack.common.js');
+const path = require('path');
+
+module.exports = merge(common, {
+  mode: 'development',
+  devServer: {
+    hot: true, // 热更新
+    open: true,
+    static: {
+      // 告诉服务器从哪里提供内容。只有在你希望提供静态文件时才需要这样做。
+      directory: path.resolve(__dirname, './public'),
+    },
+  },
+});
+```
+
+#### **webpack.prod.js 生产环境配置文件**
+
+```js
+// 生产环境主要实现的是压缩代码、提取css文件、合理的sourceMap、分割代码
+const { merge } = require('webpack-merge');
+const common = require('./webpack.common.js');
+
+module.exports = merge(common, {
+  mode: 'production',
+});
+```
+
+## 三、搭建vue开发环境 
+
+上面的小例子已经帮助而我们实现了打包css、图片、js、html等文件。 但是我们还需要以下几种配置
+
+#### 3.1 安装
+
+```js
+yarn add -D vue-template-compiler@2.6.14 vue-loader@15.9.8
+```
+
+注意 vue和vue-template-compiler版本号一定要一样，如果要更新vue，vue-template-compiler也要进行相应的更新，也要注意vue-loader的版本，这里使用vue2，安装15.9.8版本
+
+- vue-loader，用于解析.vue文件
+- vue-template-compiler，用于模板编译
+
+#### 3.2 配置
+
+```js
+// webpack.common.js
+
+const path = require('path');
+const HtmlWebpackPlugin = require('html-webpack-plugin');
+const MiniCssExtractPlugin = require('mini-css-extract-plugin');
+const { VueLoaderPlugin } = require('vue-loader'); // vue加载器
+const FileListPlugion = require('../plugin/index');
+
+module.exports = {
+  // entry: path.resolve(__dirname, '../src/main.js'), // 入口文件
+  entry: {
+    main: path.resolve(__dirname, '../src/main.js'),
+    header: path.resolve(__dirname, '../src/header.js'),
+  },
+  output: {
+    filename: '[name].[hash:8].js', // 打包后的文件名称
+    path: path.resolve(__dirname, '../dist'), // 打包后的目录
+    clean: true,
+  },
+  plugins: [
+    new HtmlWebpackPlugin({
+      template: path.resolve(__dirname, '../public/index.html'),
+      filename: 'index.html',
+      chunks: ['main'],
+      title: 'main',
+      inject: 'body', // script文件插入到HTML中的位置 默认true
+    }),
+    new HtmlWebpackPlugin({
+      filename: 'header.html',
+      chunks: ['header'],
+      title: 'header22',
+      minify: true, // development 默认不压缩 production 默认压缩
+    }),
+    new MiniCssExtractPlugin({
+      filename: '[name].[hash].css',
+      chunkFilename: '[id].css',
+    }),
+    new FileListPlugion(),
+    new VueLoaderPlugin(),
+  ],
+  resolve: {
+    // 别名
+    alias: {
+      '@': path.resolve(__dirname, '../src'),
+    },
+  },
+  module: {
+    rules: [
+      {
+        test: /\.vue$/,
+        use: ['vue-loader'], // 解析.vue模板
+        include: [path.resolve(__dirname, '../src')],
+      },
+      {
+        test: /\.css$/,
+        use: [MiniCssExtractPlugin.loader, 'css-loader'], // 从右往左解析原则
+      },
+      {
+        test: /\.less$/,
+        use: [MiniCssExtractPlugin.loader, 'css-loader', 'less-loader'],
+      },
+      {
+        test: /(\.jsx|\.js)$/,
+        use: [
+          'babel-loader',
+          // path.resolve(__dirname, '../loader/drop-console.js'),
+        ],
+        exclude: /node_modules/,
+      },
+    ],
+  },
+  externals: {
+    vue: 'Vue',
+    'vue-router': 'VueRouter',
+  },
+};
+```
+
+#### 3.3 vue文件内容
+
+index.html 引入vue、vue-routercdn资源
+
+```js
+<!-- vue模板 -->
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title><%= htmlWebpackPlugin.options.title %></title>
+    <script src="https://cdn.bootcdn.net/ajax/libs/vue/2.6.14/vue.min.js"></script>
+    <script src="https://cdn.bootcdn.net/ajax/libs/vue-router/3.5.3/vue-router.min.js"></script>
+  </head>
+  <body>
+    <div id="root"></div>
+  </body>
+</html>
+```
+
+入口main.js
+
+```js
+import App from './vue-views/App.vue';
+import router from './router';
+
+Vue.config.productionTip = false;
+
+new Vue({
+  router,
+  render: (h) => h(App),
+}).$mount('#root');
+
+```
+
+router/index.js
+
+```js
+Vue.use(VueRouter);
+
+const Home = () =>
+  import(/* webpackChunkName: "Home" */ '@/vue-views/home.vue');
+
+const About = () =>
+  import(/* webpackChunkName: "About" */ '@/vue-views/about.vue');
+
+const routes = [
+  { path: '/', component: Home },
+  { path: '/about', component: About },
+];
+const router = new VueRouter({ routes });
+
+export default router;
+```
+
+src/vue-views/App.vue
+
+```js
+<template>
+  <div class="app">
+    <router-link to="/">home</router-link>
+    <router-link to="/about">about</router-link>
+    <router-view />
+  </div>
+</template>
+<script>
+export default { name: 'App' };
+</script>
+<style scoped>
+.app {
+  font-size: 14px;
+  color: aquamarine;
+}
+</style>
+```
+
+src/vue-views/home.vue
+
+```js
+<!--  -->
+<template>
+  <div class="">home</div>
+</template>
+
+<script>
+export default {
+  //import所引入的组件注册
+  components: {},
+
+  data() {
+    return {};
+  },
+
+  //方法集合
+  methods: {},
+
+  //创建完成 访问当前this实例
+  created() {},
+};
+</script>
+<style scoped></style>
+
+```
+
+修改package.json配置
+
+```js
+"scripts": {
+    "dev": "webpack serve --config build/webpack.dev.js",
+    "build": "webpack --config build/webpack.prod.js"
+  },
+```
+
+## 四、优化webpack配置 
+
+### 4.1 优化前置内容 
+
+#### 4.1.1 编译进度条 
+
+一般来说，中型项目的首次编译时间为 5-20s，没个进度条等得多着急，通过 [progress-bar-webpack-plugin](https://www.npmjs.com/package/progress-bar-webpack-plugin)插件查看编译进度，方便我们掌握编译情况。
+
+```js
+yarn add progress-bar-webpack-plugin -D
+yarn add chalk@4.1.2 -D // chalk 5 是esm写法 cjs无法使用
+```
+
+```js
+// webpack.common.js
+
+const chalk = require('chalk');
+const ProgressBarPlugin = require('progress-bar-webpack-plugin');
+
+// 进度条
+new ProgressBarPlugin({
+  format: `  :msg [:bar] ${chalk.green.bold(':percent')} (:elapsed s)`,
+}),
+```
+
+包含内容、进度条、进度百分比、消耗时间，进度条效果如下：
+
+![](https://cdn.nlark.com/yuque/0/2022/png/739887/1671248720334-d810d09c-1171-4dcf-bd1b-fa24c11266f5.png)
+
+#### 4.1.2 编译速度分析
+
+优化 webpack 构建速度，首先需要知道是哪些插件、哪些 loader 耗时长，方便我们针对性的优化。
+通过 [speed-measure-webpack-plugin](https://www.npmjs.com/package/speed-measure-webpack-plugin)插件进行构建速度分析，可以看到各个 loader、plugin 的构建时长，后续可针对耗时 loader、plugin 进行优化。
+
+````js
+yarn add -D speed-measure-webpack-plugin
+````
+
+```js
+// webpack.dev.js
+// 打包速度分析
+const SpeedMeasurePlugin = require('speed-measure-webpack-plugin');
+const smp = new SpeedMeasurePlugin();
+
+module.exports = smp.wrap(
+  merge(common, {
+    mode: 'development',
+    devServer: {
+      hot: true, // 热更新
+      open: true,
+      static: {
+        // 告诉服务器从哪里提供内容。只有在你希望提供静态文件时才需要这样做。
+        directory: path.resolve(__dirname, './public'),
+      },
+    },
+  })
+);
+```
+
+#### 4.1.3 打包体积分析
+
+使用 [webpack-bundle-analyzer](https://www.npmjs.com/package/webpack-bundle-analyzer)查看打包后生成的 bundle 体积分析，将 bundle 内容展示为一个便捷的、交互式、可缩放的树状图形式。帮助我们分析输出结果来检查模块在何处结束。
+（1）安装
+
+```js
+yarn add webpack-bundle-analyzer -D
+```
+
+（2）配置
+
+```js
+//webpack.prod.js
+const BundleAnalyzerPlugin = require('webpack-bundle-analyzer').BundleAnalyzerPlugin; 
+
+plugins:[
+    new BundleAnalyzerPlugin()
+]
+
+```
+
+（3）运行 npm run build ，编译结束新开一个页面，默认8888端口，可以看到bundle之间的关系。
+
+### 4.2 优化打包速度 
+
+构建速度指的是我们每次修改代码后热更新的速度以及发布前打包文件的速度。
+
+使用最新的webpack版本， 通过webpack自身的迭代优化，来加快构建速度。
+
+这一点是非常有效的，如 webpack5 较于 webpack4，新增了持久化缓存、改进缓存算法等优化，webpack5 新特性可查看 [参考资料](https://zhuanlan.zhihu.com/p/56796027)。
+
+#### 4.2.1 缩小文件的搜索范围(配置include exclude alias extensions) 
+
+- alias: 当我们代码中出现 import 'vue'时， webpack会采用向上递归搜索的方式去node_modules 目录下找。
+
+​		○ 为了减少搜索范围我们可以直接告诉webpack去哪个路径下查找。也就是别名(alias)的配置。
+
+​		○ 也能使我们编写代码更加方便
+
+- include exclude 同样配置include exclude也可以减少webpack loader的搜索转换时间
+
+```js
+module: {
+  rules: [
+    {
+      test: /\.vue$/,
+      use: ['vue-loader'], // 解析.vue模板
+      include: [path.resolve(__dirname, '../src')],
+    },
+    {
+      test: /\.css$/,
+      use: [MiniCssExtractPlugin.loader, 'css-loader'], // 从右往左解析原则
+    },
+    {
+      test: /\.less$/,
+      use: [MiniCssExtractPlugin.loader, 'css-loader', 'less-loader'],
+    },
+    {
+      test: /(\.jsx|\.js)$/,
+      use: [
+        'babel-loader',
+        // path.resolve(__dirname, '../loader/drop-console.js'),
+      ],
+      exclude: /node_modules/,
+    },
+  ],
+},
+```
+
+- extensions webpack会根据extensions定义的后缀查找文件(频率较高的文件类型优先写在前面) 
+
+​		○ 如果有多个文件有相同的名字，但后缀名不同，webpack 会解析列在数组首位的后缀的文件 并跳过其余的后缀
+
+​		○ 但是要确保同一个目录下面没有重名的，不同后缀的文件
+
+```js
+// 创建 import 或 require 的别名，来确保模块引入变得更简单
+resolve: {
+  // 别名
+  alias: {
+    '@': path.resolve(__dirname, '../src'),
+  },
+  // 尝试按顺序解析这些后缀名。如果有多个文件有相同的名字，
+  // 但后缀名不同，webpack 会解析列在数组首位的后缀的文件 并跳过其余的后缀。
+  // 但是要确保同一个目录下面没有重名的 css 或者 js 文件
+  extensions: ['.js', '.json', '.vue'],
+},
+
+```
+
+#### 4.2.2 缓存Cache
+
+缓存生成的 webpack 模块和 chunk，来改善构建速度，无须在使用dll、cache-loader，使用cache帮助缓存。
+可以将构建过程的 webpack 模板进行缓存，大幅提升二次构建速度、打包速度，当构建突然中断，二次进行构建时，可以直接从缓存中拉取，可提速 90% 左右。
+cache
+
+- type  'memory' | 'filesystem'
+
+  ○ memory  webpack 在内存中存储缓存，不允许额外的配置
+  ○ filesystem 文件系统
+
+- store
+  ○ 当编译器空闲时，将缓存数据存放到一个文件中
+
+```js
+// webpack.common.js
+cache: {
+  type: 'filesystem', // string: 'memory' | 'filesystem' 内存/文件系统
+},
+```
+
+![](https://cdn.nlark.com/yuque/0/2022/png/739887/1671263951397-0bd0d3af-918e-4611-9047-a27a22273281.png)
+
+#### 4.2.3 多进程
+
+可以通过多进程来实现，试想将loader 放在一个独立的 worker 池中运行，就不会阻碍其他 loader 的构建了，可以大大加快构建速度。
+通过 [thread-loader](https://webpack.docschina.org/loaders/thread-loader/#root)将耗时的 loader 放在一个独立的 worker 池中运行，加快 loader 构建速度。
+[happypack](https://github.com/amireh/happypack)同样是用来设置多线程，但是在 webpack5 就不要再使用 [happypack](https://github.com/amireh/happypack)了，官方也已经不再维护了，推荐使用上文介绍的 thread-loader。
+
+```js
+yarn add -D thread-loader
+```
+
+```js
+{
+  test: /(\.jsx|\.js)$/,
+  use: [
+    'thread-loader',
+    'babel-loader',
+    // path.resolve(__dirname, '../loader/drop-console.js'),
+  ],
+  exclude: /node_modules/,
+}
+```
+
+由于 thread-loader 引入后，需要 0.6s 左右的时间开启新的 node 进程，本项目代码量小，可见引入 thread-loader 后，构建时间反而增加了。
+
+因此，我们应该仅在非常耗时的 loader 前引入 thread-loader。
+
+### 4.3 优化打包文件体积 
+
+打包的速度我们是进行了优化，但是打包后的文件体积却是十分大，造成了页面加载缓慢，浪费流量等，接下来让我们从文件体积上继续优化
+
+#### 4.3.1 externals 
+
+按照官方文档的解释，如果我们想引用一个库，但是又不想让webpack打包，并且又不影响我们在程序中以CMD、AMD或者window/global全局等方式进行使用，那就可以通过配置Externals。这个功能主要是用在创建一个库的时候用的，但是也可以在我们项目开发中充分使用 Externals的方式，我们将这些不需要打包的静态资源从构建逻辑中剔除出去，而使用 CDN 的方式，去引用它们。
+
+有时我们希望我们通过script引入的库，如用CDN的方式引入的jquery，我们在使用时，依旧用require的方式来使用，但是却不希望webpack将它又编译进文件中。这里官网案例已经足够清晰明了，大家有兴趣可以点击了解 
+
+```js
+externals: {
+  vue: 'Vue',
+  'vue-router': 'VueRouter',
+},
+```
+
+#### 4.3.2 JS压缩（Terser）
+
+使用 [TerserWebpackPlugin](https://link.juejin.cn/?target=https%3A%2F%2Fwebpack.docschina.org%2Fplugins%2Fterser-webpack-plugin%2F) 来压缩 JavaScript。webpack5 自带最新的 terser-webpack-plugin，无需手动安装。
+optimizatoin 优化，所有的优化都可以手动配置和重写。
+
+- minimizer 允许你通过提供一个或多个定制过的TerserPlugin实例，覆盖默认的压缩工具
+
+```js
+// webpack.prod.js
+const TerserWebpackPlugin = require('terser-webpack-plugin');
+
+optimization: {
+  minimizer: [
+    new TerserWebpackPlugin({
+      parallel: threads,
+    }),
+  ],
+},
+```
+
+#### 4.3.3 CSS压缩
+
+使用 [CssMinimizerWebpackPlugin](https://link.juejin.cn/?target=https%3A%2F%2Fwebpack.docschina.org%2Fplugins%2Fcss-minimizer-webpack-plugin%2F%23root) 压缩 CSS 文件，CssMinimizerWebpackPlugin 将在 Webpack 构建期间搜索 CSS 文件，优化、压缩 CSS。
+和 [optimize-css-assets-webpack-plugin](https://link.juejin.cn/?target=https%3A%2F%2Fgithub.com%2FNMFR%2Foptimize-css-assets-webpack-plugin) 相比，[css-minimizer-webpack-plugin](https://link.juejin.cn/?target=https%3A%2F%2Fwebpack.docschina.org%2Fplugins%2Fcss-minimizer-webpack-plugin%2F%23root) 在 source maps 和 assets 中使用查询字符串会更加准确，而且支持缓存和并发模式下运行。
+
+```js
+yarn add -D css-minimizer-webpack-plugin
+```
+
+```js
+// webpack.prod.js
+const CssMinimizerPlugin = require('css-minimizer-webpack-plugin');
+
+optimization: {
+  minimizer: [
+    new TerserWebpackPlugin({
+      parallel: threads,
+    }),
+    new CssMinimizerPlugin({
+      parallel: threads,
+    }),
+  ],
+},
+```
+
+#### 4.3.4 代码分离 
+
+代码分离能够把代码分离到不同的 bundle 中，然后可以按需加载或并行加载这些文件。代码分离可以用于获取更小的 bundle，以及控制资源加载优先级，可以缩短页面加载时间。
+
+抽取重复代码 SplitChunk
+
+```js
+// webpack.common.js
+optimization: {
+  splitChunks: {
+    // include all types of chunks
+    chunks: 'all',
+    // 重复打包问题
+    cacheGroups: {
+      vendors: {
+        // node_modules里的代码
+        test: /[\\/]node_modules[\\/]/,
+        chunks: 'all',
+        // name: 'vendors', 一定不要定义固定的name
+        priority: 10, // 优先级
+        enforce: true,
+      },
+    },
+  },
+}
+```
+
+**CSS 文件分离**
+
+```js
+yarn add -D mini-css-extract-plugin
+```
+
+#### 4.3.5 Tree Shaking(摇树)
+
+ 摇树，顾名思义，就是将枯黄的落叶摇下来，只留下树上活的叶子。枯黄的落叶代表项目中未引用的无用代码，活的树叶代表项目中实际用到的源码。
+但是要想使其生效，生成的代码必须是ES6模块
+通过 package.json 的 "sideEffects" 属性，来实现这种方式。
+
+```js
+{
+  "name": "your-project",
+  "sideEffects": false
+}
+```
+
+```js
+module.exports = {
+  mode: 'development', // 我们先使用开发模式下验证
+  devtool: 'cheap-module-source-map',  //使用source map的这个模式
+  optimization: {
+    usedExports: true,  // 表示开启使用tree shaking
+  },
+}
+```
+
+添加 TreeShaking 后，未引用的代码，将不会被打包
+
+设置mode为production的时候已经自动开启了tree-shaking。
+
+但是要想使其生效，生成的代码必须是ES6模块。不能使用其它类型的模块如CommonJS之流。
+
+#### 4.3.6 按需加载 
+
+通过 webpack 提供的 [import() 语法](https://link.juejin.cn/?target=https%3A%2F%2Fwebpack.docschina.org%2Fapi%2Fmodule-methods%2F%23import-1) [动态导入](https://link.juejin.cn/?target=https%3A%2F%2Fwebpack.docschina.org%2Fguides%2Fcode-splitting%2F%23dynamic-imports) 功能进行代码分离，通过按需加载，大大提升网页加载速度。
+
+使用方式如下：
+
+```js
+Vue.use(VueRouter);
+
+const Home = () =>
+  import(/* webpackChunkName: "Home" */ '@/vue-views/home.vue');
+
+const About = () =>
+  import(/* webpackChunkName: "About" */ '@/vue-views/about.vue');
+
+const routes = [
+  { path: '/', component: Home },
+  { path: '/about', component: About },
+];
+const router = new VueRouter({ routes });
+
+export default router;
+
+```
+
+## 五、手写webpack系列 
+
+经历过上面两个部分，我们已经可以熟练的运用相关的loader和plugin对我们的代码进行转换、解析。接下来我们自己手动实现loader与plugin，使其在平时的开发中获得更多的乐趣。
+
+### 5.1 手写webpack loader 
+
+loader从本质上来说其实就是一个node模块。
+
+loader编写原则
+
+- 单一原则: 每个 Loader 只做一件事；
+
+- 链式调用: Webpack 会按顺序链式调用每个 Loader；
+
+- 统一原则: 遵循 Webpack 制定的设计规则和结构，输入与输出均为字符串，各个 Loader 完全独立，即插即用； 
+
+在日常开发环境中，为了方便调试我们往往会加入许多console打印。但是我们不希望在生产环境中存在打印的值。那么这里我们自己实现一个loader去除代码中的console。
+
+知识点普及之AST。抽象语法树，将代码转化为树形的结构，可通过AST进行代码转换。这里推荐一篇不错的AST文章 [AST快速入门](https://link.juejin.cn/?target=https%3A%2F%2Fsegmentfault.com%2Fa%2F1190000016231512)
+
+```js
+npm i -D @babel/parser @babel/traverse @babel/generator @babel/types
+```
+
+- @babel/parser 将源代码解析成 AST
+
+- @babel/traverse 对AST节点进行递归遍历，生成一个便于操作、转换的path对象
+
+- @babel/generator 将AST解码生成js代码
+
+- @babel/types通过该模块对具体的AST节点进行进行增、删、改、查
+  新建drop-console.js
+
+  ```js
+  const parser = require('@babel/parser');
+  const traverse = require('@babel/traverse').default;
+  const generator = require('@babel/generator').default;
+  const t = require('@babel/types');
+  
+  module.exports = function (source) {
+    const ast = parser.parse(source, { sourceType: 'module' });
+    traverse(ast, {
+      CallExpression(path) {
+        if (
+          t.isMemberExpression(path.node.callee) &&
+          t.isIdentifier(path.node.callee.object, { name: 'console' })
+        ) {
+          // 
+          path.remove();
+        }
+      },
+    });
+  
+    const output = generator(ast, {}, source);
+  
+    return output.code;
+  };
+  ```
+
+  如何使用
+
+  ```js
+  // webpack.config.js
+  
+  const path = require('path');
+  const HtmlWebpackPlugin = require('html-webpack-plugin');
+  const MiniCssExtractPlugin = require('mini-css-extract-plugin');
+  
+  module.exports = {
+    mode: 'development', // 开发模式
+    // entry: path.resolve(__dirname, '../src/main.js'), // 入口文件
+    entry: {
+      main: path.resolve(__dirname, '../src/main.js'),
+      header: path.resolve(__dirname, '../src/header.js'),
+    },
+    output: {
+      filename: '[name].[hash:8].js', // 打包后的文件名称
+      path: path.resolve(__dirname, '../dist'), // 打包后的目录
+      clean: true,
+    },
+    plugins: [
+      new HtmlWebpackPlugin({
+        template: path.resolve(__dirname, '../public/index.html'),
+        filename: 'index.html',
+        chunks: ['main'],
+        title: 'main',
+        inject: 'body', // script文件插入到HTML中的位置 默认true
+      }),
+      new HtmlWebpackPlugin({
+        filename: 'header.html',
+        chunks: ['header'],
+        title: 'header22',
+        minify: true, // development 默认不压缩 production 默认压缩
+      }),
+      new MiniCssExtractPlugin({
+        filename: '[name].[hash].css',
+        chunkFilename: '[id].css',
+      }),
+    ],
+    module: {
+      rules: [
+        {
+          test: /\.css$/,
+          use: [MiniCssExtractPlugin.loader, 'css-loader'], // 从右往左解析原则
+        },
+        {
+          test: /\.less$/,
+          use: [MiniCssExtractPlugin.loader, 'css-loader', 'less-loader'],
+        },
+        {
+          test: /(\.jsx|\.js)$/,
+          use: [
+            'babel-loader',
+            path.resolve(__dirname, '../loader/drop-console.js'),
+          ],
+          exclude: /node_modules/,
+        },
+      ],
+    },
+    watch: true,
+  };
+  ```
+
+  实际上在webpack4中已经集成了去除console功能，在minimizer中可配置 [去除console](https://link.juejin.cn/?target=https%3A%2F%2Fwebpack.js.org%2Fplugins%2Fterser-webpack-plugin%2F%23root)
+
+  附上官网 [如何编写一个loader](https://link.juejin.cn/?target=https%3A%2F%2Fwebpack.docschina.org%2Fcontribute%2Fwriting-a-loader%2F)
+
+### 5.2 手写webpack plugin 
+
+在 Webpack 运行的生命周期中会广播出许多事件，Plugin 可以监听这些事件，在合适的时机通过Webpack提供的API改变输出结果。通俗来说：一盘美味的 [盐豆炒鸡蛋](https://link.juejin.cn/?target=https%3A%2F%2Fwww.meishij.net%2Fzuofa%2Fyandouchaojidan.html) 需要经历烧油 炒制 调味到最后的装盘等过程，而plugin相当于可以监控每个环节并进行操作，比如可以写一个少放胡椒粉plugin,监控webpack暴露出的生命周期事件(调味)，在调味的时候执行少放胡椒粉操作。那么它与loader的区别是什么呢？上面我们也提到了loader的单一原则,loader只能一件事，比如说less-loader,只能解析less文件，plugin则是针对整个流程执行广泛的任务。
+
+一个基本的plugin插件结构如下
+
+```js
+// 文件列表插件
+class FileListPlugion {
+  constructor(filename) {
+    this.filename = filename;
+  }
+  apply(compiler) {
+    compiler.hooks.done.tap('firstPlugin', () => {
+      console.log('编译完成');
+    });
+  }
+}
+
+module.exports = FileListPlugion;
+
+```
+
+compiler 、compilation是什么？
+
+- compiler 对象包含了Webpack 环境所有的的配置信息。这个对象在启动 webpack 时被一次性建立，并配置好所有可操作的设置，包括 options，loader 和 plugin。当在 webpack 环境中应用一个插件时，插件将收到此 compiler 对象的引用。可以使用它来访问 webpack 的主环境。
+
+- compilation对象包含了当前的模块资源、编译生成资源、变化的文件等。当运行webpack 开发环境中间件时，每当检测到一个文件变化，就会创建一个新的 compilation，从而生成一组新的编译资源。compilation 对象也提供了很多关键时机的回调，以供插件做自定义处理时选择使用。
+
+compiler和 compilation的区别在于  
+
+- compiler代表了整个webpack从启动到关闭的生命周期，而compilation 只是代表了一次新的编译过程
+- compiler和compilation暴露出许多钩子，我们可以根据实际需求的场景进行自定义处理
+
+webpack提供三种触发钩子的方法：
+tap：以同步的方式触发钩子
+tapAsync：以异步的方式触发钩子
+tapPromise：以异步的方式触发钩子，返回Promise
+
+发布订阅者模式的插件plugin机制
+
+[compiler钩子文档](https://link.juejin.cn/?target=https%3A%2F%2Fwww.webpackjs.com%2Fapi%2Fcompiler-hooks%2F) 
+[compilation钩子文档](https://link.juejin.cn/?target=https%3A%2F%2Fwww.webpackjs.com%2Fapi%2Fcompilation-hooks%2F)
+下面我们手动开发一个简单的需求,在生成打包文件之前自动生成一个关于打包出文件的大小信息
+新建一个webpack-firstPlugin.js
+
+```js
+// 文件列表插件
+class FileListPlugion {
+  constructor(filename) {
+    this.filename = filename;
+  }
+  apply(compiler) {
+    // compiler.hooks.done.tap('firstPlugin', () => {
+    //   console.log('编译完成');
+    // });
+    // 输出 asset 到 output 目录之前执行
+    compiler.hooks.emit.tap('FileListPlugin', (compilation) => {
+      let assets = compilation.assets;
+      let content = '';
+      Object.entries(assets).forEach(([filename, statObj]) => {
+        content += `文件名: ${filename} 大小：${statObj.size()} \n`;
+      });
+
+      console.log(content);
+    });
+  }
+}
+
+module.exports = FileListPlugion;
+
+```
+
+如何使用
+执行 npm run build即可看到在dist文件夹中生成了一个包含打包文件信息
+
+上面两个loader与plugin案例只是一个引导，实际开发需求中的loader与plugin要考虑的方面很多，建议大家自己多动手尝试一下。
+
+# **⼯程化⼯具**
+
+## **⼀、⼯具的⼯作模式**
+
+**1.** **模式：原⽣** **=>** **脚本加⼯** **=>** **⾃动化脚本加⼯**
+
+**2.** **代表作品：****gulp****、****grunt……** 
+
+## **⼆、经典流式构建⼯具** **—— gulp** 
+
+### gulp - 流式工程化
+
+#### 准备
+
+1. 安装
+   npm install -g gulp
+
+2. 新建依赖主入口gulpfile.js - 主文件脚本入口
+
+#### 工作方式 - 三步走
+
+```js
+  var gulp = require('gulp')
+  gulp.src('xxx.js')   // 获取流的api
+    .pipe(gulp.dest('dist/xxx.js'))  // 写文件的api
+```
+
+1. gulp.src() - 获取到想要处理的文件流
+
+```js
+  gulp.src(glob[, options]) // => 并非原本的文件流，而是虚拟文件对象流 => 减少对于实体文件的IO次数
+
+  // 1. globs 文件匹配模式
+  // 使用数组的方式来匹配多种文件
+  gulp.src(['./js/*.js'])
+
+  // 2. options 处理文件的配置项
+  // options.buffer - boolean返回buffer => false时 返回stream而非文件本身
+  // options.read - boolean文件内容返回 => 判断文件内容是或否读取返回 => false时候，file.content 返回空值
+  // options.base - 文件基础路径
+  gulp.src('zhaowa/js/**/*.js', {base: 'zhaowa'})
+```
+
+2. .pipe() - 把文件流通过pipe方法导入到gulp插件中
+
+```js
+  gulp.src('zhaowa/js/*.js')
+    .pipe(minify()) // 压缩 or 其他操作
+    .pipe(gulp.dest('build')) // 写入 'build/**/somefile.js'
+
+  gulp.src('zhaowa/js/*.js', { base:'zhaowa' })
+    .pipe(minify())
+    .pipe(gulp.dest('build')) // 面试题：产出是什么？和上面一样吗？
+    // 写入了'build/js/somefile.js'将zhaowa替换为build
+```
+
+3. gulp.dest() - 处理后的流内容写入到文件中
+
+```js
+  gulp.dest(path[, options])
+  // 1. path - 写入文件的路径
+  // 2. options可选参数
+    // options.mode - string 0777 所在目录的权限
+```
+
+4. gulp.watch() - 监视文件的变化，用以触发相应的任务流开展
+
+```js
+  gulp.watch(glob[, options], tasks);
+  // glob - 监视文件的匹配模式
+  // tasks - 文件变化后要执行的任务
+
+  // 创建任务
+  gulp.task('minify', function() {
+    // 任务内容
+  })
+  gulp.task('uglify', function() {
+    // 任务内容
+  })
+
+  // < 4.0
+  gulp.watch('./page/**/*.js', ['uglify', 'minify'])
+  // 4.0
+  gulp.watch(
+    './page/**/*.js',
+    gulp.parallel(
+      ['uglify', 'minify']
+    )
+  )
+```
+
+### 性能优化
+
+#### 1. 自我救赎 —— webpack自身升级的本质
+
+##### v3 => v4的升级
+
+* 配置项：
+
+1. 提出零配置的概念
+   => 不强制依赖webpack.config.js做配置 => 默认项
+   entry: ./src/index.js + output: ./dist/main.js
+   webpack-cli 分离安装
+
+2. 区分开了开发与编译态
+   => 提供mode区分 development & production
+   => 提升开发的编译效率 & 专注于编译产品
+
+3. 配置差异
+   移除了 commonTrunkPlugin => optimization.splitChunks
+
+##### v4优化方向 => 速度
+
+对于产品打包、开发编译速度都做了优化
+
+##### v4 => v5的升级
+
+1. 持久化缓存 - 构建结果持久化缓存到本地 => 直接利用缓存结果反向跳过构建部分步骤
+   module.exports = {
+     cache: {
+    type: 'fileSystem',
+    buildDependencies: {
+      config: [__filename]
+    }
+     }
+   }
+
+2. 资源模块
+   old
+   raw-loader | url-loader | file-loader
+
+new
+asset/resource
+asset/source  导出资源的源代码
+
+=> 优化取消资源文件引入的loader => 直接与路径关联优化配置
+
+3. 打包优化
+   优化了tree-shaking
+   优化splitchunk，支持更加全面精细的调整
+
+```js
+  splitChunks: {
+    chunks: 'all',
+    minSize: {
+      javascript: 30000,
+      style: 50000
+    }
+  }
+```
+
+=> v5 => 进一步优化配置 & 优化编译速度以及包大小
+
+#### 2. 外援辅助 —— webpack插件的帮忙
+
+##### 1. 缓存加速派
+
+cache-loader —— 指向性针对一些耗时的工作进行缓存
+terser-webpack-plugin | uglifyjs-webpack-plugin
+
+##### 2. 减肥瘦身派
+
+purifycss-webpack css未执行的部分自动删除
+optimize-css-assets-webpack-plugin css管理压缩
+
+##### 3. 贴心小助手派
+
+cleanWebpackPlugin 自动清理无用文件
+
+### 工程化进阶
+
+#### vite ——— 新一代效率导向工程化工具
+
+* 模式：
+
+1. 冷启动 / 冷服务 => 开发状态下不出包
+2. 热更新 => 更新源文件视图的直接更新
+3. 按需更新，不刷新所有节点，只更新改动部分
+
+* 原理对比：
+
+1. webpack - 编译支撑开发
+   src => 打包生成bundle => 启动dev—server => 建立开发环境
+   HMR把改动的模块以及相关依赖全部编译
+
+2. vite - 路由劫持 + 实时编译
+   启动dev-server => 直接请求所需模块的的路由，并直接实时编译（利用了新一代浏览器支持esm的能力）
+   HMR只需要只需要让浏览器重新请求该模块
+   => 利用浏览器的缓存机制（源码模块协商缓存、依赖模块强缓存）来优化资源请求
+
+* 开发环境 vs 正式环境 => 运行时 vs 编译打包
+  dev:
+
+1. 依赖预构建 cjs/UMD => ESM
+   => 面试：vite如何提高依赖于构建效率？
+2. 依赖缓存到node_modules/.vite
+   => 面试：如何更新缓存？有没有遇到缓存的坑？怎么解决的？ --force
+3. package.json / lockfile / vite.config.js => 三者之一发生变化 => 重新预构建
+4. 通过路由直接访问esm模块，通过浏览器缓存解析依赖进行强缓存优化
+
+prod:
+
+1. 依赖与rollup进行打包
+2. 整体同webpack
+
+##### 安装
+
+```js
+  // 安装vite
+  npm init vite-app zhaowa
+```
+
+一键式可以搭建完成vue3.0的环境
+
+###### 特性
+
+* 1. 原生支持ts
+
+```js
+  <script lang="ts"></script>
+```
+
+* 2. 原生文件的支持
+     支持json的直接打包引入
+
+```js
+  import mockData from '../mock.json'
+```
+
+支持css的直接引入
+
+```js
+  import '../reset.css'
+```
+
+* 3. 新增额外依赖配置
+     <!-- vite.config.js vite文档 config章节 -->
+
+#### 原理展现
+
+1. ESM为静态定义，编译时加载 => 生成只读引用
+2. 路由根据脚本进入，查找只读引用去模块内取值 => 运行时编译代码
+   （结合了浏览器缓存机制）
+3. 单vue文件进一步拆分
+4. 热更新 => 独立服务websocket去推送热更新的提醒
+
+#### 前端测试
+
+##### 单元测试
+
+* 1. 覆盖率
+
+```js
+  function top10(number, sum) {
+    if (number < 10) {
+      return sum += number;
+    }
+    return sum;
+  }
+
+  top10(8);
+  top9(9);
+  // 覆盖率 50%
+```
+
+* 2. 单元拆分定义 => 逻辑层面
+
+* 3. 环境准备
+
+```js
+  // 1. 安装依赖
+  npm i --save-dev jest
+  npm i @types/jest babel-jest @vue/test-utils@next @testing-library/jest-dom ts-jest vue-jest --save-dev
+
+  // 2. 配置babel
+  // 配置babel支持es6语法
+
+  // 3. 配置jest
+  // jest.config.js
+  // 单元测试用例
+```
+
+###### E2E 测试
+
+端到端测试 => 业务功能出发，不关注具体实现，只验证是否实现业务功能 => 测试提供case
+
+1. 安装
+   npm init -y
+   npm i -D cypress
 
 
 
@@ -55013,7 +56712,7 @@ https://www.yuque.com/lpldplws/web/tsii7l?singleDoc# 《现代hybrid发展史&fl
 
 https://github.com/umijs/qiankun/pull/1061
 
-https://github.com/jamiebuilds/the-super-tiny-compiler/blob/master/the-super-tiny-compiler.js
+![https://github.com/jamiebuilds/the-super-tiny-compiler/blob/master/the-super-tiny-compiler.js](https://cdn.nlark.chttps://cdn.nlark.com/yuque/0/2022/png/739887/1670518101565-6a67763a-8498-49a1-ad75-f46d986b8d34.pngm/yuque/0/2022/png/739887/1670518101565-6a67763a-8498-49a1-ad75-f46d986b8d34.png)
 
 https://getbyteoffer.feishu.cn/docx/H4ykdC8ZwokzJex1u9qcaH07nqd
 
