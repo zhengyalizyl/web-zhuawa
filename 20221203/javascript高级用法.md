@@ -56688,6 +56688,557 @@ prod:
    npm init -y
    npm i -D cypress
 
+# Web图形学： Canvas与WebGL 
+
+背景
+
+思考：Web图形学的范畴，有哪些典型应⽤？
+
+![web图形学](/Volumes/F/zyl-study/web-zhuawa/20221203/web图形学.jpg)
+
+### Echarts 项⽬案例（2D） 
+
+• https://echarts.apache.org/examples/zh/index.html 
+
+### ThreeJS 项⽬案例（3D） 
+
+• https://threejs.org/ 
+
+2D图形： SVG 
+
+可缩放⽮量图形（Scalable Vector Graphics，SVG）, SVG 格式提供的是⽮量图，这意味着它的图像能够被⽆限放⼤⽽不失真或降低质量。 
+
+探索⼀下svg的渲染及内部代码
+
+![paypal](/Volumes/F/zyl-study/web-zhuawa/20221203/paypal.jpg)
+
+SVG常⻅元素 
+
+```js
+<svg>：SVG的根元素，⽤于定义SVG⽂档的开始和结束。
+<rect>：绘制矩形的元素，可以通过指定位置、宽度和⾼度来定义矩形的形状。 
+<circle>：绘制圆形的元素，可以通过指定圆⼼坐标和半径来定义圆的形状。
+<ellipse>：绘制椭圆的元素，可以通过指定中⼼点坐标、⽔平和垂直半径来定义椭圆的形状。
+<line>：绘制直线的元素，可以通过指定起始点和结束点的坐标来定义直线的形状。
+<polyline>：绘制折线的元素，可以通过指定⼀系列连接的点坐标来定义折线的形状。
+<polygon>：绘制多边形的元素，可以通过指定⼀系列连接的点坐标来定义多边形的形状。 
+<path>：绘制路径的元素，可以通过指定⼀系列路径指令和参数来定义复杂的形状，如直线段、曲线、弧 
+<text>：⽤于在SVG中呈现⽂本的元素，可以指定⽂本内容、位置、字体样式等属性。 
+<g>：⽤于创建分组的元素，可以将多个元素组合在⼀起，并对整个组应⽤变换、样式等属性。 
+ 路径命令： 
+ M：移动到指定点（绝对坐标） 
+ m：移动到指定点（相对坐标） 
+ L：绘制直线到指定点（绝对坐标） 
+ l：绘制直线到指定点（相对坐标） 
+ H：绘制⽔平线（绝对坐标） 
+ h：绘制⽔平线（相对坐标）
+ V：绘制垂直线（绝对坐标） 
+ v：绘制垂直线（相对坐标） 
+ C：绘制三次⻉塞尔曲线（绝对坐标） 
+ c：绘制三次⻉塞尔曲线（相对坐标） 
+ S：平滑的三次⻉塞尔曲线（绝对坐标） 
+ s：平滑的三次⻉塞尔曲线（相对坐标） 
+ Q：绘制⼆次⻉塞尔曲线（绝对坐标） 
+ q：绘制⼆次⻉塞尔曲线（相对坐标） 
+ T：平滑的⼆次⻉塞尔曲线（绝对坐标） 
+ t：平滑的⼆次⻉塞尔曲线（相对坐标） 
+ A：绘制椭圆弧（绝对坐标） 
+ a：绘制椭圆弧（相对坐标） 
+ Z：关闭路径
+```
+
+### SVG的尺⼨ 
+
+探索width、height尺⼨对 svg渲染的影响 
+
+https://codepen.io/ricardocao-biker/pen/LYXEYxP 
+
+### 2D图形： Canvas 
+
+Canvas API 提供了⼀个通过JavaScript 和 HTML的 <canvas> 元素来绘制图形的⽅式。它可以⽤于动 
+
+画、游戏画⾯、数据可视化、图⽚编辑以及实时视频处理等⽅⾯。 
+
+#### 渲染上下⽂
+
+```js
+const context = canvas.getContext("2d");
+```
+
+#### 上下⽂类型： 
+
+• 2d ：创建⼀个⼆维渲染上下⽂ 
+
+• webgl ：创建⼀个三维渲染上下⽂
+
+### Canvas Context API 
+
+```js
+https://developer.mozilla.org/zh-CN/docs/Web/API/CanvasRenderingContext2D 
+fillStyle: 设置图形的填充颜⾊或样式。 
+strokeStyle: 设置图形的边框颜⾊或样式。 
+fillRect(x, y, width, height): 绘制⼀个填充的矩形。 
+strokeRect(x, y, width, height): 绘制⼀个矩形的边框。 
+clearRect(x, y, width, height): 清除指定矩形区域内的像素，使其变为透明。 
+beginPath(): 开始绘制路径。 
+moveTo(x, y): 将绘图游标移动到指定的坐标点。 
+lineTo(x, y): 绘制⼀条直线，从当前点到指定的坐标点。 
+closePath(): 封闭路径，连接起点和终点。
+fill(): 填充当前路径的内部区域。 
+stroke(): 绘制当前路径的边框。 
+arc(x, y, radius, startAngle, endAngle, clockwise): 绘制弧或圆。 
+drawImage(image, x, y): 在指定位置绘制图像。 
+translate(x, y): 平移坐标系统的原点。 
+scale(scaleX, scaleY): 缩放坐标系统。 
+rotate(angle): 旋转坐标系统。
+```
+
+### 坐标
+
+以左上⻆为起点，向右、向下计算x、y轴。
+
+![canvas](/Volumes/F/zyl-study/web-zhuawa/20221203/canvas.jpg)
+
+###  Canvas属性
+
+canvas标签只有两个属性：width和height，作为画布尺⼨ 
+
+```js
+<canvas id="myCanvas" width="150" height="150"></canvas>
+```
+
+问题：canvas的width和height与css中的width、height是什么关系？会冲突 
+
+么？
+
+https://codepen.io/ricardocao-biker/pen/ExOxGoN 
+
+实战：使⽤canvas绘制图形 
+
+1. 绘制矩形 
+
+context.fillRect(x, y, width, height) 
+
+2. 绘制路径步骤 
+
+a. 创建路径起始点 beginPath() 
+
+b. 画出路径 
+
+i. moveTo(x,y) 
+
+ii. lineTo(x, y) 
+
+c. 闭合路径 closePath() 
+
+d. 渲染图形 
+
+i. stroke() 描边 
+
+ii. fill() 填充 
+
+https://codepen.io/ricardocao-biker/pen/rNQBLNb 
+
+探索：Echarts是如何通过canvas绘制图表？ 
+
+Echarts在canvas绘制库 ZRender的上层进⾏继续封装。
+
+![zrender](/Volumes/F/zyl-study/web-zhuawa/20221203/zrender.jpg)
+
+
+
+⽂档：https://ecomfe.github.io/zrender-doc/public/api.html 
+
+使⽤：https://codepen.io/ricardocao-biker/pen/zYMxrBG 
+
+### 实战： 使⽤Echarts绘制图表 
+
+https://codepen.io/ricardocao-biker/pen/YzRPBjB?editors=1010 
+
+#### 使⽤框架：基于React/Vue的Echarts 
+
+• https://github.com/ecomfe/vue-echarts 
+
+• https://github.com/hustcc/echarts-for-react 
+
+#### ⾼频⾯试题： 
+
+Canvas和SVG的区别是什么？如何技术选型？
+
+|        | 操作对象        | 渲染方式 | 适用场景             |
+| ------ | --------------- | -------- | -------------------- |
+| canvas | 像素            | 像素     | 性能优先，自由度优先 |
+| svg    | XML矢量描述标签 | DOM      | 缩放还原度优先       |
+
+更⽣动的回答：根据具体场景举例 
+
+• 剪映Web端编辑器 / Canva可画编辑器 
+
+• ⼤数据量可视化 
+
+• 流程图编辑 
+
+## 3D图形：WebGL 
+
+OpenGL： 
+
+OpenGL是⼀种跨平台的图形编程接⼝，⽤于渲染2D和3D图形。它提供了⼀系列函数和命令，⽤于操作图形硬件以进⾏⾼性能的图形渲染。 
+
+WebGL（Web 图形库）是⼀个 JavaScript API，可在任何兼容的 Web 浏览器中渲染⾼性能的交互式 3D 和 2D 图形，⽽⽆需使⽤插件。WebGL 通过引⼊⼀个与 OpenGL ES 2.0 ⾮常⼀致的 API 来做到这⼀ 点，该 API 可以在 HTML5 <canvas> 元素中使⽤。这种⼀致性使 API 可以利⽤⽤⼾设备提供的硬件图形加速。 
+
+### 问题：openGL和WebGL是什么关系？ 
+
+WebGL（Web Graphics Library）则是⼀种基于OpenGL的Web标准，⽤于在Web浏览器中进⾏图形渲染。WebGL是HTML5的⼀部分，使⽤JavaScript API与浏览器的图形引擎进⾏交互，将OpenGL的 功能暴露给Web开发者。
+
+WebGL使⽤OpenGL ES 2.0着⾊器语⾔来编写顶点着⾊器和⽚段着⾊器 
+
+### WebGL核⼼概念 
+
+1. 顶点缓冲区（Vertex Buffer）：顶点缓冲区是存储顶点数据的内存缓冲区，⽤于描述3D模型的⼏何形状。开发者将顶点数据加载到顶点缓冲区中，然后通过WebGL绘制指令使⽤这些顶点进⾏渲染。 
+
+2. 着⾊器（Shader）：着⾊器是⼀段在GPU上执⾏的程序，⽤于控制WebGL渲染管线中的不同阶段。WebGL使⽤顶点着⾊器（
+
+Vertex Shader）和⽚元着⾊器（Fragment Shader）来处理顶点和像素的计算和渲染。 
+
+3. 纹理（Texture）：纹理是应⽤到3D模型表⾯的图像或图案。WebGL⽀持加载和使⽤纹理，可以将纹理映射到⼏何形状的表⾯，实现真实感和细节。 
+
+### WebGL 核⼼API 
+
+• gl.POINTS 
+
+• gl.LINES 
+
+• gl.TRIANGLES 
+
+只能会点、线、三⻆形，所有的图形都是通过 这三种基础图形构成。 
+
+![webGl](/Volumes/F/zyl-study/web-zhuawa/20221203/webGl.jpg)
+
+### 坐标系
+
+![webGL坐标系](/Volumes/F/zyl-study/web-zhuawa/20221203/webGL坐标系.jpg)
+
+### 绘图流程步骤 
+
+WebGL流程概览 
+
+1. 获取顶点坐标 
+
+2. 图元装配（即画出⼀个个三⻆形） 
+
+3. 光栅化（⽣成⽚元，即⼀个个像素点）
+
+![光栅化](/Volumes/F/zyl-study/web-zhuawa/20221203/光栅化.jpg)
+
+
+
+
+
+1. 获取顶点坐标
+
+![顶点坐标](/Volumes/F/zyl-study/web-zhuawa/20221203/顶点坐标.jpg)
+
+### 问题： 为什么要写⼊缓存区？ 
+
+#### 图元装配 
+
+![图元装配](/Volumes/F/zyl-study/web-zhuawa/20221203/图元装配.jpg)
+
+顶点着⾊器，它由opengl es编写，由javascript以字符串的形式定义并传递给GPU⽣成。 
+
+```js
+attribute vec4 position;
+uniform mat4 matrix;
+void main() {
+    gl_Position = position * matrix;
+}
+```
+
+attribute修饰符⽤于声明由浏览器（javascript）传输给顶点着⾊器的变量值； 
+
+position即我们定义的顶点坐标； 
+
+gl_Position是⼀个内建的传出变量; 
+
+矩阵matrix，将三维世界坐标转换成屏幕坐标，这个矩阵叫投影矩阵，由javascript传⼊
+
+![顶点着色器](/Volumes/F/zyl-study/web-zhuawa/20221203/顶点着色器.jpg)
+
+### 光栅化 
+
+在图元⽣成完毕之后，我们需要给模型“上⾊”，⽽完成这部分⼯作的，则是运⾏在GPU的“⽚元着⾊器”来完成。 
+
+它同样是⼀段opengles程序，模型看起来是什么质地（颜⾊、漫反射贴图等）、灯光等由⽚元着⾊器来计算
+
+![片元着色器](/Volumes/F/zyl-study/web-zhuawa/20221203/片元着色器.jpg)
+
+
+
+```js
+precision mediump float; 
+ void main(void) { 
+           gl_FragColor = vec4(1.0, 1.0, 1.0, 1.0); 
+}
+```
+
+gl_FragColor即输出的颜⾊值。 
+
+顶点着⾊器是有多少顶点，运⾏了多少次，⽽⽚元着⾊器则是，⽣成多少⽚元（像素），运⾏多少次。
+
+### WebGL完整⼯作流程 
+
+![webGl完整工作流程](/Volumes/F/zyl-study/web-zhuawa/20221203/webGl完整工作流程.jpg)
+
+### 整体流程
+
+![整体流程](/Volumes/F/zyl-study/web-zhuawa/20221203/整体流程.jpg)
+
+例⼦：使⽤WebGL实现⼀个正⽅体 
+
+https://codepen.io/ricardocao-biker/pen/NWEWXKO 
+
+### 3D图形框架：ThreeJS 
+
+ThreeJS提供了更简单、⾼级的⽅式来创建和渲染3D场景。提供了许多有⽤的功能和⼯具，如相机、 灯光、⼏何体、纹理映射、动画等，使开发者能够更轻松地构建复杂的3D场景。
+
+![threejs](/Volumes/F/zyl-study/web-zhuawa/20221203/threejs.jpg)
+
+⻩⾊和绿⾊部分，都是three.js参与的部分，其中⻩⾊是javascript部分，绿⾊是opengl es部分。 
+
+我们发现，能做的，three.js基本上都帮我们做了。 
+
+• 辅助我们导出了模型数据； 
+
+• ⾃动⽣成了各种矩阵； 
+
+• ⽣成了顶点着⾊器； 
+
+• 辅助我们⽣成材质，配置灯光； 
+
+• 根据我们设置的材质⽣成了⽚元着⾊器。 
+
+## ThreeJS核⼼概念 
+
+```js
+https://threejs.org/docs/index.html#manual/en/introduction/Creating-a-scene 
+Scene（场景）：表⽰整个3D场景，⽤于存放和管理所有的物体、光源和相机。 
+（渲染器）：负责将场景中的3D物体渲染到屏幕上。您可以设置渲染器的参数，如画布⼤ ⼩、背景⾊、渲染模式等。 
+Camera（相机）：⽤于定义观察场景的视⻆和投影⽅式。
+Three.js提供了多种相机类型，如透视相机 （PerspectiveCamera）和正交相机（OrthographicCamera）。
+Object3D（对象）：是所有3D物体的基类，⽤于表⽰3D场景中的物体。可以设置对象的位置、旋转、 缩放和层次结构等属性。
+Geometry（⼏何体）：表⽰3D物体的⼏何形状。Three.js提供了许多预定义的⼏何体类型，如⽴⽅体 （BoxGeometry）、球体（SphereGeometry）和平⾯（PlaneGeometry），同时也⽀持⾃定义⼏何体。
+Material（材质）：定义物体的外观和渲染⽅式。Three.js提供了多种材质类型，如基本材质 （MeshBasicMaterial）、光照材质（MeshLambertMaterial）和Phong材质 （MeshPhongMaterial），还可以创建⾃定义材质。
+Mesh（⽹格）：将⼏何体和材质组合起来形成可渲染的物体。Mesh是Object3D的⼀个⼦类，它表⽰⼀个具有⼏何形状和外观的物体。
+Light（光源）：⽤于模拟场景中的光照效果。Three.js提供了多种光源类型，如环境光 （AmbientLight）、平⾏光（DirectionalLight）和点光源（PointLight）。 
+Texture（纹理）：⽤于将图像或视频应⽤到⼏何体上，以实现更丰富的外观效果。可以加载和创建纹 理，并将其应⽤于材质。
+Animation（动画）：⽤于实现物体的动画效果。Three.js提供了动画系统，可以定义和控制物体的 位置、旋转、缩放等属性随时间的变化。
+```
+
+### Camera 
+
+• PerspectiveCamera: 这⼀投影模式被⽤来模拟⼈眼所看到的景象，它是3D场景的渲染中使⽤得最 
+
+普遍的投影模式。 
+
+• OrthographicCamera: 在这种投影模式下，⽆论物体距离相机距离远或者近，在最终渲染的图⽚中 
+
+物体的⼤⼩都保持不变。 
+
+探索更多ThreeJS配置项 
+
+https://threejs.org/docs/#api/zh/lights/AmbientLight 
+
+### ThreeJS绘制步骤 
+
+![threejs绘制步骤](/Volumes/F/zyl-study/web-zhuawa/20221203/threejs绘制步骤.jpg)
+
+### 实战：使⽤ThreeJS绘制3D场景 
+
+https://codepen.io/ricardocao-biker/pen/jOQOaoX?editors=1010 
+
+#### 复杂模型的加载：
+
+Blender： https://www.blender.org/ 
+
+模型市场：https://sketchfab.com/
+
+```js
+// 创建 GLTFLoader 加载器 
+var loader = new THREE.GLTFLoader(); 
+// 加载 glTF ⽂件 
+loader.load(  './ford_mustang/scene.gltf', 
+            function (gltf) { 
+    // 加载成功回调函数 
+    // 获取 glTF 场景对象 
+    var model = gltf.scene; 
+    // 将模型添加到场景中 
+    scene.add(model); 
+    // 调整模型位置、旋转等 
+    // 渲染循环 
+    function animate() { 
+        requestAnimationFrame(animate); 
+        // 在这⾥可以添加模型的动画或其他操作 
+        // 渲染场景 
+        renderer.render(scene, camera); 
+    } 
+    // 开始渲染循环 
+    animate(); 
+}, 
+            function (xhr) { 
+    // 正在加载回调函数 
+    console.log((xhr.loaded / xhr.total * 100) + '% loaded'); 
+}, 
+            function (error) { 
+    // 加载失败回调函数 
+    console.error('An error happened', error); 
+} 
+           );
+```
+
+### 使⽤框架： 
+
+React Three Fiber 
+
+在react下⽅便快速地使⽤封装的ThreeJS 
+
+### 官⽅⽂档：
+
+https://docs.pmnd.rs/react-three-fiber/getting-started/introduction 
+
+案例： 
+
+https://codesandbox.io/s/rrppl0y8l4?file=/src/App.js 
+
+#### ThreeJS with Vue 
+
+#### 官⽅⽂档： 
+
+https://github.com/troisjs/trois 
+
+#### 探索更多 
+
+https://github.com/brunosimon/my-room-in-3d 
+
+#### Threejs学习更多 
+
+Threejs journey
+
+# 低代码基础及实战
+
+## 低代码使⽤场景及意义 
+
+### 定义和概述 
+
+低代码是⼀种软件开发⽅法，团队可借助此⽅法在编写最少量代码的情况下开发数字解决⽅案并创建企业应⽤程序。 低代码开发平台为⽤⼾提供了⼀套⼯具、⾃定义代码组件和样板脚本。 然后，⽤⼾可以⾼效地开发新流程和应⽤程序‒ 所有这些任务都不需要编写⼤量的代码，也不需要执⾏脚本测试。 这些平台提供具有简单拖放功能的可视化开发环境。 
+
+核⼼构成 
+
+• 组件区：提供可以被反复拖拽的组件 
+
+• 配置区：可以定制化的配置每⼀个拖到设计区的组件 
+
+• 设计区：可以将组件拖拽到设计区，并移动位置 
+
+https://h2dwof.aliwork.com/dingtalk/web/APP_LJN42QU68MIWHN3D0D29/design/pageDesigner?formUuid=FORM-MFA66S91R2UB3XHJB314D6SPUN983E5AVF6JL5&
+
+![低代码核心构成](/Volumes/F/zyl-study/web-zhuawa/20221203/低代码核心构成.jpg)
+
+## 企业和开发者中的应⽤场景 
+
+### Shopify / Shopline 
+
+跨境电商店铺搭建⽹站 
+
+https://www.shopify.com/ 
+
+#### 更多低代码 
+
+https://github.com/taowen/awesome-lowcode 
+
+#### 优势和劣势
+
+![应用场景优势和劣势](/Volumes/F/zyl-study/web-zhuawa/20221203/应用场景优势和劣势.jpg)
+
+### 低代码搭建技术⽅案 
+
+组件
+
+• 可重⽤性和模块化 
+
+• 界⾯⼀致性和可定制性 
+
+```js
+// ⼀个具有界⾯⼀致性和可定制性的卡⽚组件 
+const Card = ({ title, content, backgroundColor, textColor }) => { 
+    const cardStyle = {
+        backgroundColor: backgroundColor || "#FFFFFF", 
+        color: textColor || "#000000", 
+        padding: "16px", 
+        borderRadius: "8px", 
+        boxShadow: "0 2px 4px rgba(0, 0, 0, 0.1)", 
+    }; 
+    return ( 
+        <div style={cardStyle}> 
+        <h2>{title}</h2> 
+<p>{content}</p> 
+</div> 
+); 
+};
+// 使⽤卡⽚组件的⽰例
+const App = () => {
+    return (
+        <div>
+        <h1>我的应⽤程序</h1> 
+        <Card
+        title="欢迎使⽤低代码平台" 
+        content="这是⼀个具有界⾯⼀致性和可定制性的卡⽚组件⽰例。"
+        backgroundColor="#F5F5F5"
+        textColor="#333333"
+        />
+        </div>
+    ); 
+};
+// 渲染⽰例组件到根元素
+ ReactDOM.render(<App />, document.getElementById("root")); 
+        
+```
+
+• 交互和事件处理 
+
+• 可配置性和可扩展性 
+
+• ⽂档和⽰例 
+
+### 可拖拽 
+
+Drag Events（拖放事件）： 
+
+◦ dragstart ：当拖动操作开始时触发，通常在拖动源元素上使⽤。 
+
+◦ drag ：在拖动过程中持续触发，通常在拖动源元素上使⽤
+
+◦ dragenter ：当被拖动的元素进⼊可放置⽬标时触发，通常在⽬标元素上使⽤。 
+
+◦ dragover ：当被拖动的元素在可放置⽬标上⽅移动时触发，通常在⽬标元素上使⽤。需要阻⽌默认⾏为才能接受拖放。 
+
+◦ dragleave ：当被拖动的元素离开可放置⽬标时触发，通常在⽬标元素上使⽤。 
+
+◦ drop ：当被拖动的元素放置在可放置⽬标上时触发，通常在⽬标元素上使⽤。需要阻⽌默认⾏为才能接受拖放。 
+
+◦ dragend ：当拖动操作结束时触发，⽆论是成功放置还是取消拖放，通常在拖动源元素上使⽤。 
+
+## 数据与预览 
+
+我们需要⼀套统⼀的数据，⽤于承载⻚⾯信息
+
+![数据与预览-承载页面](/Volumes/F/zyl-study/web-zhuawa/20221203/数据与预览-承载页面.jpg)
+
+
+
+
+
+
+
 
 
 https://www.yuque.com/lpldplws/web/wsp422ie5fpedsn4?singleDoc# 《阿里前端面试官带你深度剖析面试真题&React Fiber源码解析》 密码：rgzl
