@@ -57413,6 +57413,32 @@ const renderComponent = (component) => {
 
 问题：配置选项有哪？
 
+## 低代码进阶及实战
+
+![低代码](/Volumes/F/zyl-study/web-zhuawa/20221203/低代码.png)
+
+[低代码的数据](https://vgbixa7nr9.feishu.cn/docx/NHdydNNquog9fzxkIrkcVnDknyc)
+
+## BUG修复
+
+- A组件和B组件的配置表单切换时没有刷新数值
+
+> key唯一值
+
+## UI优化
+
+- TopBar
+- DragOver时设计区active样式
+- 配置区优化
+
+## AntDesign组件支持
+
+除了支持我们自己内部封装的组件，当然我们还希望可以引入更多的第三方开源组件，以增强我们低代码平台的组件丰富度，如何实现第三方引入的npm库组件的引入呢？
+
+Antd文档：https://ant-design.gitee.io/components/button-cn
+
+
+
 
 
 https://www.yuque.com/lpldplws/web/wsp422ie5fpedsn4?singleDoc# 《阿里前端面试官带你深度剖析面试真题&React Fiber源码解析》 密码：rgzl
