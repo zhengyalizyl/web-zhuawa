@@ -57415,6 +57415,8 @@ const renderComponent = (component) => {
 
 ## 低代码进阶及实战
 
+https://vgbixa7nr9.feishu.cn/docx/NHdydNNquog9fzxkIrkcVnDknyc
+
 ![低代码](/Volumes/F/zyl-study/web-zhuawa/20221203/低代码.png)
 
 [低代码的数据](https://vgbixa7nr9.feishu.cn/docx/NHdydNNquog9fzxkIrkcVnDknyc)
@@ -57437,9 +57439,269 @@ const renderComponent = (component) => {
 
 Antd文档：https://ant-design.gitee.io/components/button-cn
 
+### 安装antd
 
+```js
+yarn add antd
+```
 
+### 引入组件并导出
 
+思考：除了引入组件之外还需要做什么？以达到设计区和配置区可以识别该组件的目的
+
+### 配置区表单的动态配置
+
+问题：字符串引发的prop异常导致antd组件
+
+### 增加样式配置
+
+> 通用样式配置区
+
+将style作为props中的一项参数处理。
+
+### 设计区内部拖动
+
+我们现在仅支持了组件区向设计区的拖动，并且只能添加到结尾处，如何实现设计区内部的拖动呢？
+
+```js
+import React, { useState } from 'react';
+
+const DesignArea = () => {
+  const [items, setItems] = useState(['Item 1', 'Item 2', 'Item 3', 'Item 4']);
+
+  const handleDragStart = (event, index) => {
+    event.dataTransfer.setData('text/plain', index);
+  };
+
+  const handleDragOver = (event) => {
+    event.preventDefault();
+  };
+
+  const handleDrop = (event, index) => {
+    event.preventDefault();
+
+    const dragIndex = event.dataTransfer.getData('text/plain');
+    const newItems = [...items];
+    const draggedItem = newItems[dragIndex];
+
+    newItems.splice(dragIndex, 1);
+    newItems.splice(index, 0, draggedItem);
+
+    setItems(newItems);
+  };
+
+  return (
+    <div>
+      <h3>设计区</h3>
+      {items.map((item, index) => (
+        <div
+          key={index}
+          draggable
+          onDragStart={(event) => handleDragStart(event, index)}
+          onDragOver={handleDragOver}
+          onDrop={(event) => handleDrop(event, index)}
+        >
+          {item}
+        </div>
+      ))}
+    </div>
+  );
+};
+
+export default DesignArea;
+
+```
+
+### 设计区层叠关系拖动
+
+> 参考https://h2dwof.aliwork.com/dingtalk/web/APP_LJN42QU68MIWHN3D0D29/design/pageDesigner?formUuid=FORM-MFA66S91R2UB3XHJB314D6SPUN983E5AVF6JL5&
+
+有些组件支持层叠嵌套逻辑，比如一个轮播容器组件 应该支持内部添加卡片组件
+
+- 层叠后，子组件成为父组件的children字段
+
+参考第三方库SortableJS：
+
+https://sortablejs.github.io/Sortable/#nested
+
+问题：**如何实现的层叠识别？**
+
+### 组件区可直接拖拽至设计区并定位最终位置
+
+我们需要实现从组件区拖拽过来即可直接实现层叠位置的确定，这样可以一步到位地直接完成组件位置的定位。
+
+**思路：为每一个节点增加onDrop事件处理函数，在节点间留出空隙，用于父级节点的drop空间。**
+
+```jsx
+import React, { useState } from 'react';
+
+// 示例的节点数据
+const json = {
+  id: 1,
+  title: 'Node 1',
+  children: [
+    {
+      id: 2,
+      title: 'Node 2',
+      children: []
+    },
+    {
+      id: 3,
+      title: 'Node 3',
+      children: []
+    }
+  ]
+};
+
+// 节点组件
+const Node = ({ node, onDrop }) => {
+  const [isDragging, setIsDragging] = useState(false);
+
+  // 拖拽开始时的事件处理函数
+  const handleDragStart = (e) => {
+    e.stopPropagation();
+    setIsDragging(true);
+  };
+
+  // 拖拽结束时的事件处理函数
+  const handleDragEnd = (e) => {
+    e.stopPropagation();
+    setIsDragging(false);
+  };
+
+  // 放置事件处理函数
+  const handleDrop = (e) => {
+    e.preventDefault();
+    setIsDragging(false);
+
+    // 获取被拖拽的节点的ID
+    const draggedNodeId = parseInt(e.dataTransfer.getData('text/plain'), 10);
+
+    // 调用父组件传递的回调函数，将节点放置为当前节点的子节点
+    onDrop(draggedNodeId, node.id);
+  };
+
+  return (
+    <div
+      draggable
+      onDragStart={handleDragStart}
+      onDragEnd={handleDragEnd}
+      onDrop={handleDrop}
+      className={`node ${isDragging ? 'dragging' : ''}`}
+    >
+      {node.title}
+      {node.children.map(child => (
+        <Node key={child.id} node={child} onDrop={onDrop} />
+      ))}
+    </div>
+  );
+};
+
+// 主组件
+const App = () => {
+  const [data, setData] = useState(json);
+
+  // 放置回调函数，用于处理节点放置的逻辑
+  const handleDrop = (draggedNodeId, targetNodeId) => {
+    // 根据节点ID查找被拖拽的节点和目标节点
+    const draggedNode = findNode(data, draggedNodeId);
+    const targetNode = findNode(data, targetNodeId);
+
+    // 在目标节点的子节点中添加被拖拽的节点
+    targetNode.children.push(draggedNode);
+
+    // 移除被拖拽的节点在原位置的引用
+    const parent = findParentNode(data, draggedNodeId);
+    parent.children = parent.children.filter(node => node.id !== draggedNodeId);
+
+    // 更新数据
+    setData({ ...data });
+  };
+
+  // 辅助函数，用于在数据中查找节点
+  const findNode = (node, targetNodeId) => {
+    if (node.id === targetNodeId) {
+      return node;
+    }
+    for (let child of node.children) {
+      const foundNode = findNode(child, targetNodeId);
+      if (foundNode) {
+        return foundNode;
+      }
+    }
+    return null;
+  };
+
+  // 辅助函数，用于在数据中查找节点的父节点
+  const findParentNode = (node, targetNodeId) => {
+    for (let child of node.children) {
+      if (child.id === targetNodeId) {
+        return node;
+      }
+      const parent = findParentNode(child, targetNodeId);
+      if (parent) {
+        return parent;
+      }
+    }
+    return null;
+  };
+
+  return (
+    <div>
+      <h1>Sortable Nodes</h1>
+      <Node node={data} onDrop={handleDrop} />
+    </div>
+  );
+};
+
+export default App;
+
+```
+
+### 页面搭建数据持久化
+
+我们希望搭建好的页面可以持久化地保存和二次编辑，我们需要处理全局JSON的保存和还原
+
+### 页面标签内缓存
+
+- 刷新可缓存
+- 关闭、新开标签后消失
+
+### 组件事件处理
+
+组件的事件抛出后，事件需要在全局层面进行处理，在其他组件中增加对指定事件的响应。
+
+- 全局事件监听、处理
+
+### 页面部署
+
+当我们完成低代码设计后，如何将该设计应用到线上呢？
+
+方案一：打包，部署打包后的代码
+
+**如何打包？**
+
+- 打包无需前端，后台可执行
+- 后端工程通过接口控制webpack打包
+
+> 缺点：对服务端压力大
+>
+> 优点：性能好
+
+方案二： 不打包，线上使用JSON渲染
+
+> 优点：足够灵活
+>
+> 缺点：注意安全，防止注入，对服务端压力小
+
+### 未来发展方向
+
+1. **拓展功能和扩展性：**未来的低代码平台将更加注重提供更丰富的功能和更高的可扩展性。开发人员将能够使用更多的组件、集成第三方服务和自定义代码来满足更复杂的应用需求。
+2. **增强用户体验**：用户体验将成为低代码平台发展的重要方向。平台将提供更直观、易用且美观的用户界面，使非技术人员能够轻松创建和定制应用程序，提高工作效率和用户满意度。
+3. **智能化和自动化**：低代码平台将更多地采用智能化和自动化技术，例如机器学习、自然语言处理和自动代码生成等。这些技术将帮助开发人员更快速地构建应用程序，减少手动工作量，提高开发效率。
+4. **多平台和跨设备支持**：未来的低代码平台将更好地支持多平台和跨设备的应用开发。开发人员将能够同时创建适用于多种操作系统和设备类型的应用程序，如移动设备、Web、桌面和物联网设备等。
+   1. > TailwindCSS的接入
+5. **更强的集成能力**：低代码平台将进一步加强与其他系统和服务的集成能力，如云服务、数据源、第三方API等。这将使开发人员能够轻松地连接和交互不同的系统，实现更强大的应用功能和数据流。
 
 https://www.yuque.com/lpldplws/web/wsp422ie5fpedsn4?singleDoc# 《阿里前端面试官带你深度剖析面试真题&React Fiber源码解析》 密码：rgzl
 
@@ -57455,11 +57717,7 @@ https://github.com/jamiebuilds/the-super-tiny-compiler/blob/master/the-super-tin
 
 https://www.yuque.com/lpldplws/web/zf77fb?singleDoc# 《微信小程序项目优化&开发实战》 密码：tdbo
 
-https://www.yuque.com/lpldplws/web/avn0gl?singleDoc# 《小程序课程课后习题汇总》 密码：nr6g
-
-https://www.yuque.com/lpldplws/web/tsii7l?singleDoc# 《现代hybrid发展史&flutter 与 dart 开发入门》 密码：ov0l
-
-
+https://www.yuque.com/lpldplws/web/avn0gl?singleDoc# 《小程序课程课后习题汇总》 密码：nr6
 
 https://github.com/umijs/qiankun/pull/1061
 
