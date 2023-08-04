@@ -1,7 +1,7 @@
 {
   "private": true,
   "author": "lizheng",
-  "name":"zyl",
+  "name":"sub-umi",
   "scripts": {
     "dev": "umi dev",
     "build": "umi build",
