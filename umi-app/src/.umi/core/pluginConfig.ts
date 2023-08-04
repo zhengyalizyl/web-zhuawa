@@ -270,6 +270,11 @@ interface IConfigTypes {
     run: {
     globals?: (Array<string> | undefined);
 };
+    qiankun: {
+    slave?: ({ [x: string]: any } | undefined);
+    master?: ({ [x: string]: any } | undefined);
+    externalQiankun?: (boolean | undefined);
+};
 };
 
 type PrettifyWithCloseable<T> = {

@@ -3,6 +3,7 @@ import ReactDOM from 'react-dom/client';
 import { BrowserRouter } from 'react-router-dom';
 import './index.css';
 import App from './App';
+import './public-path.js'
 
 let root;
 //将render方法用函数包裹，供后续住应用和独立运行调用

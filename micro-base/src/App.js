@@ -13,6 +13,31 @@ function App() {
   const [selectedPath, setSelectedPath] = useState(
     routes.find(item => currentPath.includes(item.key))?.key || ''
   );
+
+    // 重写函数
+    const _wr = function (type) {
+      const orig = (window).history[type]
+      return function () {
+        const rv = orig.apply(this, arguments)
+        const e= new Event(type)
+        e.arguments = arguments
+        window.dispatchEvent(e)
+        return rv
+      }
+    }
+  
+    window.history.pushState = _wr('pushState')
+  
+    // 在这个函数中做跳转后的逻辑
+    const bindHistory = () => {
+      const currentPath = window.location.pathname;
+      setSelectedPath(
+        routes.find(item => currentPath.includes(item.key))?.key || ''
+      )
+    }
+  
+    // 绑定事件
+    window.addEventListener('pushState', bindHistory)
   
   return (
     <Layout>

@@ -109,13 +109,11 @@ import "/Volumes/F/zyl-study/web-zhuawa/umi-app/node_modules/core-js/modules/esn
 import "/Volumes/F/zyl-study/web-zhuawa/umi-app/node_modules/core-js/modules/esnext.map.update-or-insert.js";
 import "/Volumes/F/zyl-study/web-zhuawa/umi-app/node_modules/core-js/modules/esnext.map.upsert.js";
 import "/Volumes/F/zyl-study/web-zhuawa/umi-app/node_modules/core-js/modules/esnext.math.clamp.js";
-import "/Volumes/F/zyl-study/web-zhuawa/umi-app/node_modules/core-js/modules/esnext.math.deg-per-rad.js";
 import "/Volumes/F/zyl-study/web-zhuawa/umi-app/node_modules/core-js/modules/esnext.math.degrees.js";
 import "/Volumes/F/zyl-study/web-zhuawa/umi-app/node_modules/core-js/modules/esnext.math.fscale.js";
 import "/Volumes/F/zyl-study/web-zhuawa/umi-app/node_modules/core-js/modules/esnext.math.iaddh.js";
 import "/Volumes/F/zyl-study/web-zhuawa/umi-app/node_modules/core-js/modules/esnext.math.imulh.js";
 import "/Volumes/F/zyl-study/web-zhuawa/umi-app/node_modules/core-js/modules/esnext.math.isubh.js";
-import "/Volumes/F/zyl-study/web-zhuawa/umi-app/node_modules/core-js/modules/esnext.math.rad-per-deg.js";
 import "/Volumes/F/zyl-study/web-zhuawa/umi-app/node_modules/core-js/modules/esnext.math.radians.js";
 import "/Volumes/F/zyl-study/web-zhuawa/umi-app/node_modules/core-js/modules/esnext.math.scale.js";
 import "/Volumes/F/zyl-study/web-zhuawa/umi-app/node_modules/core-js/modules/esnext.math.seeded-prng.js";

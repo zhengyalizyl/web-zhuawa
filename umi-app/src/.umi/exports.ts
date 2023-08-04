@@ -13,4 +13,5 @@ export { terminal } from './core/terminal';
 export { TestBrowser } from './testBrowser';
 export const useServerInsertedHTML: Function = () => {};
 // plugins
+export { connectMaster, MicroAppLink } from '/Volumes/F/zyl-study/web-zhuawa/umi-app/src/.umi/plugin-qiankun-slave';
 // plugins types.d.ts

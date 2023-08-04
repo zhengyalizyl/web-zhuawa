@@ -8,10 +8,10 @@ import { getRoutes } from './core/route';
 import { createPluginManager } from './core/plugin';
 import { createHistory } from './core/history';
 import { ApplyPluginsType } from 'umi';
-
+import { genMount as qiankun_genMount, genBootstrap as qiankun_genBootstrap, genUnmount as qiankun_genUnmount, genUpdate as qiankun_genUpdate } from '@@/plugin-qiankun-slave/lifecycles';
 
 const publicPath = "/";
-const runtimePublicPath = false;
+const runtimePublicPath = true;
 
 async function render() {
   const pluginManager = createPluginManager();
@@ -33,7 +33,7 @@ async function render() {
     initialValue: {},
   });
 
-  const basename = contextOpts.basename || '/';
+  const basename = contextOpts.basename || '/sub-umi';
   const historyType = contextOpts.historyType || 'browser';
 
   const history = createHistory({
@@ -74,3 +74,12 @@ render();
 window.g_umi = {
   version: '4.0.73',
 };
+  
+
+export const bootstrap = qiankun_genBootstrap(render);
+export const mount = qiankun_genMount('root');
+export const unmount = qiankun_genUnmount('root');
+export const update = qiankun_genUpdate();
+if (!window.__POWERED_BY_QIANKUN__) {
+  bootstrap().then(mount);
+}

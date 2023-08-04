@@ -4,7 +4,7 @@ import qiankun from 'vite-plugin-qiankun';
 
 // https://vitejs.dev/config/
 export default defineConfig({
-  base:'sub-vue',//和基座中配置的activeRule一致
+  base:'/sub-vue',//和基座中配置的activeRule一致
   server:{
     port:3002,
     cors:true,
@@ -17,3 +17,4 @@ export default defineConfig({
     })
   ],
 })
+

@@ -1,6 +1,7 @@
 {
   "private": true,
-  "author": "lizheng <lizheng123<lily@timelinelabs.cn>>",
+  "author": "lizheng",
+  "name":"zyl",
   "scripts": {
     "dev": "umi dev",
     "build": "umi build",

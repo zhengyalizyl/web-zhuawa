@@ -1,24 +1,27 @@
-import logo from './logo.svg';
 import './App.css';
+import { Link, Routes, Route } from 'react-router-dom'
+import List from './pages/List';
+import Detail from './pages/Detail';
+
 
 function App() {
+  const goVue = () => {
+    window.history.pushState({}, '', '/sub-vue')
+  }
+
   return (
     <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/App.js</code> and save to reload.
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
-      </header>
+    <h2>react 子应用</h2>
+    <div className='menu'>
+      <Link to={'/'}>list</Link>
+      <Link to={'/detail'}>detail</Link>
+      <a onClick={goVue}>vue列表页</a>
     </div>
+    <Routes>
+      <Route path='/' element={<List />} />
+      <Route path='/detail' element={<Detail />} />
+    </Routes>
+  </div>
   );
 }
 
