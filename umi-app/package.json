@@ -1,7 +1,7 @@
 {
   "private": true,
   "author": "lizheng",
-  "name":"sub-umi",
+  "name": "sub-umi",
   "scripts": {
     "dev": "umi dev",
     "build": "umi build",
@@ -11,6 +11,7 @@
   },
   "dependencies": {
     "@umijs/plugins": "^4.0.73",
+    "axios": "^1.4.0",
     "umi": "^4.0.73"
   },
   "devDependencies": {

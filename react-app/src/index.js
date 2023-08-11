@@ -35,6 +35,8 @@ export async function mount(props){
 
 //应用每次切出/卸载会调用的方法，通常在这里我们会卸载微应用的应用实例
 export async function unmount(props){
-  root.unmount()
+  // root.unmount()
+  const { container } = props;
+  ReactDOM.unmountComponentAtNode(container ? container.querySelector('#root') : document.querySelector('#root'));
 }
 

@@ -12,7 +12,7 @@ export default defineConfig({
   },
   plugins: [
     vue(),
-    qiankun('sub-vue',{ //配置qiankun插件
+    qiankun('sub-vue',{ //配置qiankun插件，也就是放在windows上面是window.sub-vue
       useDevMode:true
     })
   ],

@@ -7,7 +7,7 @@ import router from './router';
 let app:any;
 if(!qiankunWindow.__POWERED_BY_QIANKUN__){
 
-  createApp(App).mount('#app')
+  createApp(App).mount('#app');//说明是单独渲染
 } else{
   renderWithQiankun({
      //子应用挂载

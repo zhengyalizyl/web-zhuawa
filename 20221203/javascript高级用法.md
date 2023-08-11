@@ -54986,8 +54986,15 @@ console.log(transToLet(code));
 
 # webpack
 
-
 https://www.yuque.com/lpldplws/web/itd4rdqaqqioga10?#《webpack》 密码：nn2p 
+
+```js
+const {Configuration} =require('webpack');
+/**
+ * @type {Configuration} //配置智能提示
+ *
+ */
+```
 
 ## webpack 核心概念 
 

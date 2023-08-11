@@ -14,13 +14,18 @@ root.render(
   </BrowserRouter>
 );
 
+const loader=(loading)=>{
+  console.log(loading);
+}
+
 //1.加载的子应用列表,下列的服务器一定要启动，不然会报TypeError: Failed to fetch at importHTML 错误
 const  apps=[ 
   {
   name:'sub-react',//子应用的名称
   entry:'//localhost:3001',//默认会加载这个路径下的html,解析里面的js
   activeRule:'/sub-react',//匹配的路由
-  container:'#sub-app'//加载的容器
+  container:'#sub-app',//加载的容器
+  loader,
 },
 {
   name: "sub-vue", // 子应用的名称
@@ -55,7 +60,11 @@ actions.setGlobalState(state);
 
 
 //3. 启动微服务
-start();
+start({
+  sandbox:{
+     experimentalStyleIsolation:true
+  }
+});
 
 
 
