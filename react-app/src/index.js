@@ -1,14 +1,15 @@
+import './public-path.js'
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 import { BrowserRouter } from 'react-router-dom';
 import './index.css';
 import App from './App';
-import './public-path.js'
 
 let root;
 //将render方法用函数包裹，供后续住应用和独立运行调用
 function render(props) {
   const { container } = props;
+  // console.log(container)
   const dom = container ? container.querySelector('#root') : document.getElementById('root');
   root = ReactDOM.createRoot(dom);
   root.render(<BrowserRouter basename='/sub-react'>
@@ -35,8 +36,9 @@ export async function mount(props){
 
 //应用每次切出/卸载会调用的方法，通常在这里我们会卸载微应用的应用实例
 export async function unmount(props){
-  // root.unmount()
   const { container } = props;
-  ReactDOM.unmountComponentAtNode(container ? container.querySelector('#root') : document.querySelector('#root'));
+  const root=container ? container.querySelector('#root') : document.querySelector('#root');
+  console.log(root, ReactDOM.unmountComponentAtNode,'-----root')
+  // ReactDOM.unmountComponentAtNode(container ? container.querySelector('#root') : document.querySelector('#root'));
 }
 

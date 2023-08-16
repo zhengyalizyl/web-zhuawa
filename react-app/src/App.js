@@ -2,6 +2,7 @@ import './App.css';
 import { Link, Routes, Route } from 'react-router-dom'
 import List from './pages/List';
 import Detail from './pages/Detail';
+import LOGO from './logo.svg'
 
 
 function App() {
@@ -12,6 +13,7 @@ function App() {
   return (
     <div className="App">
     <h2>react 子应用</h2>
+    <img src={LOGO}></img>
     <div className='menu'>
       <Link to={'/'}>list</Link>
       <Link to={'/detail'}>detail</Link>
