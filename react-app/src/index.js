@@ -30,7 +30,10 @@ export async function bootstrap(){
 
 //应用每次进入都会调用mount方法，通常我们在这里触发应用的渲染方法
 export async function mount(props){
-  render(props)
+  render(props);
+  props.onGlobalStateChange((value,prev)=>{
+      console.log("onGlobalStateChange",value,prev)
+  },true)
 }
 
 
@@ -38,7 +41,7 @@ export async function mount(props){
 export async function unmount(props){
   const { container } = props;
   const root=container ? container.querySelector('#root') : document.querySelector('#root');
-  console.log(root, ReactDOM.unmountComponentAtNode,'-----root')
+  // console.log(root.unmount, ReactDOM.unmountComponentAtNode,'-----root')
   // ReactDOM.unmountComponentAtNode(container ? container.querySelector('#root') : document.querySelector('#root'));
 }
 

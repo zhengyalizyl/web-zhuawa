@@ -3,8 +3,8 @@ import ReactDOM from 'react-dom/client';
 import { BrowserRouter } from 'react-router-dom'
 import './index.css';
 import App from './App';
-// import {start,registerMicroApps,initGlobalState} from 'qiankun'
-import  {start,registerMicroApps} from './micro-fe'
+import {start,registerMicroApps,initGlobalState} from 'qiankun'
+// import  {start,registerMicroApps} from './micro-fe'
 
 const root = ReactDOM.createRoot(
   document.getElementById('root')
@@ -49,15 +49,20 @@ registerMicroApps(apps,{
   afterMount: [async app => console.log('after mount', app.name)],
 })
 
-const state = { count: 1 }
+const state = { count: 1,isLogin:false }
 
-// const actions = initGlobalState(state);
-// // 主项目项目监听和修改
-// actions.onGlobalStateChange((state, prev) => {
-//   // state: 变更后的状态; prev 变更前的状态
-//   console.log(state, prev);
-// });
-// actions.setGlobalState(state);
+export const actions = initGlobalState(state);
+// 主项目项目监听和修改
+actions.onGlobalStateChange((state, prev) => {
+  // state: 变更后的状态; prev 变更前的状态
+  console.log(state, prev);
+});
+
+setTimeout(() => {
+  actions.setGlobalState({
+    count:2
+  });
+}, 5000);
 
 
 //3. 启动微服务

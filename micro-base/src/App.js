@@ -1,10 +1,12 @@
-import React,{useState} from 'react';
-import { Layout,Menu } from 'antd';
+import React,{useState,useEffect} from 'react';
+import { Button, Layout,Menu } from 'antd';
 import {Link,Routes,Route} from 'react-router-dom';
 import routes from './routes';
 import Home from './pages/Home';
 import logo from './logo.svg';
 import './App.css';
+import { useCallback } from 'react';
+import {actions} from './index'
 
 const { Sider, Header, Content } = Layout;
 function App() {
@@ -13,6 +15,26 @@ function App() {
   const [selectedPath, setSelectedPath] = useState(
     routes.find(item => currentPath.includes(item.key))?.key || ''
   );
+  const [isLogin,setLogin] =useState(false);
+
+  const handleStateChange=useCallback((state)=>{
+    if(isLogin!==state.isLogin){
+       setLogin(state.isLogin)
+    }
+ })
+
+   useEffect(()=>{
+        actions.onGlobalStateChange(handleStateChange);
+        return ()=>{
+          actions.offGlobalStateChange(handleStateChange)
+        }
+   },[isLogin])
+
+   const handleToggleLoginState=()=>{
+    actions.setGlobalState({
+      isLogin:!isLogin
+    })
+   }
 
     // 重写函数
     const _wr = function (type) {
@@ -40,6 +62,7 @@ function App() {
     window.addEventListener('pushState', bindHistory)
   
   return (
+    <>
     <Layout>
     <Sider collapsedWidth="0">
       <img src={logo} className='page-logo' alt="" />
@@ -66,6 +89,7 @@ function App() {
     <Layout>
       <Header style={{ padding: 0 }} />
       <Content style={{ margin: '24px 16px 0', height: '100%', background: '#fff', padding: '24px' }}>
+      <Button onClick={handleToggleLoginState}>{!isLogin?"点击登陆":"退出登陆"}</Button>
         {/* 主应用渲染区域 */}
         <Routes>
           <Route path="/" element={<Home />} />
@@ -76,6 +100,7 @@ function App() {
       </Content>
     </Layout>
   </Layout>
+  </>
   );
 }
 

@@ -1,0 +1,15 @@
+{
+  "name": "qainkun",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "import-html-entry": "^1.15.0",
+    "path-to-regexp": "^6.2.1"
+  }
+}

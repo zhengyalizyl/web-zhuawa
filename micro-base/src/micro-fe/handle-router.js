@@ -22,7 +22,6 @@ export const handleRouter = async () => {
   //获取上一个路由
   const prevApp=apps.find(item=>getPrevRoute().startsWith(item.activeRule))
   //获取下一个路由
-  console.log(window.location.pathname);
   let app = apps.find(item => getNextRoute().startsWith(item.activeRule));
    
   //如果有上一个应用则将上一个应用销毁

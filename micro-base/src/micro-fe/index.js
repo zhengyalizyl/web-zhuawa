@@ -5,7 +5,7 @@ let _apps = [];
 
 export const getApps = () => _apps;
 
-export const registerMicroApps = (apps,) => {
+export const registerMicroApps = (apps) => {
   _apps = apps;
 }
 
