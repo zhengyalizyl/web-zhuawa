@@ -37,4 +37,5 @@ export interface IInteralAppInfo extends IAppInfo{
    bootstrap?:LifeCycle;
    mount?:LifeCycle;
    unmount?:LifeCycle;
+   proxy?:any;
 }
