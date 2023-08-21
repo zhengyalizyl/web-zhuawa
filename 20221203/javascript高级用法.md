@@ -52990,25 +52990,19 @@ leader.handle();
 
 https://www.yuque.com/g/aliang-khvnv/kb/gss67kry0e7m6ehg/collaborator/join?token=fotRM4sX09Xqy4qa# 《微前端(上)》
 
-微前端背景 
+### 微前端背景 
 
-2014年：Martin Fowler和James Lewis共同提出了 微服务 的概念。微服务是⼀种开发软件的架 
-
-构和组织⽅法，其中软件由通过明确定义的API进⾏通信的 ⼩型独⽴服务 组成。 
+2014年：Martin Fowler和James Lewis共同提出了微服务的概念。微服务是⼀种开发软件的架构和组织⽅法，其中软件由通过明确定义的API进⾏通信的⼩型独⽴服务组成。 
 
 微服务的主要思路是： 
 
-● 将应⽤ 分解 为⼩的、互相连接的微服务，⼀个微服务完成某个 特定功能 。 
+● 将应⽤分解为⼩的、互相连接的微服务，⼀个微服务完成某个特定功能 。 
 
-● 每个微服务都有⾃⼰的业务逻辑和适配器，不同的微服务，可以使⽤ 不同的技术 去实现。 
+● 每个微服务都有⾃⼰的业务逻辑和适配器，不同的微服务，可以使⽤不同的技术去实现。 
 
-● 使⽤ 统⼀的⽹关 进⾏调⽤。 
+● 使⽤ 统⼀的⽹关进⾏调⽤。 
 
-可以看到微服务的主要思路是化繁为简，通过更加细致的划分，使得服务内部更加内聚，服务之间 
-
-耦合性降低，有利于项⽬的团队开发和后期维护。把微服务的概念应⽤到前端， 前端微服务/微前 
-
-端服务 就诞⽣了，简称其为微前端。 
+可以看到微服务的主要思路是化繁为简，通过更加细致的划分，使得服务内部更加内聚，服务之间耦合性降低，有利于项⽬的团队开发和后期维护。把微服务的概念应⽤到前端， 前端微服务/微前端服务就诞⽣了，简称其为微前端。 
 
 微前端的概念是由ThoughtWorks在2016年提出的。 
 
@@ -53016,17 +53010,11 @@ https://www.yuque.com/g/aliang-khvnv/kb/gss67kry0e7m6ehg/collaborator/join?token
 
 2019年: 基于single-spa的qiankun问世。 
 
-2020年：Module Federation(webpack5）把项⽬中模块分为本地模块和远程模块，远程模块不 
+2020年：Module Federation(webpack5）把项⽬中模块分为本地模块和远程模块，远程模块不属于当前构建，在运⾏时从所谓的容器加载。加载远程模块是异步操作。当使⽤远程模块时，这些 异步操作将被放置在远程模块和⼊⼝之间的下⼀个chunk的加载操作中，从⽽实现微前端的构建。
 
-属于当前构建，在运⾏时从所谓的容器加载。加载远程模块是异步操作。当使⽤远程模块时，这些 
+### 本期课程两部分 
 
-异步操作将被放置在远程模块和⼊⼝之间的下⼀个chunk的加载操作中，从⽽实现微前端的构建。
-
-本期课程两部分 
-
-第⼀部分主要讲解微前端解决的问题，微前端的特点，如何实现微前端，并以qiankun为例，教⼤家我们 
-
-的应⽤如何接⼊微前端。 
+第⼀部分主要讲解微前端解决的问题，微前端的特点，如何实现微前端，并以qiankun为例，教⼤家我们的应⽤如何接⼊微前端。 
 
 第⼆部分主要讲解微前端的核⼼实现原理，并⼿把⼿从0-1实现简单的微前端框架。 
 
@@ -53094,15 +53082,15 @@ https://www.yuque.com/g/aliang-khvnv/kb/gss67kry0e7m6ehg/collaborator/join?token
 
 ![micro-frontends-value](/Volumes/F/zyl-study/web-zhuawa/20221203/micro-frontends-value.jpg)
 
-● 技术栈⽆关 主框架不限制接⼊应⽤的技术栈，⼦应⽤可⾃主选择技术栈
+● 技术栈⽆关主框架不限制接⼊应⽤的技术栈，⼦应⽤可⾃主选择技术栈
 
-● 独⽴开发/部署 各个团队之间仓库独⽴，单独部署，互不依赖 
+● 独⽴开发/部署各个团队之间仓库独⽴，单独部署，互不依赖 
 
 ● 增量升级 当⼀个应⽤庞⼤之后，技术升级或重构相当麻烦，⽽微应⽤具备渐进式升级的特性 
 
-● 独⽴运⾏时 微应⽤之间运⾏时互不依赖，有独⽴的状态管理 
+● 独⽴运⾏时微应⽤之间运⾏时互不依赖，有独⽴的状态管理 
 
-● 提升效率 应⽤越庞⼤，越难以维护，协作效率越低下。微应⽤可以很好拆分，提升效率
+● 提升效率应⽤越庞⼤，越难以维护，协作效率越低下。微应⽤可以很好拆分，提升效率
 
 2. 微前端的意义 
 
@@ -53112,21 +53100,11 @@ https://www.yuque.com/g/aliang-khvnv/kb/gss67kry0e7m6ehg/collaborator/join?token
 
 任何新技术的产⽣都是为了解决现有场景和需求下的技术痛点，微前端也不例外： 
 
-1. 拆分和细化：当下前端领域，单⻚⾯应⽤（SPA）是⾮常流⾏的项⽬形态之⼀，⽽随着时间的推移 
-
-以及应⽤功能的丰富，单⻚应⽤变得不再单⼀⽽是越来越庞⼤也越来越难以维护，往往是改⼀处⽽
-
-动全身，由此带来的发版成本也越来越⾼。微前端的意义就是将这些庞⼤应⽤进⾏拆分，并随之解 
-
-耦，每个部分可以单独进⾏维护和部署，提升效率。 
+1. 拆分和细化：当下前端领域，单⻚⾯应⽤（SPA）是⾮常流⾏的项⽬形态之⼀，⽽随着时间的推移 以及应⽤功能的丰富，单⻚应⽤变得不再单⼀⽽是越来越庞⼤也越来越难以维护，往往是改⼀处⽽动全身，由此带来的发版成本也越来越⾼。微前端的意义就是将这些庞⼤应⽤进⾏拆分，并随之解 耦，每个部分可以单独进⾏维护和部署，提升效率。 
 
 2. 整合历史系统：在不少的业务中，或多或少会存在⼀些历史项⽬，这些项⽬⼤多以采⽤⽼框架类似 
 
-（Backbone.js，Angular.js 1）的B端管理系统为主，介于⽇常运营，这些系统需要结合到新框架中 
-
-来使⽤还不能抛弃，对此我们也没有理由浪费时间和精⼒重写旧的逻辑。⽽微前端可以将这些系统
-
-进⾏整合，在基本不修改来逻辑的同时来同时兼容新⽼两套系统并⾏运⾏ 
+（Backbone.js，Angular.js 1）的B端管理系统为主，介于⽇常运营，这些系统需要结合到新框架中来使⽤还不能抛弃，对此我们也没有理由浪费时间和精⼒重写旧的逻辑。⽽微前端可以将这些系统进⾏整合，在基本不修改来逻辑的同时来同时兼容新⽼两套系统并⾏运⾏ 
 
 ## 微前端的能⼒ 
 
@@ -53185,19 +53163,7 @@ remote: 被其他应⽤所使⽤的应⽤
 
 介绍：
 
-● Custom elements（⾃定义元素）：⼀组JavaScript API，允许您定义custom elements及其⾏ 
-
-为，然后可以在您的⽤户界⾯中按照需要使⽤它们
-
-Shadow DOM（影⼦DOM）：⼀组JavaScript API，⽤于将封装的“影⼦”DOM树附加到元素（与
-
-主⽂档DOM分开呈现）并控制其关联的功能。通过这种⽅式，您可以保持元素的功能私有，这样它 
-
-们就可以被脚本化和样式化，⽽不⽤担⼼与⽂档的其他部分发⽣冲突。 
-
-HTML templates（HTML模板）： <template> 和 <slot> 元素使您可以编写不在呈现⻚⾯中显示 
-
-的标记模板。然后它们可以作为⾃定义元素结构的基础被多次重⽤ 
+● Custom elements（⾃定义元素）：⼀组JavaScript API，允许您定义custom elements及其⾏为，然后可以在您的⽤户界⾯中按照需要使⽤它们，Shadow DOM（影⼦DOM）：⼀组JavaScript API，⽤于将封装的“影⼦”DOM树附加到元素（与主⽂档DOM分开呈现）并控制其关联的功能。通过这种⽅式，您可以保持元素的功能私有，这样它们就可以被脚本化和样式化，⽽不⽤担⼼与⽂档的其他部分发⽣冲突。 HTML templates（HTML模板）： <template> 和 <slot> 元素使您可以编写不在呈现⻚⾯中显示 的标记模板。然后它们可以作为⾃定义元素结构的基础被多次重⽤ 
 
 1. 技术栈⽆关：Web Components是浏览器原⽣组件，那即是在任何框架中都可以使⽤。 
 
@@ -53221,8 +53187,6 @@ class CustomButton extends HTMLElement {
  disconnectedCallback() { alert('1') } }
 window.customElements.define('custom-button', CustomButton);
 ```
-
-
 
 1.4服务端拼接
 
@@ -53289,13 +53253,11 @@ single-spa 就做了两件事情：
 
 加载微应⽤（加载⽅法还得⽤户⾃⼰来实现） 
 
-管理微应⽤的状态（初始化、挂载、卸载）
+管理微应⽤的状态（q初始化、挂载、卸载）
 
 single-spa 仅仅是⼀个⼦应⽤⽣命周期的调度者。single-spa 借鉴了组件⽣命周期的思想，它为应⽤设 
 
-置了针对路由的⽣命周期。当应⽤匹配路由/处于激活状态时，应⽤会把⾃身的内容挂载到⻚⾯上；反之 
-
-则卸载。典型的 single-spa 由 html ⻚⾯、应⽤注册脚本、应⽤脚本⾃身构成。 
+置了针对路由的⽣命周期。当应⽤匹配路由/处于激活状态时，应⽤会把⾃身的内容挂载到⻚⾯上；反之 则卸载。典型的 single-spa 由 html ⻚⾯、应⽤注册脚本、应⽤脚本⾃身构成。 
 
 single-spa ⼜约定应⽤脚本包含以下⽣命周期： 
 
@@ -53315,7 +53277,7 @@ unload 之后会重新启动 bootstrap 流程；借助 unload 可实现热更新
 
 ### qiankun
 
-iankun 是⼀个基于 single-spa 的微前端实现库，旨在帮助⼤家能更简单、⽆痛的构建⼀个⽣产可⽤微前端架构系统。 
+qiankun 是⼀个基于 single-spa 的微前端实现库，旨在帮助⼤家能更简单、⽆痛的构建⼀个⽣产可⽤微前端架构系统。 
 
 qiankun 孵化⾃蚂蚁⾦融科技，在经过⼀批线上应⽤的充分检验及打磨后，我们将其微前端内核抽取出来并开源，希望能同时帮助社区有类似需求的系统更⽅便的构建⾃⼰的微前端系统，同时也希望通过区的帮助将 qiankun 打磨的更加成熟完善。 
 
@@ -53379,39 +53341,40 @@ import { BrowserRouter as Router, Link } from 'react-router-dom'
 import { Menu } from 'antd'
 import './App.css'
 const menus = [
- {
- key: 'Home',
- label: <Link to="/">主⻚</Link>,
- },
- {
- key: 'app-vue1',
- label: <Link to="/app-vue1">vue微应⽤1</Link>,
- },
- {
- key: 'app-vue2',
- label: <Link to="/app-vue2">vue微应⽤2</Link>,
- }, ];
+  {
+    key: 'Home',
+    label: <Link to="/">主⻚</Link>,
+  },
+  {
+    key: 'app-vue1',
+    label: <Link to="/app-vue1">vue微应⽤1</Link>,
+  },
+  {
+    key: 'app-vue2',
+    label: <Link to="/app-vue2">vue微应⽤2</Link>,
+  },];
 function App() {
- let style = {
- width: '100vw',
- height: '100vh',
- }
- return (
- <Router>
- <div className="App">
- <Menu
- style={{
- width: 256,
- }}
- theme="dark"
- mode="inline"
- items={menus}
- ></Menu>
- <h1>主应⽤启动成功</h1>
- <div id="micro-container" style={style}></div>
- </div>
- </Router>
- ) }
+  let style = {
+    width: '100vw',
+    height: '100vh',
+  }
+  return (
+    <Router>
+      <div className="App">
+        <Menu
+          style={{
+            width: 256,
+          }}
+          theme="dark"
+          mode="inline"
+          items={menus}
+        ></Menu>
+        <h1>主应⽤启动成功</h1>
+        <div id="micro-container" style={style}></div>
+      </div>
+    </Router>
+  )
+}
 
 ```
 
@@ -53422,18 +53385,18 @@ function App() {
 ```js
 // micro-app.js
 export const MicroApps = [
- {
- name: "vue1App",
- entry: "//localhost:3001",
- container: "#micro-container",
- activeRule: "/app-vue1",
- },
- {
- name: "vue2App",
- entry: "//localhost:3002",
- container: "#micro-container",
- activeRule: "/app-vue2",
- }, ];
+  {
+    name: "vue1App",
+    entry: "//localhost:3001",
+    container: "#micro-container",
+    activeRule: "/app-vue1",
+  },
+  {
+    name: "vue2App",
+    entry: "//localhost:3002",
+    container: "#micro-container",
+    activeRule: "/app-vue2",
+  },];
 ```
 
 我们在注册好了微应⽤，通过 start 函数后，我们需要在合适的地⽅调⽤ start 启动主应⽤。
@@ -53452,9 +53415,9 @@ registerMicroApps(MicroApps);
 start();
 const root = ReactDOM.createRoot(document.getElementById("root"));
 root.render(
- <React.StrictMode>
- <App />
- </React.StrictMode>
+  <React.StrictMode>
+    <App />
+  </React.StrictMode>
 );
 // If you want to start measuring performance in your app, pass a function
 // to log results (for example: reportWebVitals(console.log))
@@ -53496,21 +53459,26 @@ import App from './App.vue';
 Vue.config.productionTip = false;
 let instance = null;
 function render() {
- instance = new Vue({
- render: (h) => h(App),
- }).$mount('#app'); }
+  instance = new Vue({
+    render: (h) => h(App),
+  }).$mount('#app');
+}
 render();
 // 独⽴运⾏时
 if (!window.__POWERED_BY_QIANKUN__) {
- render(); }
+  render();
+}
 export async function bootstrap() {
- console.log('[vue1] vue1 app bootstraped'); }
+  console.log('[vue1] vue1 app bootstraped');
+}
 export async function mount(props) {
- console.log('[vue1] props from main framework mount', props);
- render(props); }
+  console.log('[vue1] props from main framework mount', props);
+  render(props);
+}
 export async function unmount() {
- instance.$destroy();
- instance = null; }
+  instance.$destroy();
+  instance = null;
+}
 ```
 
 在配置好了⼊⼝⽂件 main.js 后，我们还需要配置 webpack，使 main.js 导出的⽣命周期钩⼦函 数可以被 qiankun 识别获取。 
@@ -53520,21 +53488,22 @@ export async function unmount() {
 ```js
 const { name } = require("./package");
 module.exports = {
- devServer: {
- // 配置下⾯内容 否则主应⽤访问会报跨域
- headers: {
- // 配置跨域请求头，解决开发环境的跨域问题
- "Access-Control-Allow-Origin": "*",
- },
- port: "3001",
- },
- configureWebpack: {
- output: {
- library: `${name}-[name]`,
- libraryTarget: "umd", // 把微应⽤打包成 umd 库格式
- chunkLoadingGlobal: `webpackJsonp_${name}`,
- },
- }, }
+  devServer: {
+    // 配置下⾯内容 否则主应⽤访问会报跨域
+    headers: {
+      // 配置跨域请求头，解决开发环境的跨域问题
+      "Access-Control-Allow-Origin": "*",
+    },
+    port: "3001",
+  },
+  configureWebpack: {
+    output: {
+      library: `${name}-[name]`,
+      libraryTarget: "umd", // 把微应⽤打包成 umd 库格式
+      chunkLoadingGlobal: `webpackJsonp_${name}`,
+    },
+  },
+}
 ```
 
 我们需要重点关注⼀下 output 选项，当我们把 libraryTarget 设置为 umd 后，我们的 library 就暴露为所有的模块定义下都可运⾏的⽅式了，主应⽤就可以获取到微应⽤的⽣命周期钩⼦函数了。 
@@ -53543,12 +53512,11 @@ module.exports = {
 
 到这⾥，Vue 微应⽤就接⼊成功了！ 
 
-Public-path.js
+public-path.js
 
 ```js
 if (window.__POWERED_BY_QIANKUN__) {
- window.__webpack_public_path__ = window.__INJECTED_PUBLIC_PATH_BY_QIANKUN
-__
+ window.__webpack_public_path__ = window.__INJECTED_PUBLIC_PATH_BY_QIANKUN__
 }
 ```
 
@@ -53608,7 +53576,7 @@ qiankun https://qiankun.umijs.org/zh
 
 - - - activeRule - string | (location: Location) => boolean | Array<string | (location: Location) => boolean> - 必选，微应用的激活规则
 
-- - LifeCyclest
+- - LifeCycles
 
 - - - type Lifecycle = (app: RegistrableApp) => Promise<any>;
 
@@ -53726,19 +53694,19 @@ import { setAppList, getAppList } from './appList/index';
 import { setLifeCycle } from './lifeCycle/index';
 import { hackRoute, reRoute } from './route/index';
 export const registerMicroApps = (
- appList: IAppInfo[],
- lifeCycle?: ILifeCycle
+  appList: IAppInfo[],
+  lifeCycle?: ILifeCycle
 ) => {
- appList && setAppList(appList);
- lifeCycle && setLifeCycle(lifeCycle);
+  appList && setAppList(appList);
+  lifeCycle && setLifeCycle(lifeCycle);
 };
 export const start = () => {
-     const list = getAppList();
- if (!list.length) {
- throw new Error('请先注册应用');
- }
- hackRoute();
- reRoute(window.location.href);
+  const list = getAppList();
+  if (!list.length) {
+    throw new Error('请先注册应用');
+  }
+  hackRoute();
+  reRoute(window.location.href);
 };
 ```
 
@@ -53861,15 +53829,15 @@ export type EventType = 'hashchange' | 'popstate'
 ```js
 import { EventType } from '../types'
 import {
- runBoostrap,
- runBeforeLoad,
- runMounted,
- runUnmounted,
+  runBoostrap,
+  runBeforeLoad,
+  runMounted,
+  runUnmounted,
 } from '../lifeCycle'
 import { getAppListStatus } from '../utils'
 const capturedListeners: Record<EventType, Function[]> = {
- hashchange: [],
- popstate: [],
+  hashchange: [],
+  popstate: [],
 }
 // 劫持和 history 和 hash 相关的事件和函数
 // 然后我们在劫持的方法里做一些自己的事情
@@ -53879,80 +53847,80 @@ const originalReplace = window.history.replaceState
 let historyEvent: PopStateEvent | null = null
 let lastUrl: string | null = null
 export const reroute = (url: string) => {
- if (url !== lastUrl) {
- const { actives, unmounts } = getAppListStatus()
- Promise.all(
- unmounts
- .map(async (app) => {
- await runUnmounted(app)
- })
- .concat(
- actives.map(async (app) => {
- await runBeforeLoad(app)
-      await runBoostrap(app)
- await runMounted(app)
- })
- )
- ).then(() => {
- callCapturedListeners()
- })
- }
- lastUrl = url || location.href
+  if (url !== lastUrl) {
+    const { actives, unmounts } = getAppListStatus()
+    Promise.all(
+      unmounts
+        .map(async (app) => {
+          await runUnmounted(app)
+        })
+        .concat(
+          actives.map(async (app) => {
+            await runBeforeLoad(app)
+            await runBoostrap(app)
+            await runMounted(app)
+          })
+        )
+    ).then(() => {
+      callCapturedListeners()
+    })
+  }
+  lastUrl = url || location.href
 }
 const handleUrlChange = () => {
- reroute(location.href)
+  reroute(location.href)
 }
 export const hackRoute = () => {
- window.history.pushState = (...args) => {
- originalPush.apply(window.history, args)
- historyEvent = new PopStateEvent('popstate')
- args[2] && reroute(args[2] as string)
- }
- window.history.replaceState = (...args) => {
- originalReplace.apply(window.history, args)
- historyEvent = new PopStateEvent('popstate')
- args[2] && reroute(args[2] as string)
- }
- window.addEventListener('hashchange', handleUrlChange)
- window.addEventListener('popstate', handleUrlChange)
- window.addEventListener = hackEventListener(window.addEventListener)
- window.removeEventListener = hackEventListener(window.removeEventListener)
+  window.history.pushState = (...args) => {
+    originalPush.apply(window.history, args)
+    historyEvent = new PopStateEvent('popstate')
+    args[2] && reroute(args[2] as string)
+  }
+  window.history.replaceState = (...args) => {
+    originalReplace.apply(window.history, args)
+    historyEvent = new PopStateEvent('popstate')
+    args[2] && reroute(args[2] as string)
+  }
+  window.addEventListener('hashchange', handleUrlChange)
+  window.addEventListener('popstate', handleUrlChange)
+  window.addEventListener = hackEventListener(window.addEventListener)
+  window.removeEventListener = hackEventListener(window.removeEventListener)
 }
 const hasListeners = (name: EventType, fn: Function) => {
- return capturedListeners[name].filter((listener) => listener === fn).length
+  return capturedListeners[name].filter((listener) => listener === fn).length
 }
 const hackEventListener = (func: Function): any => {
- return function (name: string, fn: Function) {
- if (name === 'hashchange' || name === 'popstate') {
- if (!hasListeners(name, fn)) {
- capturedListeners[name].push(fn)
- return
- } else {
- capturedListeners[name] = capturedListeners[name].filter(
- (listener) => listener !== fn
- )
- }
- }
- return func.apply(window, arguments)
- }
+  return function (name: string, fn: Function) {
+    if (name === 'hashchange' || name === 'popstate') {
+      if (!hasListeners(name, fn)) {
+        capturedListeners[name].push(fn)
+        return
+      } else {
+        capturedListeners[name] = capturedListeners[name].filter(
+          (listener) => listener !== fn
+        )
+      }
+    }
+    return func.apply(window, arguments)
+  }
 }
 export function callCapturedListeners() {
- if (historyEvent) {
- Object.keys(capturedListeners).forEach((eventName) => {
- const listeners = capturedListeners[eventName as EventType]
- if (listeners.length) {
- listeners.forEach((listener) => {
- // @ts-ignore
- listener.call(this, historyEvent)
- })
- }
- })
- historyEvent = null
- }
+  if (historyEvent) {
+    Object.keys(capturedListeners).forEach((eventName) => {
+      const listeners = capturedListeners[eventName as EventType]
+      if (listeners.length) {
+        listeners.forEach((listener) => {
+          // @ts-ignore
+          listener.call(this, historyEvent)
+        })
+      }
+    })
+    historyEvent = null
+  }
 }
 export function cleanCapturedListeners() {
- capturedListeners['hashchange'] = []
- capturedListeners['popstate'] = []
+  capturedListeners['hashchange'] = []
+  capturedListeners['popstate'] = []
 }
 ```
 
@@ -54004,47 +53972,47 @@ const runJS = (value: string, app: IInternalAppInfo) => {
 
 ```js
 export class ProxySandbox {
- proxy: any
- running = false
- constructor() {
- const fakeWindow = Object.create(null)
- const proxy = new Proxy(fakeWindow, {
- set: (target: any, p: string, value: any) => {
- if (this.running) {
- target[p] = value
- }
- return true
- },
- get(target: any, p: string): any {
- switch (p) {
- case 'window':
- case 'self':
- case 'globalThis':
- return proxy
- }
- if (
- !window.hasOwnProperty.call(target, p) &&
- window.hasOwnProperty(p)
- ) {
- // @ts-ignore
- const value = window[p]
- if (typeof value === 'function') return value.bind(window)
- return value
- }
- return target[p]
- },
- has() {
- return true
- },
- })
- this.proxy = proxy
- }
- active() {
- this.running = true
- }
- inactive() {
- this.running = false
- }
+  proxy: any
+  running = false
+  constructor() {
+    const fakeWindow = Object.create(null)
+    const proxy = new Proxy(fakeWindow, {
+      set: (target: any, p: string, value: any) => {
+        if (this.running) {
+          target[p] = value
+        }
+        return true
+      },
+      get(target: any, p: string): any {
+        switch (p) {
+          case 'window':
+          case 'self':
+          case 'globalThis':
+            return proxy
+        }
+        if (
+          !window.hasOwnProperty.call(target, p) &&
+          window.hasOwnProperty(p)
+        ) {
+          // @ts-ignore
+          const value = window[p]
+          if (typeof value === 'function') return value.bind(window)
+          return value
+        }
+        return target[p]
+      },
+      has() {
+        return true
+      },
+    })
+    this.proxy = proxy
+  }
+  active() {
+    this.running = true
+  }
+  inactive() {
+    this.running = false
+  }
 }
 ```
 
