@@ -1,9 +1,13 @@
+import Nav from '@/components/nav'
 import React from 'react'
 
-function index() {
+const  BaseLayouts=(props:any)=>{
   return (
-    <div>index</div>
+    <div>
+      <Nav></Nav>
+      {props.children}
+      </div>
   )
 }
 
-export default index
+export default BaseLayouts

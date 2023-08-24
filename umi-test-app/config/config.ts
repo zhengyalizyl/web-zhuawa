@@ -1,6 +1,7 @@
 import { defineConfig } from 'umi';
 import theme from './theme';
 import routes from './routes';
+import proxy from './proxy';
 
 export default defineConfig({
   nodeModulesTransform: {//node-modules的编译
@@ -11,14 +12,10 @@ export default defineConfig({
   // ],
   routes,
   fastRefresh: {},//快速刷新
-
-  proxy:{
-    "/api":{
-      traget:'http://192.168.1.20:7999',
-      changeOrigin: true,
-      // pathRewrite: { '^/api': '' },
-    }
+  request:{
+    dataField:'',//因为useRequest返回的数据必须含有data字段，否则会报错
   },
+  proxy,
   antd:{
     mobile:false //需要将umi里面的插件关掉,使用我们安装的库
   },
