@@ -55002,6 +55002,69 @@ loader 被用于转换某些类型的模块,而插件则可以用于执行范围
 
 插件的范围包括,从打包优化和压缩,一直到重新定义环境中的变量。插件接口功能极其强大,可以用来处理各种各样的任务。
 
+#### loader和Plugin的区别
+
+##### loader
+
+编写原则：
+
+- 单一原则，每个loader只做一件事
+- 支持链式调用
+- 统一原则，输入和输出均为字符串，各个loader完全独立，即插即用
+
+- @babel/parser将源码解析成AST
+- @babel/traverse对AST进行遍历
+- @babel/generator将ast转换成js代码
+- @babel/types对AST节点进行增删改查
+
+```js
+const parser=require('@babel/parser');
+const traverse =require('@babel/traverse').default;
+const generator=require('@babel/generator').default;
+const t=require('@babel/types');
+
+module.exports=function (source){
+  const ast=parser.parse(source,{sourceType:'module'});
+  traverse(ast,{
+    CallExpression(path){
+      if(t.isMemberExpression(path.node.callee)&&t.isIdentifier(path.node.callee.object,{name:'console'})){
+        path.remove();
+      }
+    }
+  })
+
+  const  output=generator(ast,{},source);
+  return  output.code;
+}
+```
+
+##### plugin
+
+发布订阅模式
+
+```js
+class FileListPlugin{
+   constructor(filename){
+    this.filename =filename;
+   }
+
+   apply(compiler){
+    compiler.hooks.emit.tap('FileListPlugin',(compilation)=>{
+        let assets=compilation.assets;
+        let content='';
+        Object.entries(assets).forEach(([filename,stateObj])=>{
+            content+=`文件名：${filename} 大小:${stateObj.size()}\n`;
+        })
+        console.log(content)
+    })
+   }
+}
+
+module.exports=FileListPlugin;
+```
+
+
+
 #### webpack 构建流程 
 
 Webpack 的运行流程是一个串行的过程,从启动到结束会依次执行以下流程 :
@@ -55069,7 +55132,7 @@ module.exports = {
   },
 ````
 
-面试题：webpack打包产出特点？分为几大块？每块的作用？
+#### 面试题：webpack打包产出特点？分为几大块？每块的作用？
 
 1. 整体为立即执行函数 =》 每个模块都是IIFE =》 避免泄露 =》 webpack通过立即执行函数进行模块化隔离
 
@@ -55430,7 +55493,7 @@ module.exports = {
 
 Babel其实是几个模块化的包：
 
-- @babe-l/core：babel核心库
+- @babel/core：babel核心库
 - babel-loader：webpack的babel插件，让我们可以在webpack中运行babel
 - @babel/preset-env：将ES6转换为向后兼容的JavaScript，一组预先设定的插件 默认支持所有最新的JS（ES2015，ES2016等）特定
 - @babel/plugin-transform-runtime：处理async，await、import()等语法关键字的帮助函数
@@ -56308,7 +56371,7 @@ class FileListPlugion {
     this.filename = filename;
   }
   apply(compiler) {
-    compiler.hooks.done.tap('firstPlugin', () => {
+    compiler.hooks.done.tap('firstPlugin', (compilation) => {
       console.log('编译完成');
     });
   }
@@ -56379,7 +56442,7 @@ module.exports = FileListPlugion;
 
 **1.** **模式：原⽣** **=>** **脚本加⼯** **=>** **⾃动化脚本加⼯**
 
-**2.** **代表作品：****gulp****、****grunt……** 
+**2.** **代表作品：**gulp**、**grunt……
 
 ## **⼆、经典流式构建⼯具** **—— gulp** 
 
