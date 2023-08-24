@@ -13,6 +13,7 @@ export default{
               {
                 path: '/goods',
                 wrappers: ["wrappers/auth"],
+                title:'商品',
                 component: 'layouts/aside-layouts',
                 routes: [
                   { path: '/goods', component: 'pages/goods' },

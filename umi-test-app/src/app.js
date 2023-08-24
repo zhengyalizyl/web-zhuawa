@@ -1,4 +1,4 @@
-import { request, history } from "umi"
+import {  history,request} from "umi"
 
 let routesData = [];//动态路由
 export const render = async (oldRender) => {
@@ -14,9 +14,8 @@ export const render = async (oldRender) => {
 }
 
 
-
+//添加路由
 export const patchRoutes = ({ routes }) => {
-  console.log(routes)
   //添加一条数据，需要有exact:true,require
   // routes.push({
   //   exact:true,component:require('@/pages/404').default
@@ -57,3 +56,28 @@ const filterRoutes = (routesArr) => {
 
   })
 }
+
+
+export  const onRouteChange=({matchedRoutes,location,routes,action})=>{
+
+   document.title=matchedRoutes[matchedRoutes.length-1].route.title||'zyl'
+
+}
+
+// export const request={
+//   // errorConfig:{}//错误处理
+//   // timeout:1000,//延时
+//   // middlewares:[],使用中间件
+//    // 统一的请求设定
+//    timeout: 1000,
+//    headers: {'X-Requested-With': 'XMLHttpRequest'},
+//   requestInterceptors:[
+//     (url,options)=>{
+//       //请求
+//       options.headers={token:'1222'};
+//       return url
+//     }
+//   ],
+//   reponseInterceptors:[]
+// }
+
