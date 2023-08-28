@@ -56521,8 +56521,8 @@ module.exports = FileListPlugion;
   // 4.0
   gulp.watch(
     './page/**/*.js',
-    gulp.parallel(
-      ['uglify', 'minify']
+    gulp.parallel(//parallel先执行同步再执行异步任务
+      ['uglify', 'minify'] //正序执行
     )
   )
 ```
@@ -56554,6 +56554,7 @@ module.exports = FileListPlugion;
 ##### v4 => v5的升级
 
 1. 持久化缓存 - 构建结果持久化缓存到本地 => 直接利用缓存结果反向跳过构建部分步骤
+   ```js
    module.exports = {
      cache: {
     type: 'fileSystem',
@@ -56562,16 +56563,17 @@ module.exports = FileListPlugion;
     }
      }
    }
-
+   ```
+   
 2. 资源模块
    old
    raw-loader | url-loader | file-loader
 
-new
-asset/resource
-asset/source  导出资源的源代码
+​		new
+​		asset/resource
+​		asset/source  导出资源的源代码
 
-=> 优化取消资源文件引入的loader => 直接与路径关联优化配置
+​		=> 优化取消资源文件引入的loader => 直接与路径关联优化配置
 
 3. 打包优化
    优化了tree-shaking
@@ -56623,13 +56625,13 @@ cleanWebpackPlugin 自动清理无用文件
 
 2. vite - 路由劫持 + 实时编译
    启动dev-server => 直接请求所需模块的的路由，并直接实时编译（利用了新一代浏览器支持esm的能力）
-   HMR只需要只需要让浏览器重新请求该模块
+   HMR只需要让浏览器重新请求该模块
    => 利用浏览器的缓存机制（源码模块协商缓存、依赖模块强缓存）来优化资源请求
 
 * 开发环境 vs 正式环境 => 运行时 vs 编译打包
   dev:
 
-1. 依赖预构建 cjs/UMD => ESM
+1. 依赖预构建 cjs/UMD => ESM(只需要首次构建，剩下来的依赖于缓存机制)
    => 面试：vite如何提高依赖于构建效率？
 2. 依赖缓存到node_modules/.vite
    => 面试：如何更新缓存？有没有遇到缓存的坑？怎么解决的？ --force
@@ -56679,7 +56681,7 @@ prod:
 1. ESM为静态定义，编译时加载 => 生成只读引用
 2. 路由根据脚本进入，查找只读引用去模块内取值 => 运行时编译代码
    （结合了浏览器缓存机制）
-3. 单vue文件进一步拆分
+3. 单vue文件进一步拆分，分别拆分为模版，样式和脚本部分
 4. 热更新 => 独立服务websocket去推送热更新的提醒
 
 #### 前端测试
@@ -58699,4 +58701,202 @@ BFC不会影响外部元素
 
 
 https://www.electronjs.org/zh/docs/latest/api/desktop-capturer
+
+# 突击课-js
+
+## 面试方式
+
+特点：逐步挖掘、层层深入
+
+## 类型检查&快速区分
+
+### 1.JS有几种基础数据类型？几种新增？*
+
+JS 8种基础数据类型：undefined null boolean number string object | symbol bigInt
+
+symbol独一无二且不可变=>全局变量冲突、内部变量覆盖
+
+bigInt 任意精度正数，安全地存储和操作大数据，即便超出了number的安全整数范围
+
+### 2.基础数据类型通常会如何进行分类？使用起来有什么区别？是用过程中你是如何区别他们的？**
+
+可以分为：原始数据类型+引用数据类型
+
+原始数据类型：undefined null bollean number string
+
+引用数据类型：对象、数组、函数
+
+效果不同：
+
+原始数据类型直接赋值后，不存在引用关系
+
+属性引用关系
+
+存储位置不同：
+
+栈：原始数据类型=>先进后出栈维护结构=>栈区由编译器自动分配释放=>临时变量方式
+
+堆：引用数据类型=>堆内存由开发者进行分配=>直到应用结束
+
+原始数据放置在栈中，空间小、大小固定、操作频繁
+
+引用类型数据量大、大小不固定，赋值给的是地址
+
+### 3. 如何进行类型区别判断？几种对类型做判断区分的方式？*
+
+typeof
+
+```js
+typeof 2 //number
+typeof true //boolean
+
+//问题
+typeof {} //object
+typeof [] //object
+```
+
+=>有哪些需要注意的特例?
+
+```js
+typeof null;//object
+typeof NaN;//number
+```
+
+instanceof
+
+```js
+2 instanceof Number //true
+[] instanceof Array //true
+```
+
+那你能说说或者手写一下instanceof的原理实现? ***
+
+```js
+ function myInstance(left,right){
+    //获取对象的原型
+    let _proto=Object.getPrototypeOf(left);
+    //构造函数的prototype
+    let _prototype=right.prototype;
+    while(true){
+      if(!_proto){
+        return false;
+      }
+
+      if(_proto===_prototype){
+        return true;
+      }
+      _proto=Obejct.getPrototypeOf(_proto);
+
+    }
+ }
+```
+
+constructor
+
+```js
+(2).constructor === Number //true
+([]).constructor ===Array //true
+```
+
+=>隐患？***
+
+constructor代表的是构造函数指向的类型，可以被修改的
+
+```js
+function Fn(){}
+Fn.prototype=new Array();
+var f= new Fn();
+```
+
+Object.prototype.toString.call()
+
+```js
+let  a=Object.prototype.toString;
+a.call(2);//'[object Number]'
+a.call([]) //'[object Array]'
+```
+
+=>这里为啥要用call?同样是检测obj调用toString, obj.toString()的结果Object.prototype.toString.call(obj)结果不一样？为什么？ **
+
+保证toString是Object的原型方法，根据原型链知识，优先调用对象属性=>原型链
+
+=>当对象有某个属性和object的属性重名时，使用的顺序是什么样的？如果说优先使用Object属性，如何做?  **
+
+顺序：先使用对象中已有的某个属性，再跟着原型链查找
+
+做法：Object.prototype.toString.call()
+
+## 类型转换
+
+### 1. isNaN和Number.isNaN的区别？**
+
+isNaN包含了一个隐式转化
+
+isNaN=>接受参数=>尝试参数转成数字型=>不能被转成数字的参数，返回true=>非数字掺入返回true
+
+NUmber.isNaN=>接收参数=>判断参数是否为数字=>判断是否为NaN=>不会进行数据类型转换
+
+### 2.既然说到了类型转换，有没有其他的类型转换场景?***
+
+转成字符串:
+
+Null和undefined=>'null' ，‘undefined’
+
+Boolean=>‘true，’false'
+
+Number=>'数字'，大数据会转换成带有指数形式
+
+Symbol=>'内容'
+
+普通对象=>'[Object Object]'
+
+转成数字:
+
+undefined=>NaN
+
+Null=>0
+
+Boolean=>true|1,false|0
+
+String=>包含非数字的值NaN 空 0
+
+Symbol=>报错
+
+对象=>相应的基本值类型=>相应的转换
+
+转成Boolean:
+
+undefined|null|falsee|+0 -0|NaN |""=>false
+
+### 3.原始数据类型如何具有属性操作的?***
+
+前置知识:js的包装类型
+
+原始数据类型，在调用属性和方法时，js会在后台隐式的将本地类型转换成对象
+
+```js
+let a='zhaowa';
+a.length//6
+//js在收集阶段
+Object(a);//String{'zhaowa'}
+//去包装
+let a='zhaowa';
+let b=Object(a);
+let a=b.valueOf()//'zhaowa'
+```
+
+=>说说下面代码执行结果
+
+```js
+let  a= new Boolean(false);//=>Boolean{false}
+if(!a){
+console.log('hi zhaowa')//不打印
+}
+```
+
+## 数组操作
+
+1.数组的操作基本方法？如何使用? *
+
+
 
