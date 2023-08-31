@@ -57076,11 +57076,11 @@ Animation（动画）：⽤于实现物体的动画效果。Three.js提供了动
 
 ### Camera 
 
-• PerspectiveCamera: 这⼀投影模式被⽤来模拟⼈眼所看到的景象，它是3D场景的渲染中使⽤得最 
+-  PerspectiveCamera: 这⼀投影模式被⽤来模拟⼈眼所看到的景象，它是3D场景的渲染中使⽤得最 
 
 普遍的投影模式。 
 
-• OrthographicCamera: 在这种投影模式下，⽆论物体距离相机距离远或者近，在最终渲染的图⽚中 
+-  OrthographicCamera: 在这种投影模式下，⽆论物体距离相机距离远或者近，在最终渲染的图⽚中 
 
 物体的⼤⼩都保持不变。 
 
@@ -58161,9 +58161,7 @@ frame.contentWindow.xxx;
 回流
 回流又称重排，指改变几何属性的渲染。感觉“回流”较高大上，后续统称回流吧。
 
-可理解为将整个网页填白，对内容重新渲染一次。只不过以人眼的感官速度看浏览器回流是不会有任何变化的，若你拥有闪电侠的感官速度看浏览器回流(实质是将时间调慢)，就会发现每次回流都会将网页清空，从左上角第一个像素点从左到右从上到下这样一点一点渲染，直至右下角最后一个像素点。每次回流都会呈现该过程，只是感受不
-
-到而已。
+可理解为将整个网页填白，对内容重新渲染一次。只不过以人眼的感官速度看浏览器回流是不会有任何变化的，若你拥有闪电侠的感官速度看浏览器回流(实质是将时间调慢)，就会发现每次回流都会将网页清空，从左上角第一个像素点从左到右从上到下这样一点一点渲染，直至右下角最后一个像素点。每次回流都会呈现该过程，只是感受不到而已。
 
 渲染树的节点发生改变，影响了节点的几何属性，导致节点位置发生变化，此时就会触发浏览器回流并重新生成渲染树。回流意味着节点的几何属性改变，需重新计算并生成渲染树，导致渲染树的全部或部分发生变化。
 
@@ -59671,5 +59669,217 @@ function arrToTree(arr){
    }
 
 ```
+
+# 突击课 - vue
+ 框架一般问什么？
+ 1-2年：会熟悉使用
+ - 生命周期，使用上的
+ - 指令，use API
+
+ 3-5年
+ - 思想
+ - 方案，封装，亮点
+ - 性能
+ - 源码
+
+ 5-7年
+ - 框架无关，框架对比，核心思想（宿主环境）
+ - 源码，怎么养影响你的工作
+
+## 如果平时使用 react/vue,那么vue/react是否需要很深入？
+3-5年
+ react -- 是一个单向数据流，里面有fiber，每次更新，相当于重头遍历，数据的状态发生改变来驱动fiber的调度，react的灵活性高一点
+ vue -- 指令比较多，自己用起来不是很习惯，自己写过一个demo,通过数据劫持，监听到数据发生变化，通知视图把这个值改了，实战经验不是很丰富
+ 5-7年
+ 技术选型
+ 比如团队的技术栈，看具体场景
+
+
+## vue有哪些生命周期？以及各个生命周期做了些什么？
+ 生命周期，就是在一系列的流程中，在流程中间插入一下代码，让它执行
+
+- beforeCreate
+  - 组件的options都未被创建，el,data,methods data computed都还不能用
+- created
+  - 实例已经完成创建了，watch,event,data初始化完成了。没有挂载，$el无法挂载
+- beforeMount
+  - 现在数据已经被劫持了，下面是渲染到界面上去了
+- Mounted   
+  - 完成渲染和数据处理
+- beforeUpdate
+  - 已经是nextTick 了
+- updated
+  - 已经经历了一系列的patch,diff,调用updated
+- beforeDestory
+- destoryed
+  - 在一些清理逻辑完成以后，父子关系,watcher  
+
+## data是一个函数的原因以及如何理解vue的模块化？
+```js
+const data={message:'hello world'};
+
+const com1=new Vue({
+  el:'#app1',
+  data
+})
+
+const com2=new Vue({
+  el:'#app2',
+  data
+})
+
+```
+
+
+## vue的指令有哪些，如何书写自定义指令？
+Vue允许通过全局注册和局部注册两种方式，添加自定义的指令
+```js
+   Vue.directive('demo',{
+      //只调用一次，指令第一次绑定元素时调用，主要进行初始化
+      bind(el){
+
+      },
+      //被绑定元素插入父节点的时候调用
+      inserted(){},
+      //所在组件的vnode更新时调用
+      update(){},
+      //所在组件的Vnode更新后调用
+      compontentUpdated(){},
+      //只调用一次
+      unbind(){}
+   })
+```
+更偏向于给元素、组件做功能增强
+而不是去组合、加工、处理元素
+
+
+## 组件间不同参数方式有何优劣？
+有哪些？
+1. props / $emit - 用于父子组件之间通信
+   - 优点
+      - 简单，常见props有类型检查
+   - 缺点
+     - 跨级上优缺点
+
+2. $ref / $children | $parent - 用于指向性通信
+   - 优点
+      - 能够拿到父子组件的实例的
+   - 缺点
+      - 难以维护，打破了数据封装的  
+3. $attrs / $listener -隔代等监听型通信
+   - 常用队一些原生组件的一些封装      
+4. EventBus - 隔代、兄弟等非直接通信
+   - $emit,$on
+   - 优点 
+     - 原理简单，多层组件的事件传递
+   - 缺点
+     - 很难模块化
+     - 多人开发，容易造成一些bug
+     - $on, $off  
+5. provide / inject - 隔代广播等
+   - 解决一层层传递的问题
+   - 缺点
+     - 非响应式
+6. vuex - 整体状态机
+   - 多层组件的事件传播
+   - 单向数据流
+   - 统一状态管理
+
+
+## 什么是函数式组件，函数式组件注意项？
+
+## vue是如何实现数据驱动双向绑定？响应式是如何实现的？
+
+
+## v-mode的含义是什么？不同版本有何差异？
+```html
+<!-- vue2 -->
+ <input :value="foo" @input="foo=$event.target.value"/>
+ <!-- .sync的修饰符 -->
+  <input :value="foo" @update:value="foo=$event.target.value">
+```
+
+vue3
+了让v-model更好的针对多个属性进行双绑 
+ 1. 去掉了sync,原本的功能，有v-model来代替
+ 2. 对自定义组件使用v-model时，value -> modelValue
+ ```html
+ <input :value="foo" @update:modelValue="foo=$event.target.value" />
+ ```
+
+## vue3和vue2 diff对比
+vue3使用了最长上升子序列
+runtime-core/src/renderer.ts 2494行
+莱文斯坦最短编辑距离
+
+
+## computed 和watch 有何异同
+computed:
+ - 缓存，不支持异步
+ - 一般一个属性，可以由其他事属性计算而来，可以用
+watche：
+ - 无缓存，可异步
+ - immediate
+ - deep 
+
+## MVVM的含义以及如何实现一个迷你版MVVM框架？
+model-view:render -- 双向绑定
+view-model:DOM监听
+
+## vue3.0的特性有哪些？如何理解组合式编程？
+ - Proxy
+ - composition api
+ - patchFlag
+ - openBlock
+ - monorepo
+ - typescript
+
+## vue-router的核心功能？ $route和$router有何区别？
+$router 路由器，访问整个项目的路由结构
+router.beforeEach();
+router.afterEach();
+router.push();
+router.replace();
+router.go();
+router.back();
+router.forward();
+
+$route,静态的信息
+fullpath,hash,meta,query,path,params
+
+## vuex的状态管理流程？ 如何正确使用状态机?
+
+
+# 突击课 - react
+## 如何理解react组件状态？
+
+
+### 状态时同步还是异步?
+
+### 如何在异步情况，批量更新?
+
+
+## react组件的生命周期以及各阶段区别是什么？
+constructor
+getDerivedStateFromProps
+
+
+
+### react的hooks是怎么模拟生命周期的？
+
+
+## react的时间常见以及合成事件方式
+React 事件系统分为三个部分：
+1. 初始化注册
+2. 事件收集，注册事件
+3. 事件触发
+
+### react为什么要做一套自己的事件方式?
+
+### 为什么v17版本之后，事件会放到app上，而不是document上？
+
+
+
+
 
 
