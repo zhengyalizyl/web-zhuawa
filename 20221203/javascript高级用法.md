@@ -60211,8 +60211,11 @@ react-redux基于redux(作为一个数据管理工具，是无法触发视图更
 ### 模块化的方案
 
 ## 简述require的模块加载机制
+commonjs遵循的是，文件直接获取。node是commonjs的实现
+在node端，我的文件是直接可以fs.read
 
-
+### 为什么浏览器端，不能require?
+require的模块加载机制是通过文件的读取，和script上下文执行实现的，浏览器端不能读取文件
 ## 如何理解node的时间循环流程
 ```bash
 
@@ -60247,13 +60250,101 @@ react-redux基于redux(作为一个数据管理工具，是无法触发视图更
 
 ```
 
-## 如何秒速异步I/O的流程
+## 如何描述异步I/O的流程
 
+### 什么是阻塞/非阻塞？
+系统在接受输入的时候，再到输出的过程中，能不能接收其他的输入
+
+思考一个问题：多个任务执行时，存在I/O和cpu计算任务，如何合理地利用资源？
 #### 方案1:多线程
+线程之间要切换，代码要加锁
 #### 方案2:单线程+异步I/O
+- I/O是不能阻塞cpu的执行
+- 不要带来锁的问题
+- 性能要Ok
 
 ## 简述V8的垃圾回收机制以及关键点
 
-## 内存泄漏是什么？常见的内存泄漏原因以及排查方式是什么？
+### 为什么会产生垃圾
+```js
+   window.foo=function(){}
+   window.bar=Object.create({})
+   window.bar=1
+```
+栈｜window的指针｜
+堆｜window的变量｜foo的地址｜null｜
+堆｜function(){...}|{}|
 
+### 垃圾回收，是如何实现的
+引用计数
+a->b b->a
+
+标记清除
+从根节点触发，所有的能够索引到的，都不是垃圾，其它的都是垃圾
+
+- GC root
+  - 全局window/global对象
+  - DOM树
+  - 存在栈上的变量
+
+###  两个垃圾回收器 / 代际假说
+- Major 主垃圾回收器 / 老生代 / 老而不死的
+- Minor 副垃圾回收器 / 新生代 / 朝生夕死 / Scanvenge
+
+## 内存泄漏是什么？常见的内存泄漏原因以及排查方式是什么？
+1. 全局变量
+2. 函数闭包
+3. 事件监听
+
+检测方法：
+1. headdump，这个事一个npm包
+2. chrome devtools 
 ## websocket与常规的http有何区别？
+websocket是一个双向的通信协议。客户端可以通过upgrade一个http,升级websocket和服务器保持长链接
+http是一个在tcp协议之上的单向协议
+
+## 简述对于node的多进程架构的理解
+- Master - worker 的一个模式，主从模式
+- fork复制出一个独立的进程
+- libuv进行提供的
+
+## 如何创建子进程，以及子进程crash后如何自动重启
+- spawn
+```js
+// 在父进程中
+const cp=spawn('node','child.js',{
+  cwd:path.resove(proccess.cwd(),'./worker'),
+  stdio:['pipe','pipe',2]
+})
+
+//在子进程中
+process.stdout.write('sum'+sum)
+
+```
+- fork
+ stdio默认是ipc的方式
+- exec
+```js
+ const  cp= exec('node --version',{
+   cwd:path.resolve(process.cwd(),'./worker')
+ },function(err,stdout,stderr){
+
+ })
+
+```
+- execfile -传参是数组
+```js
+ const  cp= execFile('node ',['--version'],{
+   cwd:path.resolve(process.cwd(),'./worker')
+ },function(err,stdout,stderr){
+
+ })
+
+```
+
+### 如何重启
+- 一般在生产环境中，使用pm2进行进程守护，原理是，父进程监听子进程的退出事件，然后restart
+- 进行健康检查，定时启动启动一个进程，查询目标进程的健康状态
+
+## 简述koa的中间件原理
+https://github.com/koajs/compose/blob/master/index.js
