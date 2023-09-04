@@ -59074,7 +59074,7 @@ OPTIONS是一种HTTP请求方法
 d. 了解http协议的头部算法吗？如何降低开销？ **
 HPACK算法
   1) 客户端和服务端共同维护建立字典，引用索引来标识重复的字符串
-  2）通过编码算法压缩字符串，从而进一步减少头的大小
+    2）通过编码算法压缩字符串，从而进一步减少头的大小
 
 客户端、服务端利用字典来跟踪和实时存储之前发送的数据值，实时记忆
 对于相同的数据，不再通过每次请求和响应重复发送
@@ -59208,11 +59208,11 @@ TLS/SSL利用了身份验证 + 信息加密 + 完整性校验
   1）散列函数hash
   MD5.SHA1 ... => 单向不可逆，且输入敏感型，输出长度固定 => 任何对于数据的修改都会导致他值的变化
                => 验证信息的完整性
-  
+
   2）对称加密
   特点是两者共用一种密钥，同时用其进行加解密
         => 存在问题：如何保证密钥的传输安全性
-  
+
   3）非对称加密
   利用公钥和对应私钥的互相加解密能力进行加密
    => 存在问题：中间截取问题
@@ -59852,32 +59852,351 @@ fullpath,hash,meta,query,path,params
 
 # 突击课 - react
 ## 如何理解react组件状态？
+什么是状态？
+**web是一个状态机**
+ 
+ 1. 在react中，useState / this.setState,意味着状态发生改变
+    1. 源码里，有一个createUpdate的函数要执行
+    2. shared.pending = update;
+    3. processUpdateQueue 中去消费这个update
+ 2. react 是依靠状态进行视图更新的，状态的变化，意味着视图迭代到下一个状态
+ 3. 在开发工程中，我们的思路只需要围绕着，react在一些事件发生变化以后，当前界面的状态是什么样子
 
+对于react来说，相比较vue，状态的概念更加重要，我们可以把状态理解成为一种“快照”
+
+```vue
+<template>
+<div>{{msg}}</div>
+</template>
+<script>
+ export default{
+   data(){
+     return {
+      msg:'hello'
+     }
+   },
+     methods:{
+         handleClick:(){
+         this.msg="zyl"
+         }
+     }
+ }
+ // get: Dep.target && dep.add(Dep.target)
+ // set: dep.notify()
+</script>
+```
+
+react 修改数据的方法
+```js
+ this.setState({});
+ const [state,dispatch] =useState()
+ dispatch(action);
+ forceUpdate;
+ ReactDOM.render()
+```
 
 ### 状态时同步还是异步?
+v17版本
+```js
+ class Index extends React.Component{
+   state={count:1};
+   handleClick=()=>{
+      setTimeout(()=>{
+      this.setState()
+      this.setState()
+      this.setState()
+      },0)
+   }
+ }
+
+ batchedUpdate(handleClick)
+//相当于
+ isBatchingEventUpdate =true;
+setTimeout(()=>{
+ this.setState()
+ this.setState()
+ this.setState()
+},0)
+
+ isBatchingEventUpdate =false;
+```
+
+在通常情况下，React17的lagecy模式，或者更低版本，同步和异步，要看调用的方式
+如果setState在当前的任务中执行，则是异步的(batchedUpdate)
+如果使用了异步任务（定时器、事件、网络请求类似的）去执行state更新，则是同步的
+因为：isBatchingEventUpate已经变成了false
+
+在18中，都是异步的
 
 ### 如何在异步情况，批量更新?
+```js
+setTimeout(()=>{
+  unstable_batchUpdates(()=>{
+    this.setState();
+    this.setState();
+    this.setState();
+  })
+},0)
+
+```
+
+### 如果我想让某一个更新，优先级高一些
+```js
+  setTimeout(()=>{
+    this.setState()
+  },0)
+
+  ReactDOM.flushSync(()=>{
+    this.setState()
+  })
+ 
+```
 
 
 ## react组件的生命周期以及各阶段区别是什么？
 constructor
-getDerivedStateFromProps
+- 初始化state
+- 绑定this,如果我们有些防抖、节流，可以在这里做
+- 劫持生命周期
 
+getDerivedStateFromProps - 静态值
+ - 代替componentWillReceiveProps
+ - 返回值，与state合并完，作为shouldComponentUpdate的第二个参数 newState
+
+ ```js
+  static getDerivedStateFromProps(newProps){
+   const {type} = newProps;
+   switch(type){
+    case 'age'
+      return {name:'年龄'，defaultValue:18}
+    case 'sex':{
+       return {name:'性别',defaultValue:'男'}
+    }
+   }
+  }
+ 
+ ```
+### getDerivedStateFromProps是一个静态方法？
+- 希望这个方法，是一个纯函数
+
+componentWillReceiveProps
+ - 可以监听父组件是否执行render
+ - props改变，判断是否执行更新state
+
+componentWillUpdate
+- 获取组件更新前的状态
+
+getSnapshotBeforeUpdate
+- 配合comonentDidUpdate一起，计算形成一个snapShot传给componentDidUpdate
+
+```js
+ getSnapshotBeforeUpate(prevProps,prevState){
+   const snapshot={
+    //一些组件的位置信息
+   }
+   return snapshot
+ }
+
+ componentDidUpdate(prevProps,prevState,snapshot){
+
+ }
+
+```
+
+componentDidUpdate
+- 更新完以后调用的，切记如果setState要注意，否则很容易死循环
+- 配合 getSnapshotBeforeUpate
+
+componentDidMount
+- 可以做一些DOM操作，比如DOM的事件监听
+- 请求借口
+
+shouldComponentUpdate
+- 性能优化，看返回值，是否更新组件
 
 
 ### react的hooks是怎么模拟生命周期的？
+```js
+ import {useEffect} from 'react'
+ const  MockLifeCycle=(props)=>{
+  useEffect(()=>{
+    console.log('mock:componentDidMount');
+    return ()=>{
+      console.log('mock:componentWillUnmout')
+    }
+  },[])
+
+  useEffect(()=>{
+     console.log('mock:componentWillReceiveProps');
+  },[props])
+
+    useEffect(()=>{
+     console.log('mock:componentDidUpdate');
+  })
+
+ }
+
+```
 
 
 ## react的时间常见以及合成事件方式
 React 事件系统分为三个部分：
 1. 初始化注册
+  在底层有这样的两个对象
+  事件系统本质上是插件化，合成事件，就是注册不同的事件插件
+  ```js
+   const registrationNameModules={
+    onClick:SimpleeventPlugin,
+    onChange:ChangeEventPlugin,
+    onBlur:simpleEventPlugin
+    //...
+   }
+
+   const registrationNameDependcies={
+      onClick:['click'],
+      onChange:['blur','change','click',"focus","keydown","keyup"]
+   }
+
+  ```
 2. 事件收集，注册事件
+   当发现一个onchange事件，它会绑定["blur","change","click“,”focus","keydown","keyup"]多个事件
+
+   deps =registrationNameDependcies['onChange'];
+   deps.forEach(event=>{
+     <!-- 绑定原生的事件监听器 -->
+   })
 3. 事件触发
+```js
+    export default function Indedx(){
+      const handle1=()=>console.log(1);
+      const handle2=()=>console.log(2);
+      const handle3=()=>console.log(3);
+      const handle4=()=>console.log(4);
+
+      return (<div onClick={handle3} onClickCapture={handle4}>
+            <button onClick={handle1} onClickCapture={handle2}>click</button>
+      </div>)
+    }
+    //4,2,1,3
+
+```
 
 ### react为什么要做一套自己的事件方式?
+-  兼容性，不同浏览器，兼容性不一致
+- 如果大量的dom, 绑定特别多的事件，GC会有问题，性能好一些
+- 这个系统，对SSR和跨端很友好
 
 ### 为什么v17版本之后，事件会放到app上，而不是document上？
+- document上，在一些微前端，就不好处理了
 
+## 什么是HOC? 以及高价组件的传参和事件？
+高阶组件
+高阶函数就是一个将函数作为参数并且返回值也是函数的函数
+高阶组件是以组件作为参数，返回组件的函数，返回的组件把传进去的组件进行功能强化
+
+## HOC的分类与应用场景有哪些?
+
+1. 属性代理
+```js
+ function HOC(Component){
+  return class Advanced extends Rect.Component{
+     render(){
+      return <Component {...this.props}>
+     }
+  }
+ }
+
+```
+优点：
+- 组件松耦合，又能对props，组件能力进行征集啊，withRouter()
+- 隔离一些业务组件的渲染
+- 可以嵌套
+
+缺点：
+- 一般无法获取原组件的状态,ref
+- 无法直接继承静态属性
+
+2. 反向继承
+```js
+class Index extends React.component{
+   render(){
+    return <div>hello</div>
+   }
+}
+
+function HOC(Component){
+    return class wrapComponent extends Component{
+
+    }
+}
+```
+优点：
+- 方便获取组件内部的状态
+- 静态属性无需特殊处理
+
+缺点：
+- hook不能使用
+- 耦合度很高，cdm多个的时候，会造成很大的副作用
+
+
+## react 的hook的理解，他在做什么？
+ workInPorgress ->
+        memoizedState [next]
+               - memoizedState = 0
+               - memoizedState = '你好'
+               - memoizedState = {current:null}
+               - memoizedState={create:()=>console.log()}
+### Hooks出现本质上原因是？
+- 让函数组件也能做类组件的事，可以处理一些副作用，能拿ref
+- 解决逻辑复用难的问题
+- OOP放弃，拥抱FP
+
+### 为什么useAPI前面不能加判断？
+链表中的顺序由于if状态的存在会改变吧，这样就会错乱
+## 为什么useState要使用数组而不是对象
+解构赋值的问题：
+数组，依次排序的，所以可以随便命名，
+对象不行，没有次序
+## useEffect和useLayoutEffect的区别？
+修改DOM,改变布局就用useLayoutEffect,其它情况就用useEffect
+
+### React.useEffect回调函数和componentDidMount/componentDidUpdate执行时机有什么区别?
+useEffect在react的执行栈中，是异步执行的，而cdm/cdu是同步执行的
+useEffect代码不会阻塞浏览器绘制，和cdm/cdu的执行时机更像{都是在commitLayoutEffects中执行}
+### 你听说过useInsertionEffect吗？
+useInsertionEffect执行时间，更加提前一些
+css-in-js
+
+useInsertionEffect的执行在dom更新之前，所以此时使用css-in-js,避免浏览器重绘和重拍，性能更好
+## redux遵循的三原则
+1. 单向数据流
+newState=reudcer(state,actions)
+2. state只读
+唯一修改state的方法，只有diapatch触发action来修改state
+3. 纯函数执行
+每一个reducer都是纯函数
+
+### redux中的发布订阅和中间件思想
+state={}
+
+compose的实现
+```js
+  const compose =(...funcs)=>{
+    return funcs.reduce((f,g)=>(x)=>f(g(x)))
+  }
+
+```
+- redux是一种发布订阅的核心实现方式，以store为数据中心，使用dispatch修改数据.使用subscribe订阅数据，dispatch时，会通知所有的subscribe的函数
+- redux把副作用交给compose以中间件的形式去处理
+  - 核心就是强化dispatch
+  - 处理副作用 
+
+## react-redux,redux,react三者关系
+react是一个ui框架
+redux是一个数据管理工具
+react-redux基于redux(作为一个数据管理工具，是无法触发视图更新的),react-redux =redux+consumer/provider
+### 如何理解单一事件来源
+整个数据源是一个单向的
 
 
 
