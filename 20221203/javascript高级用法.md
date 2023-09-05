@@ -60348,3 +60348,320 @@ process.stdout.write('sum'+sum)
 
 ## 简述koa的中间件原理
 https://github.com/koajs/compose/blob/master/index.js
+
+
+# 突击课 - 算法 - 数据结构篇
+
+## 实现一个LRU缓存
+vue - keep-alive 缓存
+LRU - 最近使用
+least recently used
+
+实现 LRUCache
+缓存，有一个大小`const lru = new LRUCache(capacity);`
+lru.put(1,1);
+lru.put(2,2); // {1:1,2:2}
+lru.get(1);
+lru.put(3,3) //{1:1，3:3}
+lru.get(2) // -1
+lru.put(4,4) // {4:4,3:3}
+lru.get(1)
+
+## 求环状表
+```js
+  const  hasCycle = function(head){
+    let fast =slow =head;
+    while(fast && fast.next){
+      fast =fast.next.next;
+      slow =slow.next;
+      if(slow===fast){
+        return true
+      }
+    }
+    return false
+  }
+
+```
+
+## 二叉树的前序、中序、后序遍历
+  ```js
+   const  preOrder = function (node){
+    if(!node){
+      return node
+    }
+     console.log(node.val)
+     preOrder(node.left);
+     preOrder(node.right);
+   }
+
+   const  inOrder =function(node){
+     if(!node){
+      return node
+    }
+     preOrder(node.left);
+     console.log(node.val)
+     preOrder(node.right);
+   }
+
+   const postOrder= function(node){
+    if(!node){
+      return node
+    }
+     preOrder(node.left);
+     preOrder(node.right);
+     console.log(node.val)
+   }
+  
+  ```
+
+## 树的层序遍历
+```js
+var levelOrder =function(root){
+  if(!root){return []};
+  let queque =[root];
+   let result =[];
+
+    //开始循环
+    while(queue.length){
+      let tmpQueue =[];
+      let tmpResult =[];
+      let len =queue.length;
+      for(let i=0;i<len;i+=1){
+        let node =queue.shift();
+        tmpResult.push(node.val);
+        node.left&&tmpQueue.push(node.left);
+        node.right && tmpQueue.push(node.right)
+      }
+
+      //循环完毕后
+      result.push(tmpResult);
+      tmpResult=[];
+      queue = tmpQueue;
+    }
+    return result
+}
+```
+
+## 获取二叉树的层级
+1. 二叉树的层级，就是上个二叉树的层序遍历获得的结果的length
+2. 
+```js
+  var maxlength =function (root){
+    if(!root){return 0}
+     return Math.max(maxLength(root.left),maxLength(root.right))+1;
+  }
+
+```
+## 实现类数组转数组
+```js
+const arrayLike =document.querySelectorAll('div');
+// 1. 扩展运算符
+[...arrayLike]
+// 2.prototype
+Array.prototype.slice.call(arrayLike);
+Array.prototype.concat.apply([],arrayLike)
+Array.apply(null,arrayLike);
+
+// 3
+Array.from(arrayLike)
+
+```
+
+## 实现DOM转JSON
+```js
+function dom2json(dom){
+  let obj={};
+  obj.name=dom.tagName;
+  obj.children=[];
+  dom.childNodes.forEach(child=>obj.children.push(dom2json(child)));
+  return  obj;
+}
+```
+
+## 实现JSON转DOM
+```js
+function json2dom(vnode){
+  if(typeof vnode==='string'||typeof vnode==='number'){
+    return document.createTextNode(String(vnode))
+  }else{
+    const  __dom = doceument.createElement(vnode);
+    if(vnode.attrs){
+      Object.entries(vnode.attrs).forEach(([key,value])=>{
+        if(key==='className'){
+          __dom[key]=value
+        }else{
+          __dom.setAttribute(key,value)
+        }
+      })
+    }
+    vnode.children.forEach(child=>__dom.appendChild(json2dom(child)));
+    return  __dom
+  }
+}
+```
+## 实现树转数组
+```js
+ [
+  {
+    id:1,
+    text:'根节点',
+    children:[
+      {
+        id:2,
+        text:'二级节点2',
+        parentId:1,
+            children:[
+                      {
+                        id:6,
+                        text:'三级节点6',
+                      },
+                      {
+                        id:7,
+                        text:'三级节点7',
+                      },
+                      {
+                        id:8,
+                        text:'三级节点8',
+                      },
+                      {
+                        id:9,
+                        text:'三级节点9',
+                      }
+                      
+                      ]
+      },
+      {
+        id:3,
+        text:'二级节点3',
+      },
+      {
+        id:4,
+        text:'二级节点4',
+      },
+      {
+        id:5,
+        text:'二级节点5',
+      }
+      
+      ]
+  }
+  ]
+
+
+  
+ function treeToList(root){
+   let res=[];
+   const dfs =function(data){
+    data.forEach((item)=>{
+      if(item.children){
+        dfs(item.children,item.id);
+        delete(item.children)
+      }
+      item.parentId=parentId;
+      res.push(item)
+    })
+   }
+   dfs(root,0)
+   return  res
+ }
+
+
+```
+
+## 实现数组转树
+```js
+  const list=[
+    {
+      id:2,text:'一级节点1',parentId:1
+    },
+    {
+      id:5,text:'二级节点2-1',parentId:3
+    },
+    {
+      id:6,text:'二级节点2-2',parentId:3
+    },
+    {
+      id:7,text:'二级节点2-3',parentId:3
+    },
+    {
+      id:3,text:'一级节点2',parentId:1
+    },
+    {
+      id:4,text:'一级节点3',parentId:1
+    },
+    {
+      id:1,text:'根节点',parentId:0
+    },
+  ]
+
+  function listToTree(data){
+    let deps={};
+    let result =[];
+    data.forEach(item=>deps[item.id]=item);
+    for(let i in deps){
+      if(deps[i].parentId !=0){
+        if(!deps[i].parentId.children){
+          deps[i].parentId.children =[]
+        }
+        deps[i].parentId.children.push(deps[i])
+      }else{
+        result.push(deps[i])
+      }
+    }
+    return result
+  }
+
+```
+
+## 实现数组打平
+
+```js
+ const arr=[1,2,[3,[4]]]
+  function flatten(arr){
+    if(!arr.length){ return }
+    return arr.reduce((pre,cur)=>Array.isArray(cur)?[...pre,...flattern(cur)]:[..pre,cur])
+  }
+
+```
+## 实现对象打平
+```js
+  const obj={
+    a:{
+      b:{
+        c:1,
+        d:2,
+        e:3
+      }
+    }
+  }
+
+  // 变成
+  {
+    a.b.c:1,
+    a.b.d:2,
+    a.b.e:3
+  }
+
+function flattern(obj){
+  if(typeof obj !='object'||obj===null){
+    return
+  }
+
+  let res={};
+  const dfs =function(cur,prefix)=>{
+    if(typeof cur ==='object' && cur!==null){
+       for(let k in cur){
+        dfs(cur[k],`${prefix}${prefix?'.':''}${k}`)
+       }
+    }else{
+      res[prefix] =cur;
+    }
+  }
+
+  dfs(obj,'')
+   
+}
+
+
+```
+
