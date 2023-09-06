@@ -60669,7 +60669,11 @@ function flattern(obj){
 # 突击课 - 排序与双指针等
 
 ## n平方复杂度的排序有哪些
-
+1. 冒泡排序
+2. 选择排序
+  - 选择最小的，开始交换
+3. 插入排序
+  - 插入数据，让前面的始终有序
 ## 如何实现冒泡排序，如何进行优化
 ```js
 function bubbleSort(arr){
@@ -60684,19 +60688,337 @@ function bubbleSort(arr){
   return arr;
 }
 ```
-
+### 如何优化
+每一轮迭代的时候，如果说最后已经不迭代了，那么是不是可以直接break？
 
 ## 如何实现排序和插入排序？
+```js
+function  selectSort(arr){
+  const len =arr.length;
+  let minIdx;
+  for(let i=0;i<len-1;i+=1){
+    minIdx= i;
+    for(let j=i;j<len;j+=1){
+      if(arr[j]<arr[minIdx]){
+         minIdx = j;
+      }
+    }
+     if(minIdx!=i){
+      [arr[i],arr[minIdx]] =[arr[minIdx],arr[i]]
+     }
+  }
+  return arr;
+}
+
+
+```
+
+```js
+function insertSort(arr){
+    const  len=arr.length;
+    for(let i=1;i<arr.length;i+=1){
+      let j=i;
+      //当前可能要插入或者要排一个数据
+      let target =arr[j];
+      while(j>0&&arr[j-1]>target){
+        arr[j] =arr[j-1];
+        j-=1;
+      }
+      arr[j] =target
+    }
+    return arr;
+}
+
+
+
+```
 
 ## n*logn复杂度的排序有哪些？
+- 快速排序
+- 归并排序
 
 ## 如何实现快速排序和归并排序？
+```js
+ function quickSort(arr){
+   if(arr.length<=1){
+     return arr.slice();
+   }
+
+   const  pivot =arr[match.floor(Math.random().arr.length)];
+
+   let left =[];
+   let right=[];
+   let middle =[];
+
+   for(let  i=0;i<arr.length;i+=1){
+          let val=arr[i];
+          if(val<pivot){
+            left.push(val)
+          }else if(val===pivot){
+            middle.push(val)
+          }else{
+            right.push(val)
+          }
+
+   }
+      return quickSort(left).conact(middle,quickSort(right))
+ }
+
+
+
+ function quickSort2(arr){
+   if(arr.length<=1){
+    return arr;
+   }
+
+   const  pivot =arr[arr.length-1];
+   const  left=arr.filter((v,i)=>v<=pivot && i!==arr.length-1);
+   const right =arr.filter(v=>v>pivot);
+   return quickSort2(left).conact(middle,quickSort2(right))
+ }
+
+```
+
+```js
+function merge(left,right){
+  let res=[];
+  let i=0;
+  let j=o;
+  while(i<left.length && j<right.length){
+    if(left[i]<right[j]){
+      res.push(left[i]);
+      i+=1;
+    }else{
+      res.push(right(j));
+      j+=1;
+    }
+  }
+
+  if(i<left.length){
+    res.push(...left.slice(i))
+  }else{
+    res.push(...right.slice(j))
+  }
+}
+
+// 是数组拆到最小，然后从小到大合并
+function  mergeSort(arr){
+  if(arr.length<=1){
+    return arr;
+  }
+  const mid=Math.floor(arr.length/2);
+  //这个生成一个有序的数组
+  const left =mergeSort(arr.slice(0,mid));
+    //这个生成一个有序的数组
+  const right =mergeSort(arr.slice(mid));
+
+  return merge(left,right)
+}
+
+```
 
 ## 快速排序和归并排序的区别是什么？
+快速排序
+- 递归的阶段
+归并排序
+- 归并的主要方法，是递归地合并两个有序数组
 
 ## 复杂度为n的排序算法有哪些？具体思路是什么样的？
+- 桶排序
+  - 核心在于分桶
+  - 对100w个用户，进行年龄排序。1000*1000
+     - 10-100
+     - 是不是可以对每个月的用户进行分桶，分成1000个桶
+     - 只要对每个桶里的1000个数据进行排序
+     - 1000*1000
+     - 要排序的数据，很容易就能分到m个桶里
+     - 数据在各个桶之间，分布比较均匀
 
+- 计数排序
+  计数排序是同排序的一种特殊情况
+  100w考生，我们按照分数排序的时候，其实就是计数排序
+  - 当N个数据的范围不大的时候，其实每个桶就是数据值，桶内不再排序
+  - 0-750
+  - 751个桶
+
+- 基数排序
+ 1. 对我们要排的数据有排序，需要可以分割出来位
+ 把100w个电话号码进行排序
 
 ## 返回arr的最长无重复元素子数组的长度
+## 无重复的最长子串
+```js
+function lengthOfLongestSubstring(s){
+    let pStart=0;
+    let pEnd=0;
+    let maxLength=0;
+    let sArr=s.split('')
 
-##
+    while(pEnd!==sArr.length){
+      //当然要去查找的数组是：
+      let subArr = sArr.slice(pStart,pEnd);
+      const index= subArr.findIndex(item=>item===sArr[pEnd]);
+      pStart =pStart+index+1;
+      pEnd += 1;
+      maxLength=Math.max((pEnd-pStart),maxLength);
+    }
+    return maxLength;
+}
+
+```
+
+## 最长上升子序列
+```js
+ function lengthOfLIS (nums){
+  //假如第i个值大于第i-1个值
+  //那么dp[i]的值，等于j从0到i-1各个位置的最长上升子序列+1的最大值
+  let dp=[];
+  let max=1;
+  dp[0] =1;
+  for(let i=1; i<nums.length;i+=1){
+    dp[i] =1;
+    for(let j=0;j<i;j+=1){
+      if(nums[i]>nums[j]){
+        dp[i] =Math.max(dp[j]+1,dp[i]);
+      }
+    }
+    max=Math.max(dp[i],max);
+  }
+  return max;
+ }
+
+```
+
+
+## 盛水最多的容器
+```js
+  function maxArea(height){
+    let max=0;
+    let paStart=0;
+    let pEnd =height.length-1;
+    while(pStart!==pEnd){
+      let hStart =height[pStart];
+      let hEnd = height[pEnd];
+      let minHeight = Math.min(hStart,hEnd);
+      let tmpMax = minHight *(pEnd - pStart);
+      max=Math.max(max,tmpMax);
+        hStart>hEnd? pEnd--:pStart++
+    }
+    return max;
+  }
+
+```
+
+## 动态规划
+局部最优解和全局最优解，没有直接关系
+
+
+# 突击课 - 二分与回溯
+一个典型的二分的写法：
+```js
+   function serach(arr,target){
+    let low=0;
+    let high =arr.length-1;
+    while(low<=high){
+      let mid=low+((high -low)>>1);
+      if(arr[mid]===value){
+        return mid;
+      }else if(arr[mid]<value>){
+        low =mid+1;
+      }else{
+         high=mid-1
+      }
+    }
+    return -1;
+    //如果说是找一个位置return left;return right+1
+   }
+
+
+```
+
+二分要注意的几个点
+1. low<=high ,而不是low < high，如果数组的长度是偶数，倒数第二部，low=high
+2. mid = low+((high -low)>>1); 而不是mid =(low+high)/2;因为两者之和，有可能会溢出
+3. low = mid+1;high=mid-1,如果直接写成 low = mid或者high =mid,可能会发生死循环
+
+二分场景：
+1. 二分依赖的是顺序表，是数组，而不是链表
+2. 二分查找的一定是有序数组
+3. 数据量一般比较大
+
+
+## 搜索插入的位置
+1. 
+```js
+   function search(arr,target){
+    let low=0;
+    let high =arr.length-1;
+    while(low<=high){
+      let mid=low+((high -low)>>1);
+      if(arr[mid]===value){
+        return mid;
+      }else if(arr[mid]<value>){
+        low =mid+1;
+      }else{
+         high=mid-1
+      }
+    }
+    return low
+   }
+
+
+```
+
+2. 
+```js
+ function bSearch(arr,target){
+  const search=function (arr,target,low,high){
+      let mid =low +((high -low)>>1);
+      if(arr[mid]===target){
+        return mid
+      }
+
+      if(low>= high){
+        return  low
+      }
+
+      if(arr[mid]<target){
+        return search(arr,traget,mid+1,high)
+      }else{
+        return search(arr,target,low,mid-1)
+      }
+
+  }
+  search(arr,target,0,arr.length-1)
+ }
+
+
+```
+
+## 求平方根
+```js
+   function mySqrt(x){
+     let low =1;
+     let high=x;
+     while(low<=high){
+      let mid = low +((high-low)>>1);
+      if(mid*mid<=x){
+         if((mid+1)*(mid+1)>x){return mid}
+         low =mid+1;
+      }else{
+        high= mid-1
+      }
+     }
+     return 0
+   }
+
+```
+
+
+## 搜索旋转排序数组
+```js
+
+
+```
+
+## 在排序数组中
