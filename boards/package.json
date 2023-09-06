@@ -1,0 +1,50 @@
+{
+  "name": "boards",
+  "version": "0.1.0",
+  "private": true,
+  "devDependencies": {
+    "classnames": "^2.2.5",
+    "handlebars": "^4.0.6",
+    "immutable": "^3.8.1",
+    "nodemon": "^1.11.0",
+    "pushstate-server": "^2.2.1",
+    "react-scripts": "0.8.5",
+    "react-sortable-hoc": "^0.4.12",
+    "redux-devtools": "^3.3.2"
+  },
+  "dependencies": {
+    "async": "^2.1.4",
+    "blipp": "^2.3.0",
+    "boom": "^4.2.0",
+    "catbox-memory": "^2.0.4",
+    "faker": "^3.1.0",
+    "hapi": "^16.1.0",
+    "hapi-mongodb": "^6.2.0",
+    "hapi-pagination": "^1.14.0",
+    "hoek": "^4.1.0",
+    "isomorphic-fetch": "^2.2.1",
+    "joi": "^10.2.2",
+    "joi-objectid": "^2.0.0",
+    "lodash": "^4.17.4",
+    "moment": "^2.17.1",
+    "mongodb": "^2.2.24",
+    "normalizr": "^3.2.1",
+    "react": "^15.4.2",
+    "react-addons-shallow-compare": "^15.4.2",
+    "react-dom": "^15.4.2",
+    "react-redux": "^5.0.2",
+    "react-router": "^3.0.2",
+    "react-router-redux": "^4.0.8",
+    "react-virtualized": "^8.11.2",
+    "redux": "^3.6.0",
+    "redux-thunk": "^2.2.0"
+  },
+  "scripts": {
+    "start": "react-scripts start",
+    "server-dev": "nodemon server/bin.js configs/dev.json",
+    "test-build": "pushstate-server build",
+    "build": "react-scripts build",
+    "test": "react-scripts test --env=jsdom",
+    "eject": "react-scripts eject"
+  }
+}

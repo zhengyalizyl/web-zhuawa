@@ -60665,3 +60665,38 @@ function flattern(obj){
 
 ```
 
+
+# 突击课 - 排序与双指针等
+
+## n平方复杂度的排序有哪些
+
+## 如何实现冒泡排序，如何进行优化
+```js
+function bubbleSort(arr){
+  const len =arr.length;
+  for(let i=0;i<len;i+=1){
+    for(let j=0;j<len-1;j+=1){
+      if(arr[j]>arr[j+1]){
+        [arr[j],arr[j+1]] =[arr[j+1],arr[j]]
+      }
+    }
+  }
+  return arr;
+}
+```
+
+
+## 如何实现排序和插入排序？
+
+## n*logn复杂度的排序有哪些？
+
+## 如何实现快速排序和归并排序？
+
+## 快速排序和归并排序的区别是什么？
+
+## 复杂度为n的排序算法有哪些？具体思路是什么样的？
+
+
+## 返回arr的最长无重复元素子数组的长度
+
+##

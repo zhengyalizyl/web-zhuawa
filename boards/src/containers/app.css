@@ -1,0 +1,34 @@
+.App {
+  text-align: center;
+  font-family: 'Raleway', sans-serif;
+}
+
+/* On smaller screens, where height is less than 450px, change the style of the sidenav (less padding and a smaller font size) */
+@media screen and (max-height: 450px) {
+  .sidenav {
+    padding-top: 15px;
+  }
+}
+
+.bong {
+  transition: all .1s ease;
+  transform: scale(1);
+  cursor: pointer;
+}
+.bong:hover {
+  transform: scale(1.4) translateX(-8px) rotateZ(-20Deg);
+}
+.bong:focus {
+  transform: scale(0.3);
+}
+.bong:active {
+  transform: scale(0.2);
+}
+
+.bong-rotate {
+  transition: all .1s ease;
+  transform: rotateX(0Deg);
+}
+.bong-rotate:hover {
+  transform: scale(1.015);
+}
