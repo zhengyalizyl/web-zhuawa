@@ -9,6 +9,7 @@ import {
 } from "react-virtualized";
 import styles from "./index2.css";
 import scrollbarSize from 'dom-helpers/scrollbarSize';
+// https://github.com/bvaughn/react-virtualized/blob/master/source/ScrollSync/ScrollSync.example.js
 // const STYLE = {
 //   border: "1px solid #ddd"
 // };
