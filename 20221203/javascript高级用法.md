@@ -61018,7 +61018,265 @@ function lengthOfLongestSubstring(s){
 ## 搜索旋转排序数组
 ```js
 
+  function search(nums,target){
+     let  low =0;
+     let high =nums.length-1;
+     while(low<=high){
+       let mid =low + ((high-low)>>1);
+       if(nums[mid]==target){
+         return mid;
+       }
+
+       if(nums[mid]>=nums[high]){
+        //左边有序
+         if(nums[low]<=target&&target<nums[mid]){
+           high =mid-1;
+         }else{
+          low =mid+1;
+         }
+       }else{
+        //  右边有序
+        if(nums[mid]<=target && target <=nums[high] ){
+          low =mid + 1;
+        }else{
+          high =mid-1;
+        }
+       }
+     }
+     return -1;
+  }
+
 
 ```
 
-## 在排序数组中
+## 在排序数组中查找元素的第一个位置和最后一个位置
+```js
+function searchChange(nums,target){
+    const search =function (fromStart){
+      let low =0;
+      let high=nums.length-1;
+      while(low<=high){
+      let mid =low + ((high-low)>>1);
+      if(nums[mid]<target){
+        low = mid+1;
+      }else if(nums[mid]>target){
+        high = mid-2;
+      }else{
+        if(fromStart){
+           if(nums[mid]===nums[mid-1]){
+            high =mid-1;
+           }else{
+            return mid;
+           }
+        }else{
+           if(nums[mid]===nums[mid+1]){
+            low = mid+1;
+           }else{
+            return mid;
+           }
+        }
+      }
+      }
+    return -1
+    }
+
+    return  [search(true),search(false)]
+
+}
+
+
+```
+
+## 回溯
+大部分情况下，解决的都是一个广义搜索的问题，也就是，从一组可能满足需求解中，找出一部分正解
+组合：N个数，找K个数的集合
+排列：N个数，有几种排列方式
+棋盘：N皇后，数独
+
+
+ ```js
+//  大概公式
+ function combine(n,k){
+  const result =[];
+  const path =[];
+  function backtrack(){
+     if(condition){
+      result.push([...path]); // path.pop();清空掉path，所以这里是引用
+      return
+     }
+     for(){
+      path.push();
+      backtrack();
+      path.pop();
+     }
+  }
+  backtrack();
+  return result;
+ }
+ ```
+
+## 组合:给定两个整数n和k,返回范围[1,n]中所有可能的k个数的组合
+ ```js
+ function combine(n,k){
+  const result =[];
+  const path =[];
+  function backtrack(path,startIndex){
+     if(path.length===k){
+      result.push([...path]);
+      return
+     }
+     for(let i=startIndex;i<=n;i+=1){
+      path.push(i);
+      backtrack(path,i+1);
+      path.pop();
+     }
+  }
+  backtrack(path,1);
+  return result;
+ }
+ ```
+
+## 组合2: 找出candidates中可以使数字和目标数target的所有不同组合
+```js
+
+ function combine(candidates,target){
+  candidates=candidates.sort((a,b)=>a-b)
+  const result =[];
+  const path =[];
+  function backtrack(startIndex,sum,path){
+     if(sum===target){
+      result.push([...path]);
+      return
+     }
+      for(let i=startIndex;i<candidates.length;i+=1){
+        if(candidates[i]+sum>target){return}
+      path.push(candidates[i]);
+      backtrack(i,sum+candidates[i],path);
+      path.pop();
+     }
+  }
+  backtrack(0,0,path);
+  return result;
+ }
+
+```
+
+## 组合2: 找出candidates中可以使数字和目标数target的所有不同组合，candidates不重复
+```js
+ function combine(candidates,target){
+  candidates=candidates.sort((a,b)=>a-b)
+  const result =[];
+  const path =[];
+  function backtrack(startIndex,sum,path){
+     if(sum===target){
+      result.push([...path]);
+      return
+     }
+      for(let i=startIndex;i<candidates.length;i+=1){
+        if(candidates[i]+sum>target){return}
+      //数组中可能有相同的数据，这个数据会影响最终的结果
+      if(i===startIndex||candidates[i]!=candidates[i-1]){
+      path.push(candidates[i]);
+      backtrack(i+1,sum+candidates[i],path);
+      path.pop();
+      }
+     }
+  }
+  backtrack(0,0,path);
+  return result;
+ }
+
+
+```
+
+## 全排列1:数组nums,返回其所有可能的全排列
+```js
+function permute =function(nums){
+  const result=[];
+  const path=[];
+  function backtrack(nums){
+       if(!nums.length){
+        result.push([...path])
+       }
+       for(let i=0;i<nums.length;i+=1){
+        const _nums=[...nums];
+        const temp =_nums.splice(i,1)[0];
+        path.push(temp);
+        backtrack(_nums);
+        path.pop();
+       }
+  }
+  backtrack(nums);
+  return result;
+}
+
+```
+## 全排列1:数组nums,返回其所有可能的全排列,不重复
+```js
+function permuteUnique =function(nums){
+  const result=[];
+  const path=[];
+  nums = nums.sort((a,b)=>a-b)
+  function backtrack(used){
+       if(nums.length===path.length){
+        result.push([...path])
+       }
+       for(let i=0;i<nums.length;i+=1){
+        if(i>0 && num[i]===nums[i-1]&&!used{i-1}){
+          continue;
+        }
+         if(!used[i]){
+        used[i] =true;
+        path.push(nums[i]);
+        backtrack(used);
+        path.pop();
+         used[i] = false;
+         }
+
+       }
+  }
+  backtrack(nums);
+  return result;
+}
+
+```
+
+## 8皇后问题
+```js
+  function solveQueens(n){
+     const res=[];
+     const arr=Array(n).fill(-1).map(()=>Array(n).fill('.'));
+      function backtrack(arr,row){
+         if(row ===n){
+             res.push(arr.map(i=>i.join('')));
+             return 
+           }
+
+           for(let i=0;i<n;i+=1){
+            if(valid(arr,row,i)){
+               arr[row][i] ='Q';
+               backtrack(arr,row+1);
+               arr[row][i]='.';
+            }
+           }
+      }
+
+       function valid(arr,row,col){
+         for(let i =0 ;i<row;i+=1){
+            if(arr[i][col]==='Q'){return false}
+         }
+
+         for(let i =row-i,j=col+1;i>0&&j<n;i-=1,j+=1){
+           if(arr[i][j]=='Q'){return false}
+         }
+         for(let i =row-i,j=col-1;i>0&&j>=0;i-=1,j-=1){
+           if(arr[i][j]=='Q'){return false}
+         }
+         return true;
+       }
+
+      backtrack(arr,0)
+     return res;
+  }
+
+```
