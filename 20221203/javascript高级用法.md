@@ -60953,7 +60953,7 @@ function lengthOfLongestSubstring(s){
    function search(arr,target){
     let low=0;
     let high =arr.length-1;
-    while(low<=high){
+    while(low<=high){ // 这里是为了防止数组是为偶数，
       let mid=low+((high -low)>>1);
       if(arr[mid]===value){
         return mid;
@@ -61278,5 +61278,249 @@ function permuteUnique =function(nums){
       backtrack(arr,0)
      return res;
   }
+
+```
+
+
+# 突击课 - 贪心与动归
+
+
+贪心和动归，动归还好，尤其是贪心
+贪心是无法证实/证伪的
+
+## 本质
+根据局部最优解，得出全局最优解
+
+## 具体步骤
+### 贪心
+ 1. 将大问题划分成子问题
+ 2. 得到子问题的最优解
+ 3. 通过‘叠加’得到全局最优解
+
+### 动归
+1. 确定dp的递公式
+2. 确定dp如何初始化
+3. 通过‘递推’得到全局最优解
+
+## 饼干问题
+ 455.分发饼干
+```js
+//把尺寸最大的饼干给胃口最大的饼干
+ function findContentChildren(g,s){
+     g=g.sort((a,b)=>a-b);
+     s=s.sort((a,b)=>a-b);
+     //index 指向最大的饼干
+     let result =0;
+     let index=s.length-1;
+     for(let i=g.length-1;i>=0;i-=1){
+       //如果还有饼干，并且这个饼干满足这个小孩
+       if(index>=0&&s[index]>g[i]){
+        result +=1;
+        //饼干少一块
+        index-=1;
+       }
+     }
+     return result
+ }
+```
+
+```js
+// 把饼干最小的给胃口最小的小孩子
+ function findContentChildren(g,s){
+     g=g.sort((a,b)=>a-b);
+     s=s.sort((a,b)=>a-b);
+     //index 指向第一个小孩
+      let index=0;
+     for(let i=0;i<s.length;i+=1){
+       if(index<g.length&&s[i]>=g[index]){
+        index+=1;
+       }
+     }
+     return index
+ }
+
+
+```
+
+## 最大子数组和
+```js
+//只要有负数，就会拉低总和值，就不要
+ function maxSubArray(nums){
+     let result = nums[0];
+     let sum=0;
+     for(let i =0 ; i,nums.length;i+=1){
+       if(sum>0){
+        sum+=sum+nums[i]
+       }else{
+         sum=nums[i]
+       }
+       result =Math.max(result,sum)
+     }
+     return result;
+ }
+
+```
+
+## 跳跃游戏
+55.给定一个非负整数数组nums,最初位于数组的第一个下标。数组中的每个元素代表你在该位置可跳跃的最长长度。判断你是否能够到达最后一个下标
+```js
+  function canJump(nums){
+    let len=nums.length-1;
+    let max=0;
+    // 为什么是max，不是len,因为当跳到max时，没法往下跳，就不能继续
+    for(let i=0;i<=max;i+=1){
+       max=Math.max(max,nums[i]+i);
+       if(max>=len){return true}
+    }
+    return false
+  }
+```
+45.跳跃游戏II
+```js
+ function jump(nums){
+    let curIndex=0;//当前覆盖的最远的下标
+    let nextIndex = 0;//下一步覆盖最远的下标
+    let steps=0;
+    for(let i=0;i<nums.length-1;i+=1){
+      nextIndex =Math.max(nums[i]+i,nextIndex);
+      if(i===curIndex){
+        curIndex=nextIndex;
+        steps+=1;
+      }
+    }
+    return steps;
+ }
+
+```
+
+## 买入股票的最佳时机
+121.买入股票的最佳时机
+```js
+  function maxProfit(prices){
+    if(prices.length===0){return 0}
+    
+    //最低的买点
+    let min =prices[0];
+    //最大的收入
+    let max=0;
+    for(let i=0;i<prices.length;i+=1){
+      min =Math.min(min,prices[i]);
+      max=Math.max(max,prices[i]-min)
+    }
+    return max;
+  }
+
+```
+
+122.买卖股票的最佳时机II
+```js
+// 贪心，只要一流，我就卖，只要一跌，我们就不买
+ function maxProfit(prices){
+    let result=0;
+    for(let i=1;i<prices.length;i+=1){
+      result+=prices[i]>prices[i-1]?price[i]-prices[i-1]:0
+    }
+    return result;
+ }
+
+```
+## 动态规划求解硬币找零问题
+## 爬楼梯
+```js
+ function climbStairs(n){
+  let dp=new Array(n);
+  dp[1]=1;
+  dp[0]=1;
+  for(let i=2;i<=n;i+=1){
+    dp[i]=dp[i-1]+dp[i-2]
+  }
+  return dp[n]
+ }
+
+
+```
+## 机器人走路
+62.不同路径
+```js
+function uniquePaths(m,n){
+  let dp=Array.from(Array(m),()=>Array(n).fill(1))
+  for(let i=1;i<m;i+=1){
+    for(let j=1;j<n;j+=1){
+      dp[i][j]=dp[i-1][j]+dp[i][j-1]
+    }
+  }
+  return dp[m-1]dp[n-1]
+}
+
+```
+
+63.不同路径II
+```js
+function uniquePathsWithOstacles(obstacleGrid){
+  const m=obstacleGrid.length;
+  const n=obstacleGrid[0].length;
+   let dp=Array.from(Array(m),()=>Array(n).fill(0));
+  //把障碍物列上去
+  for(let i=0;i<m&&obstacleGrid[i][0]===0;i+=1){
+       dp[i][0] =1;
+  }
+   //把障碍物列上去
+  for(let i=0;i<n&&obstacleGrid[i][0]===0;i+=1){
+       dp[0][n] =1;
+  }
+   for(let i=1;i<m;i+=1){
+    for(let j=1;j<n;j+=1){
+      dp[i][j]=obstacleGrid[i][i]===1?0:dp[i-1][j]+dp[i][j-1]
+    }
+  }
+  return dp[m-1]dp[n-1]
+
+}
+
+
+```
+## 最小路径和
+64.最小路径和
+```js
+function minPathSum(obstacleGrid){
+  const m=obstacleGrid.length;
+  const n=obstacleGrid[0].length;
+   let dp=Array.from(Array(m),()=>Array(n).fill(0));
+  let sum=0
+  for(let i=0;i<m;i+=1){
+       dp[i][0] =sum+obstacleGrid[i][0];
+       sum +=obstacleGrid[i][0];
+  }
+   sum=0
+  for(let i=0;i<n;i+=1){
+       dp[0][n] =sum+obstacleGrid[0][i];
+       sum+=obstacleGrid[0][i];
+  }
+   for(let i=1;i<m;i+=1){
+    for(let j=1;j<n;j+=1){
+      dp[i][j]=Math.min(dp[i-1][j],dp[i][j-1])+obstacleGrid[i][j]
+    }
+  }
+  return dp[m-1]dp[n-1]
+
+}
+
+
+```
+
+## 最大和的连续子数组
+53.最大子数组和
+```js
+// dp[i]一直到下标i的最大连续子数组之和
+function maxSubArray(nums){
+  let dp=[];
+  dp[0] =nums[0];
+  let max=dp[0];
+  for(let i=1;i<nums.length;i+=1){
+    dp[i] =Math.max(dp[i-1]+nums[i],nums[i])
+    max =Math.max(max,dp[i])
+  }
+  return max;
+}
 
 ```
