@@ -60734,7 +60734,7 @@ function insertSort(arr){
 ```
 
 ## n*logn复杂度的排序有哪些？
-- 快速排序
+- 快速排序又称为划分交换排序
 - 归并排序
 
 ## 如何实现快速排序和归并排序？
@@ -60744,7 +60744,7 @@ function insertSort(arr){
      return arr.slice();
    }
 
-   const  pivot =arr[match.floor(Math.random().arr.length)];
+   const  pivot =arr[Math.floor(Math.random()*arr.length)];
 
    let left =[];
    let right=[];
@@ -60761,7 +60761,7 @@ function insertSort(arr){
           }
 
    }
-      return quickSort(left).conact(middle,quickSort(right))
+      return quickSort(left).concat(middle,quickSort(right))
  }
 
 
@@ -60774,7 +60774,7 @@ function insertSort(arr){
    const  pivot =arr[arr.length-1];
    const  left=arr.filter((v,i)=>v<=pivot && i!==arr.length-1);
    const right =arr.filter(v=>v>pivot);
-   return quickSort2(left).conact(middle,quickSort2(right))
+   return quickSort2(left).concat(middle,quickSort2(right))
  }
 
 ```
@@ -60783,7 +60783,7 @@ function insertSort(arr){
 function merge(left,right){
   let res=[];
   let i=0;
-  let j=o;
+  let j=0;
   while(i<left.length && j<right.length){
     if(left[i]<right[j]){
       res.push(left[i]);
@@ -61666,3 +61666,6 @@ plugins[
 
 
 算法课：https://shimo.im/docs/68cd6h3TwygPwx8W/read
+
+
+算法：https://github.com/zhengyalizyl/algorithm-study.git/
