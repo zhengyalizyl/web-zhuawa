@@ -33,7 +33,7 @@ const arr=[2,6,5,9,3,1,8,4,7]
 function bubbleSort3(arr){
   const len =arr.length;
   for(let i=0;i<len;i+=1){
-    let unSwap=0;
+    let unSwap=true;
     for(let j=0;j<len-i-1;j+=1){
       if(arr[j]>arr[j+1]){
         [arr[j],arr[j+1]] =[arr[j+1],arr[j]];
