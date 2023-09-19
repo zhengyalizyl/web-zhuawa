@@ -60418,7 +60418,7 @@ lru.get(1)
 ```js
 var levelOrder =function(root){
   if(!root){return []};
-  let queque =[root];
+  let queue =[root];
    let result =[];
 
     //开始循环
@@ -60440,6 +60440,27 @@ var levelOrder =function(root){
     }
     return result
 }
+```
+
+```js
+var order = function(root, ans, k) {
+    if (!root) { return [] }
+    if (k == ans.length) {
+        ans[k] = [];
+    }
+    ans[k].push(root.val);
+    order(root.left, ans, k + 1);
+    order(root.right, ans, k + 1);
+}
+var levelOrderBottom = function(root) {
+    //先从上到下循环
+    let k = 0;
+    let ans = [];
+    order(root, ans, k);
+    return ans
+};
+
+
 ```
 
 ## 获取二叉树的层级
