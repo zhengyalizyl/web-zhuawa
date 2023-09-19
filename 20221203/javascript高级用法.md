@@ -60932,14 +60932,14 @@ function lengthOfLongestSubstring(s){
 # 突击课 - 二分与回溯
 一个典型的二分的写法：
 ```js
-   function serach(arr,target){
+   function serach(arr,value){
     let low=0;
     let high =arr.length-1;
     while(low<=high){
       let mid=low+((high -low)>>1);
       if(arr[mid]===value){
         return mid;
-      }else if(arr[mid]<value>){
+      }else if(arr[mid]<value){
         low =mid+1;
       }else{
          high=mid-1
@@ -60957,6 +60957,7 @@ function lengthOfLongestSubstring(s){
 2. mid = low+((high -low)>>1); 而不是mid =(low+high)/2;因为两者之和，有可能会溢出
 3. low = mid+1;high=mid-1,如果直接写成 low = mid或者high =mid,可能会发生死循环
 
+
 二分场景：
 1. 二分依赖的是顺序表，是数组，而不是链表
 2. 二分查找的一定是有序数组
@@ -60966,14 +60967,14 @@ function lengthOfLongestSubstring(s){
 ## 搜索插入的位置
 1. 
 ```js
-   function search(arr,target){
+   function search(arr,value){
     let low=0;
     let high =arr.length-1;
     while(low<=high){ // 这里是为了防止数组是为偶数，
-      let mid=low+((high -low)>>1);
+      let mid=low+((high -low)>>1); //可以用let mid=low+parseInt((high-low)/2)
       if(arr[mid]===value){
         return mid;
-      }else if(arr[mid]<value>){
+      }else if(arr[mid]<value){
         low =mid+1;
       }else{
          high=mid-1

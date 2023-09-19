@@ -3,7 +3,7 @@
      return arr.slice();
    }
 
-   const  pivot =arr[match.floor(Math.random().arr.length)];
+   const  pivot =arr[Math.floor(Math.random()*arr.length)];
 
    let left =[];
    let right=[];
