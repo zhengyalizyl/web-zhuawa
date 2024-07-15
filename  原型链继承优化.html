@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>原型链继承</title>
+</head>
+
+<body>
+    <script>
+      function Parent(){
+        this.names =["zyl","zyl1"];
+      }
+      Parent.prototype.getName =function(){
+        console.log(this.name);
+      }
+
+      function Child(){
+           Parent.call(this)
+      }
+
+      Child.prototype=new Child();
+      var child1 =new Child();
+      child1.names.push('zyl2');
+      console.log(child1.name);//["zyl","zyl1","zyl2"];
+      var child2 =new Child();
+      console.log(child2.name);//["zyl","zyl1"];
+    </script>
+</body>
+
+</html>
