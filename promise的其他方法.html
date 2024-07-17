@@ -5,7 +5,7 @@
     <meta charset="UTF-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>promise的实现</title>
+    <title>promise的其他方法实现</title>
 </head>
 
 <body>
@@ -131,6 +131,101 @@
       return  thenPormise;
     
     }
+
+
+//     1. 接收一个Promise数组，数组中如有非Promise项，则此项当做成功；
+// 2. 如果所有Promise都成功，则返回成功结果数组；
+// 3. 如果有一个Promise失败，则返回这个失败结果；
+  all(promises){
+    let count=0;
+    let result=[];
+    return new Promise2((resolve,reject)=>{
+      var addData=(val,index)=>{
+         result[index] =val;
+         count++;
+         if(count===promises.length){
+            resolve(resolve)
+         }
+      }
+       
+      promises.forEach((promise,index)=>{
+           if(promise instanceof Promise2){
+              promise.then(res=>{
+                 addData(res,index)
+              },err=>reject(err))
+           }else{
+            addData(promise,index)
+           }
+      })
+    })
+    
+  }
+
+  // 1. 接收一个Promise数组，数组中如有非Promise项，则此项当做成功；
+  // 2. 哪个Promise最快得到结果，就返回那个结果，无论成功失败；
+  race(promises){
+
+     return new Promise2((resolve,reject)=>{
+        promises.forEach((promise,index)=>{
+           if(promise instanceof Promise2){
+             promise.then(res=>resolve(res),err=>reject(err))
+           }else{
+               resolve(promise)
+           }
+        })
+     })
+  }
+
+
+//   1. 接收一个Promise数组，数组中如有非Promise项，则此项当做成功；
+// 2. 把每一个Promise的结果，集合成数组后返回；
+allSettled(promises){
+  return new Promise2((resolve,reject)=>{
+    let count=0;
+  let result=[];
+  var addData=(status,val,index)=>{
+    result[index]={
+       status,
+       value:val
+    }
+    count++;
+    if(count===promises.length){
+        resolve(result);
+    }
+  }
+     promises.forEach((promise,index)=>{
+       if(promise instanceof Promise2){
+         promise.then(res=>addData('fulfilled',res,index),err=>addData('rejected',res,index))
+       }else{
+         addData('fulfilled',promise,index)
+       }
+     })
+  })
+}
+
+// 1. 接收一个Promise数组，数组中如有非Promise项，则此项当做成功；
+// 2. 如果有一个Promise成功，则返回这个成功结果；
+// 3. 如果所有Promise都失败，则报错；
+any(promises){
+   return new Promise2((resolve,reject)=>{
+      let count=0;
+      promises.forEach((promise,index)=>{
+         if(promise instanceof Promise2){
+           promise.then(val=>{
+            resolve(val);
+           },err=>{
+            count++;
+            if(count===promises.length){
+              reject(new Error('all promise were rejected '))
+            }
+           })
+         }
+      })
+   })
+}
+
+
+
 
   }
     </script>
