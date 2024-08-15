@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useState } from 'react'
 import Navigation from '../../components/navigation'
 import Card from '../../components/card'
 import Tabs from './tabs'
@@ -9,12 +9,19 @@ import SelfFunctions from './SelfFunctions'
 type Props = {}
 
 function Home({}: Props) {
+
+  // 代表着，我的切换后的目录，该不该隐藏。
+  const [hide, setHide] = useState<boolean>(true)
+
+  const handleChange = (isHide: boolean) => {
+    setHide(isHide)
+  }
   return (
     <div className=' bg-gray-100 w-full'>
-      <Navigation />
+       <Navigation className="sticky top-0" hide={hide} />
       <div className=' mx-auto max-w-5xl flex my-2 px-2'>
         <Card className='w-2/3' >
-          <Tabs />
+        <Tabs onChange={handleChange} />
         </Card>
         <div className='w-1/3 flex flex-col flex-1'>
           <Card className='w-full'>

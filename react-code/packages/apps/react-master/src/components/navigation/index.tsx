@@ -13,10 +13,23 @@ const Logo = () => <div className='px-2'>
 </div>
 
 export interface NavProps {
-  navs?: ZHRouter
+  navs?: ZHRouter,
+  isFristLevel?: boolean
+}
+const tabs = [
+  {title: '关注', path: '/follow'},
+  {title: '推荐', path: '/'},
+  {title: '热榜', path: '/hot'},
+  {title: '视频', path: '/zvideo'},  
+]
+
+
+type Props = {
+  className: string;
+  hide: boolean;
 }
 
-const NavTab:FC<NavProps>=({navs})=>{
+const NavTab:FC<NavProps>=({navs,isFristLevel})=>{
   const navigation =useLocation();
   const getParentPath = () => {
     let pathRes;
@@ -37,7 +50,7 @@ const NavTab:FC<NavProps>=({navs})=>{
       to={item.path || '/'}
       className={({ isActive }: NavLinkRenderProps) => {
         return " hover:text-black mx-4 h-full py-3.5 transition-all  " +
-        ((isActive || getParentPath() === item.path) ? "font-extrabold text-black border-b-4 border-blue-600"  : "text-gray-400")
+        ((isActive || (getParentPath() === item.path && isFristLevel)) ? "font-extrabold text-black border-b-4 border-blue-600"  : "text-gray-400")
       }}
     >{item?.title}</NavLink>)
   }
@@ -56,21 +69,31 @@ const MenuAlarm = () => <div className='flex mr-10 gap-4'>
   </div>
 </div>
 
-const  Navigation=()=>{
+
+const Navigation = ({ className, hide }: Props) => {
   return (
-    <div className='bg-white w-screen shadow-lg'>
+    <div className={'bg-white w-screen shadow-lg overflow-hidden h-14 ' + className}>
       <div className='max-w-6xl mx-auto my-0 flex justify-center w-full'>
-        <div  className='h-14 w-full flex justify-between items-center min-w-max'>
-          <div className='flex items-center'>
-            <Logo/>
-            <NavTab navs={router} />
+        <div className={`w-full flex flex-col relative justify-between items-center min-w-max transition-all duration-300 ${hide ? "top-0": "-top-14"} `}>
+          <div className='w-full h-14 flex justify-between items-center min-w-max '> 
+            <div className='flex items-center'>
+              <Logo />
+              <NavTab navs={router} isFristLevel={true} />
+            </div>
+            <Search />
+            <MenuAlarm />
           </div>
-         <Search/>
-         <MenuAlarm />
-      
+          <div className='w-full h-14 flex justify-between items-center min-w-max '>
+            <div className='flex items-center'>
+              <Logo />
+              <NavTab navs={tabs} />
+            </div>
+            {/* <Search /> */}
+          </div>
         </div>
-        </div> 
+      
       </div>
+    </div>
   )
 }
 
