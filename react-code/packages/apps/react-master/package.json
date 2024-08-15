@@ -3,7 +3,9 @@
   "version": "1.0.0",
   "main": "index.js",
   "scripts": {
-    "start": "webpack-dev-server --config scripts/webpack.dev.js"
+    "start": "webpack-dev-server --config scripts/webpack.dev.js",
+    "build": "webpack -c scripts/webpack.prod.js",
+    "dist": "webpack -c scripts/webpack.prod.js && tar -zcvf dist.tar dist"
   },
   "author": "",
   "license": "ISC",
@@ -32,9 +34,13 @@
     "webpack-merge": "^5.10.0"
   },
   "dependencies": {
+    "@headlessui/react": "^2.1.2",
+    "@heroicons/react": "^2.1.5",
+    "@types/lodash-es": "^4.17.12",
     "@types/react": "^18.3.3",
     "@types/react-dom": "^18.3.0",
     "@types/react-router-dom": "^5.3.3",
+    "lodash-es": "^4.17.21",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "react-router-dom": "^6.26.0"
