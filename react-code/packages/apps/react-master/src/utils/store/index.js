@@ -124,4 +124,4 @@ const CreateSessionStore = function(bizcode, ...rest) {
 CreateSessionStore.prototype = Object.create(CreateStore.prototype);
 CreateSessionStore.prototype.constructor = CreateSessionStore;
 
-export const localStore = new CreateLocalStore('zhaowa');
+export const localStore = new CreateLocalStore('zyl');

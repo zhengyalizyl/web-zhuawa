@@ -2,6 +2,7 @@ const { merge } = require("webpack-merge");
 const baseCfg = require("./webpack.base");
 const CssMinimizerPlugin = require("css-minimizer-webpack-plugin");
 const TerserPlugin = require("terser-webpack-plugin");
+const ZipPlugin = require("../zipPlugin");
 
 module.exports = merge(baseCfg(false), {
     mode: "production",
@@ -35,6 +36,10 @@ module.exports = merge(baseCfg(false), {
                 }
             },
             
-        }
-    }
+        },
+       
+    },
+    plugins: [
+        new ZipPlugin({ filename: 'teach.zip'})
+    ]
 })

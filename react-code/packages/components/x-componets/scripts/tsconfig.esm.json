@@ -1,0 +1,21 @@
+{
+    "extends": "../tsconfig.json",
+    "ts-node": {
+        "transplieOnly": true,
+        "require": ["typescript-transform-paths/register"]
+    },
+    "compilerOptions": {
+        "plugins": [
+            { "transform": "typescript-transform-paths" },
+            { 
+                "transform": "typescript-transform-paths",
+                "afterDeclarations": true 
+            },
+        ],
+        "declaration": true,
+        "jsx":"react",
+        "jsxFactory": "React.createElement",
+        "jsxFragmentFactory": "React.Fragment"
+    },
+    "include": ["../src"]
+}

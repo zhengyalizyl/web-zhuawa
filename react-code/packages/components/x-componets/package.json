@@ -1,0 +1,38 @@
+{
+  "name": "@zyl/components",
+  "version": "1.0.0",
+  "description": "",
+  "main": "esm/index.js",
+  "scripts": {
+    "build": "rollup -c ./scripts/rollup.config.js",
+    "start": "rollup -c ./scripts/rollup.config.js -w"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "@rollup/plugin-alias": "^5.1.0",
+    "@rollup/plugin-commonjs": "^25.0.7",
+    "@rollup/plugin-node-resolve": "^15.2.3",
+    "postcss": "^8.4.41",
+    "postcss-pxtorem": "5.1.1",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "rollup-plugin-auto-add": "^0.0.6",
+    "rollup-plugin-clear": "^2.0.7",
+    "rollup-plugin-multi-input": "^1.4.1",
+    "rollup-plugin-peer-deps-external": "^2.2.4",
+    "rollup-plugin-postcss": "^4.0.2",
+    "rollup-plugin-terser": "^7.0.2",
+    "rollup-plugin-typescript2": "^0.36.0",
+    "typescript": "^5.5.4",
+    "typescript-transform-paths": "^3.4.7"
+  },
+  "peerDependencies": {
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0"
+  },
+  "dependencies": {
+    "rollup": "^2.79.1"
+  }
+}

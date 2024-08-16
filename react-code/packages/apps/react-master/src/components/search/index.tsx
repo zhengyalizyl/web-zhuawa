@@ -1,6 +1,6 @@
 import React, { ChangeEventHandler, FocusEventHandler, Fragment, KeyboardEventHandler, useEffect, useRef, useState } from 'react'
-import { localStore } from '../../utils/store';
-import {Button} from '@zw/components';
+import { localStore } from '../../utils/store/index';
+import {Button} from '@zyl/components';
 type Props = {}
 
 const Search = (props: Props) => {
