@@ -1,0 +1,21 @@
+{
+    "presets": [
+        [
+            "@babel/preset-env",
+            {
+                "modules": false,
+                "loose": true,
+                "targets": "node 16",
+                "useBuiltIns": "usage",
+                "corejs": {
+                    "version":"3.36",
+                    "proposals": true
+                }
+            }
+        ]
+    ],
+    "plugins": [
+        ["@babel/plugin-proposal-decorators", { "legacy": true }],
+        ["@babel/plugin-proposal-class-properties", { "loose": true }]
+    ]
+}
