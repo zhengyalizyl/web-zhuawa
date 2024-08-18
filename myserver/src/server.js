@@ -12,14 +12,14 @@ app.keys=['qG0QpVft4P1_u6U~ixLdspa0C,-PnR1+'];
 const  CONFIG={
     key:'zyl',
     maxAge:86400000,
-    autoCommit:true,
-    overwrite:true,
-    httpOnly:true,
-    signed:true,
-    rolling:false,
-    renew:false,
-    secure:true,
-    sameSite:null
+    // autoCommit:true,
+    // overwrite:true,
+    // httpOnly:true,
+    // signed:true,
+    // rolling:false,
+    // renew:false,
+    // secure:true,
+    // sameSite:null
 }
 
 app.use(session(CONFIG,app))
