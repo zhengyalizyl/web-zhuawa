@@ -1,0 +1,20 @@
+{
+	"name": "myserver",
+	"version": "1.0.0",
+	"description": "",
+	"main": "index.js",
+	"scripts": {
+		"dev": "nodemon --max_old_space_size=10240 ./src/main.js"
+	},
+	"dependencies": {
+		"@koa/router": "^12.0.1",
+		"jsonwebtoken": "^9.0.2",
+		"koa": "^2.15.1",
+		"koa-bodyparser": "^4.4.1",
+		"koa-session": "^6.4.0",
+		"mongoose": "^8.2.2",
+		"nodemon": "^3.1.0"
+	},
+	"author": "",
+	"license": "ISC"
+}
