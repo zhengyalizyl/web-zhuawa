@@ -1,0 +1,21 @@
+{
+  "name": "pandora",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "dev": "vite",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@vitejs/plugin-vue": "^5.1.2",
+    "dexie": "^4.0.8",
+    "eventemitter3": "^5.0.1",
+    "lodash": "^4.17.21",
+    "vite": "^5.4.1",
+    "vue": "^3.4.38",
+    "vue-router": "^4.4.3"
+  }
+}
