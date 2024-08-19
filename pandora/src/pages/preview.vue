@@ -110,5 +110,6 @@ onMounted(() => {
     position: absolute;
     top: -2px;
     left: -2px;
+    z-index: 2;
 }
 </style>
