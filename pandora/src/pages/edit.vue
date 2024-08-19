@@ -1,198 +1,129 @@
 <template>
-    <div class="edit_container fl fl_jc_fs fl_ai_fs">
-        <div class="edit_left">
-            <template v-for="item in ToolsList" :key="item.componentName">
-                <div class="edit_tools_item flv fl_jc_c fl_ai_c" @click="addComp(item.componentName, item.limit)">
-                    <img :src="item.iconUrl" class="edit_tools_item_icon" />
-                    <span class="edit_tools_item_title">{{ item.name }}</span>
-                    <span class="edit_tools_item_count">{{ ToolItemCount[item.componentName] }} / {{ item.limit }}</span>
-                </div>
-            </template>
-            <!-- <button @click="addComp('TitleText')">标题文本</button>
-            <button @click="addComp('Image')">图片</button>
-            <button @click="addComp('Carousel')">轮播</button> -->
-        </div>
-        <div class="edit_main">
-            <iframe id="edit_preview_iframe" src="/preview" class="edit_iframe" />
-        </div>
-        <div class="edit_right">
-            <div class="edit_right_type">
-                {{ selectedComponent.name }}
+    <div class="editor_container flv">
+        <div class="editor_header">header</div>
+        <div class="editor_body fl fl_jc_sb">
+            <div class="editor_body_tools">
+                <EditorTools />
             </div>
-            <component :is="selectedComponent.configComponentName" :data="selectedComponent" :onChange="onChange"></component>
+            <div class="editor_body_preview">
+                <iframe
+                    id="js_editor_body_preview_iframe"
+                    class="editor_body_preview_iframe"
+                    src="/preview"
+                    frameborder="0" />
+            </div>
+            <div class="editor_body_config">
+                <EditorConfig :component_item="current_component" />
+            </div>
         </div>
     </div>
 </template>
-<script>
-// 导入要注册的组件
-import TitleTextConfig from "../components/editor_config/title_text_config.vue";
-
-export default {
-    // 在这里局部注册
-    components: {
-        TitleTextConfig
-    }
-};
-</script>
 <script setup>
 import { onMounted, ref } from "vue";
-import _remove from "lodash/remove";
-import state, { ToolsList, ToolItemCount } from "../stores/editor_store";
-import db from "../db";
-// 当前选中的组件
-const selectedComponent = ref({});
+import EditorTools from "../components/editor_tools/index.vue";
+import EditorConfig from "../components/editor_config/index.vue";
+import state from "../stores/editor_store";
+import _findIndex from "lodash/findIndex";
+
+const current_id = ref("");
+const current_component = ref({});
+
 let childIFrame = null;
-const ComponentMap = {
-    TitleText: {
-        name: "标题文本",
-        componentName: "TitleText",
-        configComponentName: "TitleTextConfig",
-        value: "这里是标题文本",
-        styles: {
-            textAlign: "left",
-            fontWeight: "normal",
-            color: "#333",
-            backgroundColor: "#fff"
-        },
-        is_splite_line: false,
-        is_more: false,
-        more_setting: {
-            mode: "mod1",
-            url: "",
-            text: "查看更多"
-        }
-    },
-    Image: {
-        name: "图片",
-        componentName: "Image",
-        value: "",
-        styles: {
-            margin: "",
-            borderRadius: "",
-            boxShadow: ""
-        }
-    },
-    Carousel: {
-        name: "轮播",
-        componentName: "Carousel",
-        value: [
-            {
-                name: "图片",
-                componentName: "Image",
-                value: "",
-                styles: {
-                    margin: "",
-                    borderRadius: "",
-                    boxShadow: ""
-                }
-            }
-        ]
-    }
-};
-const addComp = (key, limit) => {
-    if (ComponentMap[key] && ToolItemCount[key] < limit) {
-        const cid = s4() + s4();
-        const cData = { ...ComponentMap[key] };
-        cData.id = cid;
-        // console.log(cData);
-        state.components.push(cData);
-        ToolItemCount[key]++;
-        // window.postMessage(cData);
-        childIFrame.postMessage({ message: "addComponent", data: cData });
-        db.states.add({...cData, create_time: Date.now()});
-    }
-};
-const s4 = () => {
-    return (((1 + Math.random()) * 0x10000) | 0).toString(16).substring(1);
-};
 
-function deleteComponent(cid) {
-    state.components = _remove(state.components, item => {
-        return item.id === cid;
-    });
-}
-
-function onChange(key, value){
-    // console.log(key,'===',value);
-    selectedComponent.value[key] = value
-    childIFrame.postMessage({ message: "updateComponent", data: JSON.parse(JSON.stringify(selectedComponent.value)) });
+function s4() {
+    return Math.floor((1 + Math.random()) * 0x10000)
+        .toString(16)
+        .substring(1);
 }
 
 onMounted(() => {
-    childIFrame = document.getElementById("edit_preview_iframe").contentWindow;
+    childIFrame = document.getElementById("js_editor_body_preview_iframe").contentWindow;
     if (childIFrame) {
-        childIFrame.postMessage({ message: "init", data: null });
+        setTimeout(() => {
+            childIFrame.postMessage({ message: "init", data: null });
+        }, 300);
     }
+
     window.addEventListener("message", event => {
-        // console.log('Message received:', event.data);
         const { message, data } = event.data;
-        if (message === "deleteComponent" && data && data.id) {
-            deleteComponent(data.id);
-        }
-        if(message === "selectComponent" && data && data.id){
-            state.components.forEach(item => {
-                if(item.id === data.id){
-                    selectedComponent.value = item;
-                }
-            })
+        console.log("子iframe发送的数据:---->", message, "--->>", data);
+
+        switch (message) {
+            case "selectComponent":
+                current_id.value = data;
+                current_component.value =
+                    state.components[
+                        _findIndex(state.components, function (o) {
+                            return o.id == data;
+                        })
+                    ];
+                break;
         }
     });
+
+    _EE_.on("createComponent", item => {
+        const temp = Object.assign({}, item.componentSchema);
+        temp.id = s4() + s4();
+        state.components.push(temp);
+        // console.log('----->>', JSON.parse(JSON.stringify(state.components)));
+        if (state.countComponents[item.componentName]) {
+            state.countComponents[item.componentName]++;
+        } else {
+            state.countComponents[item.componentName] = 1;
+        }
+        childIFrame.postMessage({ message: "createComponent", data: temp });
+    });
+    _EE_.on("updateComponent", changeData => {
+        state.components[
+            _findIndex(state.components, function (o) {
+                return o.id == changeData.id;
+            })
+        ][changeData.key] = changeData.value;
+        childIFrame.postMessage({ message: "updateComponent", data: changeData });
+    });
+    _EE_.on("deleteComponent", item => {});
+    
 });
 </script>
 
 <style scoped>
-.edit_left {
-    width: 200px;
-    height: 100vh;
-    display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    align-content: start;
-    grid-gap: 10px;
-    margin-top: 24px;
-}
-.edit_main {
-    flex: 1;
-    background-color: #f7f8fa;
-    height: 100vh;
-    min-width: 400px;
-}
-.edit_right {
-    width: 376px;
+.editor_container {
+    width: 100vw;
     height: 100vh;
 }
 
-.edit_iframe {
+.editor_header {
+    height: 55px;
+    border-bottom: 1px solid #ebedf0;
+}
+
+.editor_body {
+    height: calc(100vh - 56px);
+    overflow: hidden;
+}
+
+.editor_body_tools {
+    width: 200px;
+    height: 100%;
+}
+
+.editor_body_preview {
+    background: #f7f8fa;
     width: 100%;
-    height: 844px;
-    background-color: #fff;
-    margin-top: 24px;
-    border: none !important;
+    height: 100%;
+    flex: 1;
 }
-.edit_tools_item {
-    width: 80px;
-    height: 88px;
-    cursor: pointer;
+
+.editor_body_config {
+    width: 376px;
+    height: 100%;
 }
-.edit_tools_item_icon {
-    width: 32px;
-    height: 32px;
-}
-.edit_tools_item_title {
-    font-size: 12px;
-    margin-top: 4px;
-    color: #323233;
-}
-.edit_tools_item_count {
-    font-size: 12px;
-    margin-top: 4px;
-    color: #7d7e80;
-}
-.edit_right_type{
-    font-size: 18px;
-    font-weight: 600;
-    line-height: 24px;
-    color: #323233;
-    padding: 24px 16px;
-    border-bottom: 1px solid #f2f4f6;
+
+.editor_body_preview_iframe {
+    border: none;
+    width: 100%;
+    height: 100%;
+    margin: 0;
+    padding: 0;
 }
 </style>

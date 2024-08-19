@@ -1,76 +1,59 @@
 <template>
     <div class="preview_content">
-        <template v-if="state.components.length > 0">
-            <div
-                v-for="item in state.components"
-                :key="item.id"
-                @click="selectComponent(item.id)"
-                class="component_box">
-                <div class="component_title">{{ item.name }}</div>
-                <div class="seleted_component_box" v-if="currentComponentId === item.id"></div>
-                <div class="selected_component_opt" v-if="currentComponentId === item.id"></div>
-                <component :is="item.componentName" :data="item"></component>
+        <div class="components_content">
+<!--{{ state.components }}-->
+            <div class="component_item" v-for="item in state.components" :key="item.id">
+                <div class="" @click="selectComponent(item)">
+                    <component :is="item.componentName" :data="item"></component>
+                </div>
+                <div class="selected_box" v-show="item.id === current_id"></div>
+                <span class="tip" :class="{ active: item.id === current_id }">{{ item.name }}</span>
             </div>
-        </template>
+        </div>
     </div>
 </template>
 <script>
-// 导入要注册的组件
-import TitleText from "../components/editor_config/title_text_config.vue";
-
+import TitleText from "@components/title_text/index.vue";
+import Image from "@components/image/index.vue";
 export default {
-    // 在这里局部注册
     components: {
-        TitleText
+        TitleText,
+        Image
     }
 };
 </script>
+
 <script setup>
 import { onMounted, ref } from "vue";
-import _remove from "lodash/remove";
+import _findIndex from "lodash/findIndex";
 import state from "../stores/editor_store";
-// 父节点的document
+
+const current_id = ref("");
+
 let parent = null;
-const currentComponentId = ref("");
-function initMessage() {
-    window.addEventListener("message", event => {
-        // console.log('Message received:', event.data);
-        const { message, data } = event.data;
-        if (message === "init") {
-            parent = event.source;
-        }
-        if (message === "addComponent" && data && data.id) {
-            parent = event.source;
-            state.components.push(data);
-        }
-        if (message === "updateComponent" && data && data.id === currentComponentId.value) {
-            console.log("updateComponent:", data.value);
-            state.components.forEach((item, ind) => {
-                if (item.id === data.id) {
-                    state.components[ind] = { ...data };
-                    return;
-                }
-            });
-            // state.components[0] = data;
-        }
-    });
-}
 
-function selectComponent(cid) {
-    currentComponentId.value = cid;
-    parent.postMessage({ message: "selectComponent", data: { id: cid } });
-}
-
-function deleteComponent(item) {
-    // state.components = [];
-    _remove(state.components, o => {
-        return o.id === item.id;
-    });
-    parent.postMessage({ message: "deleteComponent", data: { id: item.id } });
-}
+const selectComponent = item => {
+    current_id.value = item.id;
+    parent.postMessage({ message: "selectComponent", data: item.id });
+};
 
 onMounted(() => {
-    initMessage();
+    window.addEventListener("message", event => {
+        const { message, data } = event.data;
+        parent = event.source;
+        if (message === "createComponent") {
+            // alert(JSON.stringify(data));
+            console.log(data);
+            state.components.push(data);
+        }
+        if (message === "updateComponent") {
+            state.components[
+                _findIndex(state.components, function (o) {
+                    return o.id == data.id;
+                })
+            ][data.key] = data.value;
+        }
+    });
 });
 </script>
 
@@ -79,48 +62,53 @@ onMounted(() => {
     width: 430px;
     height: 750px;
     background-color: #fff;
-}
-.component_title {
-    box-sizing: content-box;
-    padding: 4px 7px;
-    background-color: #155bd4;
-    box-shadow: 0 2px 4px 0 rgba(0, 0, 0, 0.1);
-    box-sizing: border-box;
-    position: absolute;
-    left: 0;
-    top: 0;
-    color: #fff;
-    font-size: 14px;
-    transform: translateX(-110%);
+    margin: 20px auto;
 }
 
-.component_title::after {
-    content: "";
+.tip {
+    padding: 6px;
+    border: 1px solid #e0e0e0;
+    position: absolute;
+    top: 0;
+    left: -6px;
+    transform: translate(-100%);
+    background-color: #fff;
+}
+.tip.active {
+    border: none;
+    background-color: #155bd4;
+    color: #fff;
+}
+.tip::before {
+    content: " ";
+    position: absolute;
+    right: -7px;
+    top: 13px;
+    border-top: 7px solid transparent;
+    border-left: 7px solid #e0e0e0;
+    border-bottom: 7px solid transparent;
+}
+.tip::after {
+    content: " ";
+    position: absolute;
+    right: -5px;
+    top: 14px;
+    border-top: 6px solid transparent;
+    border-left: 7px solid #fff;
+    border-bottom: 6px solid transparent;
+}
+
+.tip.active::after {
     border: 5px solid transparent;
     border-left-color: #155bd4;
-    position: absolute;
-    right: -9px;
-    top: 10px;
 }
 
-.seleted_component_box {
-    position: absolute;
-    width: 100%;
-    height: 100%;
+.selected_box {
     border: 2px solid #155bd4;
-    left: 0;
-    top: 0;
-    z-index: 999;
-}
-</style>
-
-<style>
-body {
-    background-color: #f7f8fa;
-}
-#root {
-    text-align: center;
-    display: flex;
-    justify-content: center;
+    height: calc(100% + 4px);
+    width: calc(100% + 4px);
+    position: absolute;
+    top: -2px;
+    left: -2px;
 }
 </style>

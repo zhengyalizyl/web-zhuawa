@@ -11,7 +11,7 @@
 </template>
 
 <script setup>
-import state from "../../stores/edit_store.js";
+import state from "../../stores/editor_store.js";
 
 const tools_list = [
     {
