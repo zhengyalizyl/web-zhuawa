@@ -16,6 +16,18 @@ router.get('/info', async (ctx) => {
     };
 });
 
+router.post('create',async(ctx)=>{
+    User.create({
+        name:'',
+        create_at:Date.now()
+    })
+  
+    const userInfo=await User.find().sort({_id:-1}).lean();
+    ctx.body = {
+        user:userInfo
+    };
+})
+
 const User = require('../../models/user');
 router.post('/login', async (ctx) => {
     // 获取用户登录账户和密码
