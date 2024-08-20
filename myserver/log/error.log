@@ -66,3 +66,37 @@
 2024-08-19 00:01 +08:00:   address: '::',
 2024-08-19 00:01 +08:00:   port: 6969
 2024-08-19 00:01 +08:00: }
+2024-08-20 00:02 +08:00: Error: listen EADDRINUSE: address already in use :::6969
+2024-08-20 00:02 +08:00:     at Server.setupListenHandle [as _listen2] (node:net:1463:16)
+2024-08-20 00:02 +08:00:     at listenInCluster (node:net:1511:12)
+2024-08-20 00:02 +08:00:     at Server.listen (node:net:1599:7)
+2024-08-20 00:02 +08:00:     at Application.listen (/Volumes/F/zyl-study/web-zhuawa/myserver/node_modules/koa/lib/application.js:88:19)
+2024-08-20 00:02 +08:00:     at Object.<anonymous> (/Volumes/F/zyl-study/web-zhuawa/myserver/src/server.js:32:5)
+2024-08-20 00:02 +08:00:     at Module._compile (node:internal/modules/cjs/loader:1198:14)
+2024-08-20 00:02 +08:00:     at Object.Module._extensions..js (node:internal/modules/cjs/loader:1252:10)
+2024-08-20 00:02 +08:00:     at Module.load (node:internal/modules/cjs/loader:1076:32)
+2024-08-20 00:02 +08:00:     at Function.Module._load (node:internal/modules/cjs/loader:911:12)
+2024-08-20 00:02 +08:00:     at Module.require (node:internal/modules/cjs/loader:1100:19) {
+2024-08-20 00:02 +08:00:   code: 'EADDRINUSE',
+2024-08-20 00:02 +08:00:   errno: -48,
+2024-08-20 00:02 +08:00:   syscall: 'listen',
+2024-08-20 00:02 +08:00:   address: '::',
+2024-08-20 00:02 +08:00:   port: 6969
+2024-08-20 00:02 +08:00: }
+2024-08-20 00:02 +08:00: Error: listen EADDRINUSE: address already in use :::6969
+2024-08-20 00:02 +08:00:     at Server.setupListenHandle [as _listen2] (node:net:1463:16)
+2024-08-20 00:02 +08:00:     at listenInCluster (node:net:1511:12)
+2024-08-20 00:02 +08:00:     at Server.listen (node:net:1599:7)
+2024-08-20 00:02 +08:00:     at Application.listen (/Volumes/F/zyl-study/web-zhuawa/myserver/node_modules/koa/lib/application.js:88:19)
+2024-08-20 00:02 +08:00:     at Object.<anonymous> (/Volumes/F/zyl-study/web-zhuawa/myserver/src/server.js:32:5)
+2024-08-20 00:02 +08:00:     at Module._compile (node:internal/modules/cjs/loader:1198:14)
+2024-08-20 00:02 +08:00:     at Object.Module._extensions..js (node:internal/modules/cjs/loader:1252:10)
+2024-08-20 00:02 +08:00:     at Module.load (node:internal/modules/cjs/loader:1076:32)
+2024-08-20 00:02 +08:00:     at Function.Module._load (node:internal/modules/cjs/loader:911:12)
+2024-08-20 00:02 +08:00:     at Module.require (node:internal/modules/cjs/loader:1100:19) {
+2024-08-20 00:02 +08:00:   code: 'EADDRINUSE',
+2024-08-20 00:02 +08:00:   errno: -48,
+2024-08-20 00:02 +08:00:   syscall: 'listen',
+2024-08-20 00:02 +08:00:   address: '::',
+2024-08-20 00:02 +08:00:   port: 6969
+2024-08-20 00:02 +08:00: }

@@ -1,0 +1,21 @@
+const path=require('path');
+module.exports={
+   entry:"./main.js",
+   output:{
+    path:path.resolve(__dirname,"./dist"),
+    filename:"bundle.[chunkhash].js",
+    publicPath:'./'
+   },
+   module:{
+    rules:[
+      {
+        test:/.(png|jpe?g|svg|gif)$/,
+        use:["file-loader"]
+      },
+      {
+        test:/.md$/,
+        use:[path.resolve(__dirname,'./loaders/md-loader')]
+      }
+    ]
+   }
+}
