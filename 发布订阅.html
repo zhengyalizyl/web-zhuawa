@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>发布订阅模式</title>
+</head>
+
+<body>
+    <script>
+    class MyEventEmitter{
+      eventMap={};
+       constructor(){}
+      addEvent(type,cb){
+           if(!this.eventMap[type]){
+               this.eventMap[type]=[]
+           }
+           this.eventMap[type].push(cb);
+      }
+
+      removeEvent(type,cb){
+        if(!this.eventMap[type]){
+              return 
+           }
+           this.eventMap[type]= this.eventMap[type].filter(i=>i!=cb)
+      }
+
+      tiggerEvent(type,data){
+        if(!this.eventMap[type]){
+              return 
+           }
+           this.eventMap[type].forEach(cb=>cb(data))
+      }
+    }
+
+    const listener=(dat)=>{
+      console.log('cb1',data)
+    }
+    const mee =new MyEventEmitter();
+    mee.addEvent('xxx',listener);
+    mee.addEvent('xxx',data=>{
+      console.log('cb2',data)
+    })
+
+
+    </script>
+</body>
+
+</html>
