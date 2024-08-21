@@ -1,0 +1,18 @@
+.config_container{
+  width:300px;
+}
+
+.config_title{
+  font-size: 16px;
+  font-weight:600
+}
+.config_prop_item{
+  display: flex;
+  margin-bottom: 10px;
+  gap:10px;
+}
+
+.config_current_comp{
+  margin:10px 0;
+  display: flex;
+}

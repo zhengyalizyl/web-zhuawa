@@ -1,0 +1,15 @@
+.editor_container{
+ flex:1;
+ border:1px dashed #ccc;
+}
+.editor_empty{
+  display: flex;
+  justify-content: center;
+  height:100%;
+  align-items:center;
+}
+
+.editor_dragging{
+  opacity: 0.5;
+  background:#ccc;
+}

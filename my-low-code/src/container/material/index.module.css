@@ -1,0 +1,20 @@
+.material_container{
+  width:200px;
+  padding:10px;
+}
+
+.material_item{
+  border:1px solid #ccc;
+  padding:5px 10px;
+  margin-bottom: 10px;
+  display: flex;
+  justify-content: center;
+  border-radius: 5px;
+  cursor: pointer;
+}
+
+.material_title{
+  font-weight: 600;
+  font-size: 16px;
+  margin-bottom: 10px;
+}
