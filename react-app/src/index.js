@@ -41,6 +41,7 @@ export async function mount(props){
 export async function unmount(props){
   const { container } = props;
   const root=container ? container.querySelector('#root') : document.querySelector('#root');
+  render(props,true)
   // console.log(root.unmount, ReactDOM.unmountComponentAtNode,'-----root')
   // ReactDOM.unmountComponentAtNode(container ? container.querySelector('#root') : document.querySelector('#root'));
 }

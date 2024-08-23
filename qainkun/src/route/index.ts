@@ -1,4 +1,3 @@
-import { eventNames, listeners } from "process";
 import { EventType } from "../types";
 import { getAppList } from "../appList";
 import { getAppListStatus } from "../utils";
