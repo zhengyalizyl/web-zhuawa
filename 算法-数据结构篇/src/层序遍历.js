@@ -1,3 +1,4 @@
+//层序遍历
 function bfs(root){
    const queue=[];
    queue.push(root);
