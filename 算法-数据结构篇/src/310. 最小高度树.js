@@ -9,3 +9,109 @@
 
 // 树的 高度 是指根节点和叶子节点之间最长向下路径上边的数量。
 
+/**
+ * @param {number} n
+ * @param {number[][]} edges
+ * @return {number[]}
+ */
+ //edges.length == n - 1,因为这个是一个稀疏图
+ //先构建graph,然后采用bfs的方式计算最短的路径
+ let visited=[];
+var findMinHeightTrees = function(n, edges) {
+   const g=[];
+   for(let i=0;i<n;i++){
+    g.push([])
+   }
+  
+   //无向图转成双向图
+   for(let [from ,to] of edges){
+    g[from].push(to);
+    g[to].push(from);
+   }
+
+   let minHeight=Number.MAX_SAFE_INTEGER;
+   let res=[];
+   for(let i=0;i<n;i++){
+     visited=new Array(n);
+     const h=bfs(g,i);
+     if(h<minHeight){
+        minHeight=h;
+        res=[i];
+     }else if(h==minHeight){
+        res.push(i)
+     }
+   }
+   return res;
+};
+
+class myQueue{
+    constructor(size){
+        this.arr=new Array(size);
+        this.head=0;
+        this.tail=0;
+    }
+
+    get length(){
+        return this.tail-this.head;
+    }
+    push(val){
+        this.arr[this.tail%this.arr.length] =val;
+        this.tail++;
+    }
+    shift(){
+        if(this.length){
+           const val= this.arr[this.head%this.arr.length];
+           this.head++;
+           return val
+        }else{
+            return 
+        }
+    }
+}
+
+//可以搜索最短路径
+//因为有push和shift会使超出时间范围
+function bfs2(grap,s){
+  const queue=[];
+  queue.push(s);
+  let height=0;
+  while(queue.length){
+    const sz=queue.length;
+    // console.log('------')
+     height++;
+    for(let i=0;i<sz;i++){
+      const cur=queue.shift();
+      visited[cur] =true;
+    //   console.log(cur);
+      for(let neightbor of grap[cur]){
+        if(!visited[neightbor]){
+          queue.push(neightbor)
+        }
+      }
+    }
+  }
+  return height
+}
+
+//时间范围还是超出时间限制
+function bfs(grap,s){
+  const queue=new myQueue(1e5);
+  queue.push(s);
+  let height=0;
+  while(queue.length){
+    const sz=queue.length;
+    // console.log('------')
+     height++;
+    for(let i=0;i<sz;i++){
+      const cur=queue.shift();
+      visited[cur] =true;
+    //   console.log(cur);
+      for(let neightbor of grap[cur]){
+        if(!visited[neightbor]){
+          queue.push(neightbor)
+        }
+      }
+    }
+  }
+  return height
+}
