@@ -35,7 +35,7 @@ var twoSum = function(nums, target) {
   while(left<right){
      const sum=arr[left].value+arr[right].value;
      if(sum===target){
-         return [arr[left].idx,arr[right].idx];
+         return [arr[left].idx,arr[right].idx];//只会存在一个有效答案
      }else if(sum<target){
          left++;
      }else{
