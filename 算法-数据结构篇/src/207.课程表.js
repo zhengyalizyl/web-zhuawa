@@ -77,6 +77,7 @@ let topResult=[];//拓扑排序
 var canFinish = function (numCourses, prerequisites) {
     graph = [];
     res = true;
+    topResult=[];
     visited = new Array(numCourses).fill(0)
     for (let i = 0; i < numCourses; i++) {
         graph.push([])
@@ -97,6 +98,10 @@ var canFinish = function (numCourses, prerequisites) {
 //图里面，一般u->v
 function dfs(u) {
     //u点的先序位置
+    if(visited[u]==1){//说明这里已经成环了
+      res=false
+      return
+  }
     //把u标记在onpath上
     visited[u] = 1;
     for (let v of graph[u]) {
@@ -135,7 +140,7 @@ var canFinish = function (numCourses, prerequisites) {
   for (let i = 0; i < numCourses; i++) {
       graph.push([])
   }
-  for (let [to, from] of prerequisites) {
+  for (let [to,from] of prerequisites) {
       graph[from].push(to);//邻阶表
       indeg[to]++;
   }

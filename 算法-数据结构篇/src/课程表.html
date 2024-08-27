@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AMD</title>
+</head>
+
+<body>
+    <script>
+
+/**
+ * @param {number} numCourses
+ * @param {number[][]} prerequisites
+ * @return {number[]}
+ */
+ let graph = [];
+//visited[u]为0表示u节点还未访问，为1表示u节点在onpath上，为2表示u节点已经访问完成
+let visited = [];
+let res;
+let topResult=[];//拓扑排序
+ 
+var findOrder = function(numCourses, prerequisites) {
+       graph = [];
+    res = true;
+    topResult=[];
+    visited = new Array(numCourses).fill(0)
+    for (let i = 0; i < numCourses; i++) {
+        graph.push([])
+    }
+    for (let [to, from] of prerequisites) {
+        graph[from].push(to);////邻接表
+    }
+
+    for (let i = 0; i < numCourses&&res; i++) {
+        if (visited[i] == 0) {
+            dfs(i)
+        }
+    }
+     topResult.reverse();
+    return topResult
+}
+//图里面，一般u->v
+//这里需要考虑孤点
+function dfs2(u) {
+    //u点的先序位置
+    //把u标记在onpath上
+    if(visited[u]==1){
+        res=false
+        return
+    }
+    visited[u] = 1;
+    for (let v of graph[u]) {
+        //u->v边的先序位置
+        if (visited[v] == 0) {
+            dfs(v)
+            if (!res) {
+                return
+            }
+        } else if (visited[v] == 1) {
+            res = false;
+            return;
+        }
+
+        //u->v边的后序位置
+    }
+    //u点的后序位置
+    //把u标记已经访问完成
+    visited[u] = 2;
+    topResult.push(u)
+}
+
+//图里面，一般u->v
+function dfs(u) {
+    //u点的先序位置
+     if(visited[u]==1){ //这里已经是环了
+         res=false
+        return
+    }
+    //把u标记在onpath上
+    visited[u] = 1;
+    for (let v of graph[u]) {
+        //u->v边的先序位置
+        if (visited[v] == 0) {
+         
+            dfs(v)
+            if (!res) {
+                return
+            }
+        } else if (visited[v] == 1) {
+            res = false;
+            return;
+        }
+
+        //u->v边的后序位置
+    }
+    //u点的后序位置
+    //把u标记已经访问完成
+    visited[u] = 2;
+     topResult.push(u)
+}
+
+
+let numCourses =3;
+let prerequisites=[[1,0],[2,0],[0,2]];
+ findOrder(numCourses,prerequisites)
+
+
+
+    </script>
+</body>
+
+</html>
