@@ -14,7 +14,7 @@ let path=[];
 let res=[];
 var permute = function(nums) {
  const n=nums.length;
- used=new Array(n).fill(false);
+ used=new Array(n);
  path=[];
  res=[];
 dfs(nums,0);
