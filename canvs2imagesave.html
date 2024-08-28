@@ -1,17 +1,40 @@
 <!DOCTYPE html>
 <html<head<meta charset="UTF-8">
-  <title>截图⽰例</title
-    <style>#canvas {position: fixed;left: 0;top: 0;z-index: 9999;}</style>
+  <title>截图⽰例</title>
+  <style>
+    #canvas {
+      position: fixed;
+      left: 0;
+      top: 0;
+      z-index: 99;
+    }
+    #bn{
+      z-index:999;
+    }
+  </style>
   </head>
-  <body<h1截图⽰例</h1<p这是⼀个简单的截图⽰例。</p>
-    </p><button id="btn"截
-图</button<canvas id="canvas"</canvas<script
-4 const canvas = document.getElementById('canvas');const ctx =
-canvas.getContext('2d');const btn = document.getElementById('btn');
-5 canvas.width = window.innerWidth;
-6 canvas.height = window.innerHeight;
-7 btn.addEventListener('click', () => {
-8 ctx.clearRect(0, 0, canvas.width, canvas.height);
-9 ctx.drawImage(document.documentElement, 0, 0);const imgData =
-canvas.toDataURL();console.log(imgData);
-10 });</script</body</html>
+
+  <body>
+    <h1>截图⽰例</h1>
+      <p>这是⼀个简单的截图⽰例。</p>
+      <button id="btn">截图</button>
+      <canvas id="canvas"></canvas>
+      <script>
+        const canvas = document.getElementById('canvas'); 
+        const ctx =canvas.getContext('2d');
+         const btn = document.getElementById('btn');
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+        btn.addEventListener('click', () => {
+          console.log('dianji')
+          ctx.clearRect(0, 0, canvas.width, canvas.height);
+          ctx.drawImage(document.documentElement, 0, 0); const imgData =
+            canvas.toDataURL(); console.log(imgData);
+        });
+      </script>
+
+
+
+  </body>
+
+  </html>

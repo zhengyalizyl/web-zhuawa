@@ -30,6 +30,7 @@
 // 以上两个流程理解之后，基本就可以写出解法了，不过题目要求我们写出具体的反转操作序列，这也很简单，只要在每次翻转烧饼时记录下来就行了。
 
 
+//https://vzx6t9oio6.feishu.cn/docx/UWJzdGhinozizwxw3uQc95Aqnhg
 /**
  * @param {number[]} arr
  * @return {number[]}
