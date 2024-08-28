@@ -39,13 +39,12 @@ var pancakeSort = function(arr) {
   const res = new Array();
 
    for (let n = arr.length; n > 0; n--) {
-       const k = arr.indexOf(n);//找到最大的那个数
-       res.push(k + 1);//
+       const k = arr.indexOf(n)
+       res.push(k + 1);//以k+1的长度做一个翻转
        action(arr, k)
-       res.push(n)
+       res.push(n) //以n的长度做一个翻转
        action(arr, n - 1)
    }
-
    return res
 };
 function action(arr, k) {
