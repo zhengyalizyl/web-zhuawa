@@ -11,101 +11,42 @@
 // 返回你为了学完所有课程所安排的学习顺序。可能会有多个正确的顺序，你只要返回 任意一种 就可以了。如果不可能完成所有课程，返回 一个空数组 。
 
 /**
- * @param {number} numCourses
- * @param {number[][]} prerequisites
- * @return {number[]}
+ * @param {number[][]} times
+ * @param {number} n
+ * @param {number} k
+ * @return {number}
  */
-
- 
-var findOrder = function(numCourses, prerequisites) {
-  let graph = [];
-     let topResult=[];
-     let indeg=new Array(numCourses).fill(0)
-     for (let i = 0; i < numCourses; i++) {
-         graph.push([])
+var networkDelayTime = function(times, n, k) {
+    const graph =new Array(n+1);
+    const dist =new Array(n+1);//从源点到其他点的距离
+    for(let i=1;i<=n;i++){
+       graph[i]=[];
+       dist[i]=Infinity;//距离为无穷大
+    }
+     //构建图
+     for(let [u,v,w] of times){
+       graph[u].push([v,w])//u是源节点，v 是目标节点， w 是一个信号从源节点传递到目标节点的时间。
      }
-     for (let [to,from] of prerequisites) {
-         graph[from].push(to);//邻阶表
-         indeg[to]++;
-     }
- 
-    const queue=new Array();
-    for(let i=0;i<numCourses;i++){
-      if(indeg[i]==0){
-         queue.push(i)
-      }
-    }
-    while(queue.length){
-     const u= queue.shift();
-     topResult.push(u)
-     for(const v of graph[u]){
-         indeg[v]--
-         if(indeg[v] ==0){
-             queue.push(v);
-         }
-     }
-    }
-    return topResult.length==numCourses?topResult:[]
- }
-
-
-
-
- /**
- * @param {number} numCourses
- * @param {number[][]} prerequisites
- * @return {number[]}
- */
-let graph = [];
-//visited[u]为0表示u节点还未访问，为1表示u节点在onpath上，为2表示u节点已经访问完成
-let visited = [];
-let res;
-let topResult=[];//拓扑排序
- 
-var findOrder = function(numCourses, prerequisites) {
-       graph = [];
-    res = true;
-    topResult=[];
-    visited = new Array(numCourses).fill(0)
-    for (let i = 0; i < numCourses; i++) {
-        graph.push([])
-    }
-    for (let [to, from] of prerequisites) {
-        graph[from].push(to);////邻接表
-    }
-
-    for (let i = 0; i < numCourses&&res; i++) {
-        if (visited[i] == 0) {
-            dfs(i)
-        }
-    }
-     topResult.reverse();
-    return res?topResult:[]
-}
-
-//图里面，一般u->v
-function dfs(u) {
-    //u点的先序位置
-    //把u标记在onpath上
-    visited[u] = 1;
-    for (let v of graph[u]) {
-        //u->v边的先序位置
-        if (visited[v] == 0) {
-         
-            dfs(v)
-            if (!res) {
-                return
+   
+     dist[k]=0;//代表从k到k的距离为0
+     const queue=[];
+     queue.push(k);
+     while(queue.length){
+       const u=queue.shift();
+       for(let [v,w] of graph[u]){
+            const len=dist[u]+w;//从u经过w的时间到达目标节点的时间
+            if(len<dist[v]){
+               dist[v]=len;
+               queue.push(v);
             }
-        } else if (visited[v] == 1) {
-            res = false;
-            return;
-        }
-
-        //u->v边的后序位置
-    }
-    //u点的后序位置
-    //把u标记已经访问完成
-    visited[u] = 2;
-     topResult.push(u)
-}
-
+       }
+     }
+     let res=0;
+     for(let i=1;i<=n;i++){
+       res=Math.max(res,dist[i]);
+     }
+     return  res==Infinity?-1:res;
+   };
+   
+   
+ 
