@@ -7,9 +7,7 @@
       left: 0;
       top: 0;
       z-index: 99;
-    }
-    #bn{
-      z-index:999;
+      pointer-events: none;
     }
   </style>
   </head>
@@ -28,8 +26,10 @@
         btn.addEventListener('click', () => {
           console.log('dianji')
           ctx.clearRect(0, 0, canvas.width, canvas.height);
-          ctx.drawImage(document.documentElement, 0, 0); const imgData =
-            canvas.toDataURL(); console.log(imgData);
+          ctx.drawImage(document.documentElement, 0, 0); 
+          
+          const imgData =canvas.toDataURL(); 
+          console.log(imgData);
         });
       </script>
 
