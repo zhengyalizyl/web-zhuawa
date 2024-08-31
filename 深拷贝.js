@@ -17,7 +17,7 @@ obj.a=obj;
 
 function deepCopy(obj,map=new Map()){
   if(obj==null){ return obj}
-  if(type obj!=='object') return obj;
+  if(typeof obj!=='object') return obj;
   if (obj instanceof RegExp) return new RegExp(obj);
   if(obj instanceof Date){ return new Date(obj) }
   if(map.map(obj)){

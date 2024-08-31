@@ -10,8 +10,15 @@
     "start": "npm run dev"
   },
   "dependencies": {
+    "@types/lodash": "^4.17.7",
     "@umijs/plugins": "^4.0.73",
+    "antd": "^3.26.20",
     "axios": "^1.4.0",
+    "lodash": "^4.17.21",
+    "lorem-ipsum": "^2.0.8",
+    "rc-tree": "^5.8.8",
+    "react-use": "^17.5.1",
+    "react-virtualized": "^9.22.5",
     "umi": "^4.0.73"
   },
   "devDependencies": {

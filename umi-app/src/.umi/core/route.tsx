@@ -19,10 +19,16 @@ if (process.env.NODE_ENV === 'development') {
 import React from 'react';
 
 export async function getRoutes() {
-  const routes = {"index":{"path":"/","id":"index","parentId":"@@/global-layout"},"docs":{"path":"docs","id":"docs","parentId":"@@/global-layout"},"@@/global-layout":{"id":"@@/global-layout","path":"/","isLayout":true}} as const;
+  const routes = {"components/TreeWithVirtualScroll":{"path":"components/TreeWithVirtualScroll","id":"components/TreeWithVirtualScroll","parentId":"@@/global-layout"},"components/VirtualizedTree":{"path":"components/VirtualizedTree","id":"components/VirtualizedTree","parentId":"@@/global-layout"},"components/TableTest":{"path":"components/TableTest","id":"components/TableTest","parentId":"@@/global-layout"},"components/Test2":{"path":"components/Test2","id":"components/Test2","parentId":"@@/global-layout"},"components/Test3":{"path":"components/Test3","id":"components/Test3","parentId":"@@/global-layout"},"components/Test":{"path":"components/Test","id":"components/Test","parentId":"@@/global-layout"},"index":{"path":"/","id":"index","parentId":"@@/global-layout"},"docs":{"path":"docs","id":"docs","parentId":"@@/global-layout"},"@@/global-layout":{"id":"@@/global-layout","path":"/","isLayout":true}} as const;
   return {
     routes,
     routeComponents: {
+'components/TreeWithVirtualScroll': React.lazy(() => import(/* webpackChunkName: "src__pages__components__TreeWithVirtualScroll" */'../../../src/pages/components/TreeWithVirtualScroll.tsx')),
+'components/VirtualizedTree': React.lazy(() => import(/* webpackChunkName: "src__pages__components__VirtualizedTree" */'../../../src/pages/components/VirtualizedTree.tsx')),
+'components/TableTest': React.lazy(() => import(/* webpackChunkName: "src__pages__components__TableTest" */'../../../src/pages/components/TableTest.tsx')),
+'components/Test2': React.lazy(() => import(/* webpackChunkName: "src__pages__components__Test2" */'../../../src/pages/components/Test2.tsx')),
+'components/Test3': React.lazy(() => import(/* webpackChunkName: "src__pages__components__Test3" */'../../../src/pages/components/Test3.tsx')),
+'components/Test': React.lazy(() => import(/* webpackChunkName: "src__pages__components__Test" */'../../../src/pages/components/Test.tsx')),
 'index': React.lazy(() => import(/* webpackChunkName: "src__pages__index" */'../../../src/pages/index.tsx')),
 'docs': React.lazy(() => import(/* webpackChunkName: "src__pages__docs" */'../../../src/pages/docs.tsx')),
 '@@/global-layout': React.lazy(() => import(/* webpackChunkName: "layouts__index" */'/Volumes/F/zyl-study/web-zhuawa/umi-app/src/layouts/index.tsx')),
