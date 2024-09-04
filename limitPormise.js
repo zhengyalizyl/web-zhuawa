@@ -32,7 +32,7 @@ async function limitPormise(urls, handler, limit) {
     })
   }))
 
-  for (let i = 0; i < promises.length; i += 1) {
+  for (let i = 0; i < queue.length; i += 1) {
       let url=queue[i];
       let firstIndex=await Promise.race(promises);
       promises[firstIndex] = handler(url).then(() => {

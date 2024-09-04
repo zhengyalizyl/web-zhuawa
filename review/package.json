@@ -1,0 +1,11 @@
+{
+  "name": "review",
+  "version": "1.0.0",
+  "description": "",
+  "main": "call.js",
+  "scripts": {
+    "dev": "node ./call.js"
+  },
+  "author": "",
+  "license": "ISC"
+}
