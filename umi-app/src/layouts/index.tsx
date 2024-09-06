@@ -1,8 +1,10 @@
 import { Link, Outlet } from 'umi';
 import styles from './index.less';
+import { AuthProvider } from '@/wrappers/auth';
 
 export default function Layout() {
   return (
+    <AuthProvider>
     <div className={styles.navs}>
       <ul>
         <li>
@@ -17,5 +19,6 @@ export default function Layout() {
       </ul>
       <Outlet />
     </div>
+    </AuthProvider>
   );
 }
