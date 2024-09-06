@@ -27,7 +27,7 @@ export function useReducer(reducer, initalState) {
 
 
 //hook={memorizedState:null,next:null}
-function updateWorkInprogressHook() {
+export function updateWorkInprogressHook() {
   let hook;
 
   const current = currentlyRenderingFiber.alternate;
