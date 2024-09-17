@@ -2,138 +2,139 @@
 <html lang="en">
 
 <head>
-    <meta charset="UTF-8">
-    <meta http-equiv="X-UA-Compatible" content="IE=edge">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>promise的实现</title>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>promise的实现</title>
 </head>
 
 <body>
-    <script>
-// let p1=new Promise((resolve,reject)=>{
-//     resolve('success');
-//     reject('fail');
-// });
-// console.log('p1',p1);
-// let p2=new Promise((resolve,reject)=>{
-//     reject('success');
-//     resolve('fail');
-// })
-// console.log('p2',p2);
-// let p3=new Promise((resolve,reject)=>{
-//     throw 'error';
-// })
+  <script>
+    // let p1=new Promise((resolve,reject)=>{
+    //     resolve('success');
+    //     reject('fail');
+    // });
+    // console.log('p1',p1);
+    // let p2=new Promise((resolve,reject)=>{
+    //     reject('success');
+    //     resolve('fail');
+    // })
+    // console.log('p2',p2);
+    // let p3=new Promise((resolve,reject)=>{
+    //     throw 'error';
+    // })
 
-// console.log('p3',p3);
+    // console.log('p3',p3);
 
-// //p1 Promise{<fulfilled>:'success'}
-// //p2 Promise{<rejected>:'success'}
-// //p3 Promise{<rejected>:'error'}
+    // //p1 Promise{<fulfilled>:'success'}
+    // //p2 Promise{<rejected>:'success'}
+    // //p3 Promise{<rejected>:'error'}
 
-  class Promise2{
-     constructor(executor){
-       //初始状态
-       this.initValue();
+    class Promise2 {
+      constructor(executor) {
+        //初始状态
+        this.initValue();
 
-       //初始化
-       this.intiBind();
-      
-       try {
-        
-         //执行传入的函数
-         executor(this.resolve,this.reject);
-       } catch (error) {
+        //初始化
+        this.intiBind();
+
+        try {
+
+          //执行传入的函数
+          executor(this.resolve, this.reject);
+        } catch (error) {
           this.reject(error)
-       }
+        }
 
-     }
-
-     initValue(){
-       this.PromiseResult=null;
-       this.PromiseState='pending';
-       this.onFulfilledCallbacks=[];
-       this.onRejectedCallBacks=[];
-     }
-
-     intiBind(){
-      this.resolve=this.resolve.bind(this);
-      this.reject=this.reject.bind(this);
-     }
-
-     resolve(val){
-      if(this.PromiseState!=='pending'){
-         return 
       }
-      this.PromiseResult='fulfilled';
-      this.PromiseState =val;
-      while(this.onFulfilledCallbacks.length){
-        this.onFulfilledCallbacks.shift()(this.PromiseResult);
+
+      initValue() {
+        this.PromiseResult = null;
+        this.PromiseState = 'pending';
+        this.onFulfilledCallbacks = [];
+        this.onRejectedCallBacks = [];
       }
-     }
 
-     reject(reason){
-       if(this.PromiseState!=='pending'){
-         return 
-       }
-       this.PromiseResult ='rejected';
-       this.PromiseState =reason;
-       while(this.onRejectedCallBacks.length){
-        this.onRejectedCallBacks.shift()(this.PromiseResult);
-       }
+      intiBind() {
+        this.resolve = this.resolve.bind(this);
+        this.reject = this.reject.bind(this);
+      }
 
-     }
-// 1. then接收两个回调，一个是成功回调，一个是失败回调；
-// 2. 当Promise状态为fulfilled执行成功回调，为rejected执行失败回调；
-// 3. 如resolve或reject在定时器里，则定时器结束后再执行then；
-// 4. then支持链式调用，下一次then执行受上一次then返回值的影响；
-    then(onFulfilled,onRejected){
-      onFulfilled =typeof onFulfilled ==='function'?onFulfilled:val=>val;
-      onRejected=typeof onRejected ==='function'?onRejected:reason=>{throw reason};
-    
-      //支持链式调用
-      var thenPormise=new Promise2((resolve,reject)=>{
-        const resolvePormise=cb=>{
-          setTimeout(()=>{
-            try {
-            var x=cb(this.PromiseResult)
-            if(x==thenPormise&&x){
-              throw new Error('不能调用自身')
-            }
-            if(x instanceof Promise2){
-               x.then(resolve,reject)
-            }else{
-              resolve(x)
-            }
-    
-          } catch (error) {
-             reject(error);
-             throw new Error(error);
+      resolve(val) {
+        if (this.PromiseState !== 'pending') {
+          return
+        }
+        this.PromiseResult = 'fulfilled';
+        this.PromiseState = val;
+        while (this.onFulfilledCallbacks.length) {
+          this.onFulfilledCallbacks.shift()(this.PromiseResult);
+        }
+      }
+
+      reject(reason) {
+        if (this.PromiseState !== 'pending') {
+          return
+        }
+        this.PromiseResult = 'rejected';
+        this.PromiseState = reason;
+        while (this.onRejectedCallBacks.length) {
+          this.onRejectedCallBacks.shift()(this.PromiseResult);
+        }
+
+      }
+      // 1. then接收两个回调，一个是成功回调，一个是失败回调；
+      // 2. 当Promise状态为fulfilled执行成功回调，为rejected执行失败回调；
+      // 3. 如resolve或reject在定时器里，则定时器结束后再执行then；
+      // 4. then支持链式调用，下一次then执行受上一次then返回值的影响；
+      then(onFulfilled, onRejected) {
+        onFulfilled = typeof onFulfilled === 'function' ? onFulfilled : val => val;
+        onRejected = typeof onRejected === 'function' ? onRejected : reason => { throw reason };
+
+        //支持链式调用
+        var thenPormise = new Promise2((resolve, reject) => {
+          const resolvePormise = cb => {
+            setTimeout(() => {
+              try {
+                var x = cb(this.PromiseResult)
+                if (x == thenPormise && x) {
+                  throw new Error('不能调用自身')
+                }
+                if (x instanceof Promise2) {
+                  x.then(resolve, reject)
+                } else {
+                  resolve(x)
+                }
+
+              } catch (error) {
+                reject(error);
+                throw new Error(error);
+              }
+
+              if (this.PromiseState === 'rejected') {
+                //  onRejected(this.PromiseResult)
+                resolvePormise(onRejected)
+              } else if (this.PromiseState === 'fulfilled') {
+                //  onFulfilled(this.PromiseResult);
+                resolvePormise(onFulfilled)
+              } else if (this.PromiseState === 'pending') {
+                // 3. 如resolve或reject在定时器里，则定时器结束后再执行then；
+                // this.onFulfilledCallbacks.push(onFulfilled.bind(this));
+                // this.onRejectedCallBacks.push(onRejected.bind(this));
+                this.onFulfilledCallbacks.push(resolvePormise.bind(this, onFulfilled));
+                this.onRejectedCallBacks.push(resolvePormise.bind(this, onRejected));
+              }
+            })
           }
 
-           if(this.PromiseState==='rejected'){
-        //  onRejected(this.PromiseResult)
-            resolvePormise(onRejected)
-       }else if(this.PromiseState==='fulfilled'){
-        //  onFulfilled(this.PromiseResult);
-        resolvePormise(onFulfilled)
-       }else if(this.PromiseState==='pending'){
-        // 3. 如resolve或reject在定时器里，则定时器结束后再执行then；
-        // this.onFulfilledCallbacks.push(onFulfilled.bind(this));
-        // this.onRejectedCallBacks.push(onRejected.bind(this));
-        this.onFulfilledCallbacks.push(resolvePormise.bind(this,onFulfilled));
-        this.onRejectedCallBacks.push(resolvePormise.bind(this,onRejected));
+        })
+
+        return thenPormise;
+
       }
-    })
-  }
 
-      })
-       
-      return  thenPormise;
-    
     }
-
-  }
-    </script>
+    
+  </script>
 </body>
 
 </html>

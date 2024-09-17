@@ -21,18 +21,22 @@
 
         //     bar.call(foo); // 1
 
-
+       //创建一个新的函数，并返回新函数
+       //绑定this;
+       //可以传入参数
         Function.prototype.bind2 = function (context, ...oldArgs) {
             context = context || window;
             const self = this;
+
             const fBound = function (...newOldArgs) {
                 let arr = [...oldArgs, ...newOldArgs];
                 return self.apply(this instanceof fBound ? this : context, arr);
             }
-            // fBound.prototype =this.prototype;//换一种思维
+            // fBound.prototype =this.prototype;//换一种思维,没有这句话，需要bar.prototype。friend会失效
+            // fBound.prototype=this.prototyp，原型链共享了
             fn = function () { };
             fn.prototype = this.prototype;
-            fBound.prototype = new fn();
+            fBound.prototype = new fn();//这里相当于只修改fn实例的内容
             return fBound;
         }
 

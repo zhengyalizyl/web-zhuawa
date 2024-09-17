@@ -20,6 +20,14 @@ export function updateFunctionComponent(wip){
   reconcileChildren(wip,children)
 }
 
+
+export function updateClassComponent(wip){
+  const {type,props} =wip;
+  const children =(new type(props)).render();
+  reconcileChildren(wip,children)
+
+}
+
 //这里比较简单粗暴
 function reconcileChildren(wip, children) {
   if(isStringOrNumber(children)){
