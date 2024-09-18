@@ -1,0 +1,13 @@
+{
+  "version": "0.0.1",
+  "packages": [
+    "packages/*"
+  ],
+  "npmClient": "pnpm",
+  "command": {
+    "publish": {
+      "npmClient": "npm",
+      "message": "chore:publish %s"
+    }
+  }
+}

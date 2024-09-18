@@ -1,0 +1,23 @@
+{
+  "name": "commitlint-config",
+  "version": "0.0.1",
+  "description": "commit文档规范",
+  "author": "zyl <863344241@qq.com>",
+  "homepage": "https://github.com/zhengyalizyl/web-zhuawa#readme",
+  "license": "ISC",
+  "main": "index.json",
+  "publishConfig": {
+    "registry": "https://registry.npmmirror.com"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/zhengyalizyl/web-zhuawa.git"
+  },
+  "scripts": {},
+  "bugs": {
+    "url": "https://github.com/zhengyalizyl/web-zhuawa/issues"
+  },
+  "dependencies": {
+    "conventional-changelog-conventionalcommits": "^8.0.0"
+  }
+}

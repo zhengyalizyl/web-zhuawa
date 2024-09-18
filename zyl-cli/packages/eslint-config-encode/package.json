@@ -1,0 +1,23 @@
+{
+  "name": "eslint-config-encode",
+  "version": "0.0.1",
+  "description": "> TODO: description",
+  "author": "zyl <863344241@qq.com>",
+  "homepage": "https://github.com/zhengyalizyl/web-zhuawa#readme",
+  "license": "ISC",
+  "main": "index.json",
+  "publishConfig": {
+    "registry": "https://registry.npmmirror.com"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/zhengyalizyl/web-zhuawa.git"
+  },
+  "scripts": {},
+  "bugs": {
+    "url": "https://github.com/zhengyalizyl/web-zhuawa/issues"
+  },
+  "extends": [
+    "eslint-config-encode"
+  ]
+}
