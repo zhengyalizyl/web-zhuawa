@@ -34,12 +34,10 @@
       constructor(executor) {
         //初始状态
         this.initValue();
-
         //初始化
         this.intiBind();
 
         try {
-
           //执行传入的函数
           executor(this.resolve, this.reject);
         } catch (error) {
@@ -133,7 +131,7 @@
       }
 
 
-      //     1. 接收一个Promise数组，数组中如有非Promise项，则此项当做成功；
+      // 1. 接收一个Promise数组，数组中如有非Promise项，则此项当做成功；
       // 2. 如果所有Promise都成功，则返回成功结果数组；
       // 3. 如果有一个Promise失败，则返回这个失败结果；
       all(promises) {
@@ -164,7 +162,6 @@
       // 1. 接收一个Promise数组，数组中如有非Promise项，则此项当做成功；
       // 2. 哪个Promise最快得到结果，就返回那个结果，无论成功失败；
       race(promises) {
-
         return new Promise2((resolve, reject) => {
           promises.forEach((promise, index) => {
             if (promise instanceof Promise2) {
@@ -177,7 +174,7 @@
       }
 
 
-      //   1. 接收一个Promise数组，数组中如有非Promise项，则此项当做成功；
+      // 1. 接收一个Promise数组，数组中如有非Promise项，则此项当做成功；
       // 2. 把每一个Promise的结果，集合成数组后返回；
       allSettled(promises) {
         return new Promise2((resolve, reject) => {
@@ -223,9 +220,6 @@
           })
         })
       }
-
-
-
 
     }
   </script>
