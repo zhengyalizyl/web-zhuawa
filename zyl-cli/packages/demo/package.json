@@ -26,5 +26,8 @@
   "bugs": {
     "url": "https://github.com/zhengyalizyl/web-zhuawa/issues"
   },
-  "gitHead": "6db0e9b7cf5f0d3a446243f1415bb340a8be2beb"
+  "gitHead": "6db0e9b7cf5f0d3a446243f1415bb340a8be2beb",
+  "devDependencies": {
+    "jest": "^29.7.0"
+  }
 }

@@ -1,11 +1,11 @@
 {
-  "name": "eslint-config-encode",
+  "name": "stylelint-config",
   "version": "0.0.1",
-  "description": "> TODO: description",
+  "description": "zyl stylelint-config",
   "author": "zyl <863344241@qq.com>",
   "homepage": "https://github.com/zhengyalizyl/web-zhuawa#readme",
   "license": "ISC",
-  "main": "index.json",
+  "main": "index.js",
   "publishConfig": {
     "registry": "https://registry.npmmirror.com"
   },
@@ -13,12 +13,19 @@
     "type": "git",
     "url": "git+https://github.com/zhengyalizyl/web-zhuawa.git"
   },
-  "scripts": {},
+  "scripts": {
+    "test": "jest"
+  },
   "bugs": {
     "url": "https://github.com/zhengyalizyl/web-zhuawa/issues"
   },
-  "extends": [
-    "eslint-config-encode"
-  ],
-  "gitHead": "6db0e9b7cf5f0d3a446243f1415bb340a8be2beb"
+  "peerDependencies": {
+    "stylelint": ">=8.3.0",
+    "stylelint-scss": ">=2.0.0"
+  },
+  "devDependencies": {
+    "jest": "^29.5.0",
+    "stylelint": "^14.3.0",
+    "stylelint-scss": "^4.1.0"
+  }
 }
