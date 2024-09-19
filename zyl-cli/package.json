@@ -1,0 +1,44 @@
+{
+  "name": "root",
+  "private": true,
+  "description": "前端编码规范工程化",
+  "workspaces": [
+    "packages/*"
+  ],
+  "devDependencies": {
+    "@commitlint/cli": "^17.6.1",
+    "husky": "^9.1.6",
+    "lerna": "^6.6.2",
+    "markdownlint": "^0.28.1",
+    "pnpm": "^8.6.0",
+    "rimraf": "^3.0.2",
+    "ts-node": "^10.9.1",
+    "tslib": "^2.5.2",
+    "typedoc": "^0.24.7",
+    "typescript": "^5.0.4",
+    "vue-template-compiler": "^2.7.14",
+    "vuepress": "^1.9.9",
+    "vuepress-plugin-one-click-copy": "^1.0.2",
+    "vuepress-plugin-zooming": "^1.1.7"
+  },
+  "scripts": {
+    "preinstall": "npx only-allow pnpm",
+    "prepare": "husky install",
+    "init": "pnpm install",
+    "clean": "lerna clean && rm -rf node_modules",
+    "test": "lerna run test",
+    "docs:dev": "vuepress dev docs",
+    "docs:build": "vuepress build docs",
+    "deploy": "bash deploy.sh",
+    "publish": "lerna publish",
+    "lint":"markdownlint README.md",
+    "changelog":"conventional-changelog -p angular -i CHANGLOG.md -s"
+  },
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org"
+  },
+  "dependencies": {
+    "conventional-changelog-conventionalcommits": "^8.0.0"
+  }
+}

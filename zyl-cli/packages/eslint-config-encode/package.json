@@ -19,5 +19,6 @@
   },
   "extends": [
     "eslint-config-encode"
-  ]
+  ],
+  "gitHead": "6db0e9b7cf5f0d3a446243f1415bb340a8be2beb"
 }
