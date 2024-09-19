@@ -5,6 +5,7 @@
   "workspaces": [
     "packages/*"
   ],
+  "version": "0.0.1",
   "devDependencies": {
     "@commitlint/cli": "^17.6.1",
     "husky": "^9.1.6",
