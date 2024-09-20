@@ -152,6 +152,7 @@ export default async (options:InitOptions)=>{
   if (!pkg.husky.hooks) pkg.husky.hooks = {};
   pkg.husky.hooks['pre-commit'] = `${PKG_NAME} commit-file-scan`;
   pkg.husky.hooks['commit-msg'] = `${PKG_NAME} commit-msg-scan`;
+  //往package.json注入pre-commit和commit-msg指令
   fs.writeFileSync(pkgPath, JSON.stringify(pkg, null, 2));
   log.success(`Step ${step}. 配置 git commit 卡点成功 :D`);
 
