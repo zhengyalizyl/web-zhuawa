@@ -1,5 +1,3 @@
-const { callExpression } = require("@babel/types");
-
 const isStrNumber=(str)=>{
   if(typeof str === 'number'){ return true}
   if(typeof str!=='string'){ return false }
@@ -13,25 +11,26 @@ const isStrLetter=str=>{
   return str.toLowerCase() !==str.toUpperCase();
 }
 
+//词法分析器
 const tokenizer =(input)=>{
   const tokens =[];
   if(typeof input !== 'string'){
     return tokens;
   }
 
-  for(let i=0;i<=input.length;i++){
-    const chart =input[i];
+  for(let i=0;i<input.length;i++){
+    const char =input[i];
     switch(true){
-       case['(',')'].includes(chart):
+       case['(',')'].includes(char):
        tokens.push({
          type:'paren',
          value:chart
        })
        break;
-      case chart ===' ':
+      case char ===' ':
         break;
-      case isStrNumber(chart):
-        let fullNum =chart;
+      case isStrNumber(char):
+        let fullNum =char;
         let nextChar=input[++i];
         if(!isStrNumber(nextChar)){
           i--;
@@ -46,7 +45,7 @@ const tokenizer =(input)=>{
         })
         break;
       default:
-        let fullStr=chart;
+        let fullStr=char;
         let nextStr=input[++i];
         if(!(isStrLetter(nextStr)||isStrNumber(nextStr))){
           i--;
@@ -83,7 +82,7 @@ const  parser=(tokens)=>{
           value: item.value
         }
         //name不是一个有效单元，只有(是一个有效单元
-       case item.type==='paren' &&item.value=='(':
+       case item.type==='paren' && item.value=='(':
           item =tokens[current];
           const astNode={
             type:'CallExpression',
@@ -97,7 +96,6 @@ const  parser=(tokens)=>{
             astNode.params.push(subItem);
            }
            item=tokens[current];
-
         }
         current++;
         return astNode;
@@ -119,7 +117,6 @@ const  parser=(tokens)=>{
 const traverse=(ast,visitor)=>{
   //单个节点和数组的情况 
    const  traverserNode=(node,parent)=>{
-     console.log(visitor,node.type)
     const enter = visitor[node.type]?.enter;
     if(enter){
       enter(node,parent);
@@ -132,9 +129,9 @@ const traverse=(ast,visitor)=>{
         traverseArr(node.params,node);
     }
    };
-   const traverseArr=(nodes)=>{
+   const traverseArr=(nodes,parent)=>{
     nodes.forEach((node)=>{
-      traverserNode(node);
+      traverserNode(node,parent);
     })
    }
 
