@@ -113,7 +113,6 @@ const  parser=(tokens)=>{
       ast.body.push(result);
     }
    }
-   console.log(JSON.stringify(ast,null,2));
    return ast
 }
 
@@ -139,7 +138,6 @@ const traverse=(ast,visitor)=>{
       traverserNode(node,parent);
     })
    }
-
   traverserNode(ast,null);
 }
 
@@ -159,7 +157,7 @@ const transform=(ast)=>{
             })
        }
      },
-     callExpression:{
+     CallExpression:{
        enter(node,parent){
          let expression = {
             type:'CallExpression',
@@ -181,6 +179,7 @@ const transform=(ast)=>{
        }
      }
   })
+  console.log(JSON.stringify(ast,null,2))
   return newAst;
 }
 
@@ -208,10 +207,12 @@ const codeGenerator =(newAst)=>{
 const compiler=(input)=>{
   return codeGenerator(transform(parser(tokenizer(input))));
 }
+
+
 module.exports = {
     tokenizer,
     parser,
     transform,
     codeGenerator,
-    compiler
+    compiler,
 }
