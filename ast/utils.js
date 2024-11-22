@@ -24,7 +24,7 @@ const tokenizer =(input)=>{
        case['(',')'].includes(char):
        tokens.push({
          type:'paren',
-         value:chart
+         value:char
        })
        break;
       case char ===' ':
@@ -75,6 +75,9 @@ const  parser=(tokens)=>{
    const handler=()=>{
     let item =tokens[current];
     current++;
+    if(!item){
+      return ;
+    }
     switch(true){
       case item.type==='number':
         return {
@@ -110,14 +113,16 @@ const  parser=(tokens)=>{
       ast.body.push(result);
     }
    }
-   console.dir(JSON.stringify(ast,null,2));
+   console.log(JSON.stringify(ast,null,2));
    return ast
 }
 
 const traverse=(ast,visitor)=>{
   //单个节点和数组的情况 
    const  traverserNode=(node,parent)=>{
-    const enter = visitor[node.type]?.enter;
+   const enter = visitor[node.type]?.enter;
+
+    //什么时候调用enter节点
     if(enter){
       enter(node,parent);
     }
@@ -135,7 +140,7 @@ const traverse=(ast,visitor)=>{
     })
    }
 
-   traverserNode(ast,null);
+  traverserNode(ast,null);
 }
 
 const transform=(ast)=>{
@@ -143,7 +148,7 @@ const transform=(ast)=>{
     type:'Program',
     body:[]
   }
-
+  
   ast._context =newAst.body;
   traverse(ast,{
      NumberLiteral:{
@@ -185,7 +190,10 @@ const codeGenerator =(newAst)=>{
       case 'Program':
         return newAst.body.map(codeGenerator).join('\n');
       case 'CallExpression':
-        return [codeGenerator(newAst.callee),'(',newAst.arguments.map(codeGenerator).join(','),')'].join('');
+        return [codeGenerator(newAst.callee),
+          '(',
+          newAst.arguments.map(codeGenerator).join(','),
+          ')'].join('');
       case 'NumberLiteral':
         return newAst.value;
       case 'Identifier':
@@ -198,7 +206,7 @@ const codeGenerator =(newAst)=>{
 }
 
 const compiler=(input)=>{
-   return codeGenerator(transform(parser(tokenizer(input))));
+  return codeGenerator(transform(parser(tokenizer(input))));
 }
 module.exports = {
     tokenizer,
