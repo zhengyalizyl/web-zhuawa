@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <title>导出千分位数据CSV</title>
+</head>
+<body>
+
+<button id="download-btn">下载CSV</button>
+
+<script>
+// 假设有以下数组数据
+const data = [
+    ["项目", "金额"],
+    ["项目A", "1,000"],
+    ["项目B", "2,500"]
+];
+
+// 用于将数据包围在双引号中，以处理数据中可能包含的逗号
+function escapeCsvField(field) {
+    if (field.includes(',')) {
+        return `"${field}"`;
+    }
+    return field;
+}
+
+document.getElementById('download-btn').addEventListener('click', function() {
+    let csvContent = "data:text/csv;charset=utf-8,";
+
+    // 遍历数组，并将每行数据转换为CSV格式的字符串
+    data.forEach(function(rowArray) {
+        let row = rowArray.map(escapeCsvField).join(",");
+        csvContent += row + "\r\n"; // 每行结束后添加换行符
+    });
+
+    // 编码URI
+    var encodedUri = encodeURI(csvContent);
+    var link = document.createElement("a");
+    link.setAttribute("href", encodedUri);
+    link.setAttribute("download", "data.csv");
+    document.body.appendChild(link); // Required for FF
+
+    link.click(); // 触发点击下载
+    document.body.removeChild(link); // 删除临时创建的链接
+});
+</script>
+
+</body>
+</html>
