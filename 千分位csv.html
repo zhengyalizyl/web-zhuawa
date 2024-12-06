@@ -32,6 +32,7 @@ document.getElementById('download-btn').addEventListener('click', function() {
         let row = rowArray.map(escapeCsvField).join(",");
         csvContent += row + "\r\n"; // 每行结束后添加换行符
     });
+    //如果不想小数点四舍五入，则加入'\t'，否则会变成科学计数法
 
     // 编码URI
     var encodedUri = encodeURI(csvContent);
