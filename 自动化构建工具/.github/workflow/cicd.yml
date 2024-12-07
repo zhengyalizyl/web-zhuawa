@@ -1,0 +1,21 @@
+name: Demo
+on:
+  push:
+     branches: master,dev //当push到master和dev分支时触发
+     pull_request:
+        tags: 'stable'    
+      
+jobs:
+   init: 
+      runs-on: ubuntu-latest //在ubuntu-latest系统上运行
+      steps:
+        - name: Checkout
+          uses: actions/checkout@v2
+        - name: Install Node.js
+          uses: actions/setup-node@v2
+          with:
+            node-version: '14.x'
+        - name: Install dependencies
+          run: npm install
+        - name: Run tests
+          run: npm test
