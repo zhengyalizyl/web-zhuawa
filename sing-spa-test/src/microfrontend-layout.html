@@ -18,13 +18,24 @@
   -->
 
   <main>
+    <div>
+       <a href="/">main</a>
+       <a href="/settings">settings</a>
+       <a href="/all">all</a>  <!-- 跳转到 /all 路由时，会同时加载 main 和 settings 应用 -->
+    </div>
     <route default>
       <!-- <application name="@single-spa/welcome"></application> -->
          <!-- <application name="@zyl-test/sub-single-test"></application> -->
          <application name="@zyl-test/sub-single-vue"></application>
     </route>
     <route path="settings">
-   <application name="@zyl-test/sub-single-test"></application>
+          <application name="@zyl-test/sub-single-test"></application>
+    </route>
+    <route path="all">
+      <div>
+         <application name="@zyl-test/sub-single-test"></application>
+         <application name="@zyl-test/sub-single-vue"></application>
+       </div>
     </route>
   </main>
 </single-spa-router>

@@ -2,6 +2,15 @@ import React from "react";
 import ReactDOM from "react-dom";
 import singleSpaReact from "single-spa-react";
 import Root from "./root.component";
+import singleSpaCss from "single-spa-css";
+
+const cssLifecycle =singleSpaCss({ //作为一个基础存在
+  cssUrls:[
+    'http://localhost:8082/style.css',
+  ],
+  webpackExtractedCss:false,
+  shouldUnmounted:true,
+})
 
 const lifecycles = singleSpaReact({
   React,
@@ -13,4 +22,20 @@ const lifecycles = singleSpaReact({
   },
 });
 
-export const { bootstrap, mount, unmount } = lifecycles;
+// export const { bootstrap, mount, unmount } = lifecycles;
+
+
+export const bootstrap =[
+  cssLifecycle.bootstrap,
+  lifecycles.bootstrap
+];
+
+export const mount =[
+  cssLifecycle.mount,
+  lifecycles.mount
+];
+
+export const unmount =[
+ lifecycles.unmount,
+ cssLifecycle.unmount
+]
