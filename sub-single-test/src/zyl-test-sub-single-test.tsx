@@ -6,7 +6,7 @@ import singleSpaCss from "single-spa-css";
 
 const cssLifecycle =singleSpaCss({ //作为一个基础存在
   cssUrls:[
-    'http://localhost:8082/style.css',
+    'http://localhost:8082/style.css', //引入./style.css 放在主应用上面
   ],
   webpackExtractedCss:false,
   shouldUnmounted:true,
