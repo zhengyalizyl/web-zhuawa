@@ -1,4 +1,4 @@
-React Diff 算法
+## React Diff 算法
 
 ```js
 // 之前
