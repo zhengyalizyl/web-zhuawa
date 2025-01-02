@@ -53,4 +53,11 @@ const insertionSort = (arr) => {
 //时间复杂度:O(n^2)
 //稳定性：稳定
 
+const selectionSort=arr=>{
+  const length =arr.length;
+  if(length<=1){
+    return  arr;
+  }
 
+  let minIndex,temp;
+}
