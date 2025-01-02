@@ -6,16 +6,17 @@
 - 前端测试 vitest 单元测试 快照测试 验证组件功能
 - cypress 自动化验证
 - i18n 多国语言处理
-- css
+- css性能优化
+  
  -  unocss
     即时按需的原子化css引擎   
    - 原子化css
    - 最小化css类为单位，实现高度可复用性
-     - .m-1 margin:1px; 
-     - .p-2 padding:2px;
+      .m-1 margin:1px; 
+      .p-2 padding:2px;
    - scoped css module 
-   html页面大小 ssr
-   css文件大小 尽可能小
+      html页面大小 ssr
+      css文件大小 尽可能小
 
 
 3-4点 亮点
@@ -27,7 +28,6 @@
   - 使用前端编码脚手架 快速生成规范文件 -- 自定义脚手架
   - 引用前端稳定性 SDK
   - 实现自定义的hooks平台 提高开发效率 参考vueuse 能力
-  
   
 - 性能优化
   - vue2 性能优化 
@@ -50,7 +50,7 @@
       - css 治理
       - ssr 首屏渲染
     
-    数据支撑
+    数据支撑：
     - LCP 从多少秒提升到多少秒 提升到多少秒 提升百分比
 
 ## 自定义前端脚手架
@@ -107,3 +107,14 @@
   虚拟滚动
 
 ### 减少大型不可变数据的响应性的开销
+```js
+  const shallowArray=shallowRef([]);
+
+  //不触发更新
+  shallowArray.value.push(newObject);
+
+  //会触发更新
+  shallowArray.value=[...shallowArray.value,newObject]
+```
+
+### 避免不必要组件抽象
