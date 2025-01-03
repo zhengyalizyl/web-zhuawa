@@ -53,6 +53,8 @@ const insertionSort = (arr) => {
 //时间复杂度:O(n^2)
 //稳定性：稳定
 
+
+//选择排序
 const selectionSort=arr=>{
   const length =arr.length;
   if(length<=1){
@@ -60,4 +62,58 @@ const selectionSort=arr=>{
   }
 
   let minIndex,temp;
+  for(let i=0;i<length-1;i++){
+    minIndex = i;
+    for(let j=i+1;j<length;j++){
+      if(arr[j]<arr[minIndex]){
+        minIndex = j; //找到最小的索引
+      }
+    }
+    temp = arr[i];
+    arr[i] = arr[minIndex];
+    arr[minIndex] = temp;
+  }
+  return arr;
 }
+
+// 空间复杂度:O(1)
+// 时间复杂度：O(n^2)
+// 稳定性：不稳定
+
+
+//稳定性是未排序的元素的顺序 2 4 10 5 5 6 7 3
+
+
+
+
+
+//归并排序
+const mergeSort = arr =>{
+   const length = arr.length;
+   if(length <= 1) return arr;
+
+   let middle =Math.floor(length/2);
+   let left =arr.slice(0,middle);
+   let right =arr.slice(middle,length);
+   return merge(mergeSort(left),mergeSort(right));
+}
+
+const merge=(left,right)=>{
+  const result=[];
+  while(left.length && right.length){
+    if(left[0] <= right[0]){
+      result.push(left.shift());
+    }else{
+      result.push(right.shift());
+    }
+  }
+
+  while(left.length){ result.push(left.shift());}
+  while(right.length){
+    result.push(right.shift());
+  }
+  return result
+}
+
+
+
