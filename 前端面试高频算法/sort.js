@@ -117,3 +117,114 @@ const merge=(left,right)=>{
 
 
 
+const quickSort=arr=>{
+  const length =arr.length;
+  if(length<2){
+    return arr;
+  }
+  const midIndex=Math.floor(length/2);
+  const valArr=arr.splice(midIndex,1);
+
+  const midIndexVal=valArr[0];
+  const left=[];//比基准点小的
+  const right=[];//比基准点大的
+  for(let i=0;i<arr.length;i++){
+    if(arr[i]<midIndexVal){
+      left.push(arr[i])
+    }else{
+      right.push(arr[i])
+    }
+  }
+  return quickSort(left).concat(midIndexVal,quickSort(right))
+}
+
+
+function fiber(n){
+  if(n<0){return 0}
+  if(n===1){
+    return 1;
+  }
+  return fiber(n-1)+fiber(n-2);
+}
+
+
+function fib(n){
+  if(n<0){return 0}
+  if(n===1){
+    return 1;
+  }
+ 
+  let arr=[0,1];
+  for(let i=2;i<n;i++){
+    arr[i]=arr[i-1]+arr[i-2];
+  }
+  return arr[n];
+}
+
+// 贪心找到当下最优解
+// 背包问题
+
+//部分背包 每个物品都有价格 体积
+// f[w] =max(f[w],f[w-w[i]]) +v[i]
+function knapsack(capacity,objectArr){
+  const n = objectArr.length;
+ const f=[];
+
+ for(let w=0;w<=capacity;w++){
+  for(let i=0;i<n;i++){
+    if(w===0){
+      f[w]=0;
+
+    }else if(objectArr[i].size<=w){
+      //包的大小比尺寸小
+      const size = objectArr[i].size;
+      const value = objectArr[i].value;
+      f[w] = Math.max(f[w],f[w-size]+value);
+    }else {
+      f[w] = Math.max(f[w],f[w-1])
+    }
+  }
+ }
+ return f[capacity];
+}
+
+
+//前序遍历
+const preOrderTraverse=(root)=>{
+  let result=[];
+  const preOrderTraverseNode=(node)=>{
+    let result=[];
+    if(node){
+      result.push(node.value);
+      preOrderTraverseNode(node.left);
+      preOrderTraverseNode(node.right);
+    }
+  }
+  preOrderTraverseNode(root);
+  return result;
+}
+
+function dfs(node,nodeList){
+  if(node){
+    nodeList.push(node.value);
+    const children = node.children;
+    for(let i=0;i<children.length;i++){
+      dfs(children[i],nodeList);
+    }
+  }
+  return nodeList;
+}
+
+function bfs(node){
+  const nodes=[];
+  let i=0;
+  if(node){
+    nodes.push(node);
+    bfs(node.nextSibling);  
+    node=nodes[i++];
+    bfs(node.firstChild);
+  }
+  return nodes;
+}
+
+
