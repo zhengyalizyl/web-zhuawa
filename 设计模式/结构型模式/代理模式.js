@@ -55,7 +55,7 @@ const getNewParams=(parmas)=>{
   return newParams
 }
 
-export const grayTypeGet=async (params=>{
+export const grayTypeGet=(async params=>{
    const res= await get(getNewParams(params));
    if(res.grayType){
     grayType=res.grayType;
