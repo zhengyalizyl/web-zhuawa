@@ -8,3 +8,6 @@ npm run all
 git commit
 
 <!-- 前端编码规范工程化-->
+
+## 架构设计
+vue 生态库
