@@ -14,35 +14,35 @@
  * @param {number[][]} obstacleGrid
  * @return {number}
  */
-  //dp[i][j]代表从(0,0)->(i,j)有多少种不同路径
- //dp[i][j]=obstacleGrid[i][j]==0?dp[i-1][j]+dp[i][j-1]:0;
- //dp[0][*]=1，如果遇到石头，则为dp[0][*]=0
- //dp[*][0]=1;如果遇到石头，则dp[*][0]=0
- var uniquePathsWithObstacles = function(obstacleGrid) {
-    const m=obstacleGrid.length;
-    const n=obstacleGrid[0].length
-   const dp=new Array(m);
-   let flag =false;//代表没有碰到石头
-   for(let i=0;i<m;i++){
-       dp[i]=new Array(n)
-   }
-   for(let i=0;i<m;i++){
-       if(obstacleGrid[i][0]){
-         flag =true;
-     }
-       dp[i][0]=flag?0:1
-   }
-   flag=false;
-   for(let j=0;j<n;j++){
-    if(obstacleGrid[0][j]){
-         flag =true;
-     }
-       dp[0][j]=flag?0:1
-   }
-  for(let i=1;i<m;i++){
-   for(let j=1;j<n;j++){
-      dp[i][j]=obstacleGrid[i][j]==0?dp[i-1][j]+dp[i][j-1]:0
-   }
-  }
-  return dp[m-1][n-1]
- };
+//dp[i][j]代表从(0,0)->(i,j)有多少种不同路径
+//dp[i][j]=obstacleGrid[i][j]==0?dp[i-1][j]+dp[i][j-1]:0;
+//dp[0][*]=1，如果遇到石头，则为dp[0][*]=0
+//dp[*][0]=1;如果遇到石头，则dp[*][0]=0
+var uniquePathsWithObstacles = function (obstacleGrid) {
+    const m = obstacleGrid.length;
+    const n = obstacleGrid[0].length
+    const dp = new Array(m);
+    let flag = false;//代表没有碰到石头
+    for (let i = 0; i < m; i++) {
+        dp[i] = new Array(n)
+    }
+    for (let i = 0; i < m; i++) {
+        if (obstacleGrid[i][0]) {
+            flag = true;
+        }
+        dp[i][0] = flag ? 0 : 1
+    }
+    flag = false;
+    for (let j = 0; j < n; j++) {
+        if (obstacleGrid[0][j]) {
+            flag = true;
+        }
+        dp[0][j] = flag ? 0 : 1
+    }
+    for (let i = 1; i < m; i++) {
+        for (let j = 1; j < n; j++) {
+            dp[i][j] = obstacleGrid[i][j] == 0 ? dp[i - 1][j] + dp[i][j - 1] : 0
+        }
+    }
+    return dp[m - 1][n - 1]
+};

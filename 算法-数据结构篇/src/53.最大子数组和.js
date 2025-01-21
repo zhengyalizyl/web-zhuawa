@@ -8,7 +8,7 @@
 // 子数组
 // 是数组中的一个连续部分。
 
- 
+
 
 // 示例 1：
 
@@ -20,62 +20,62 @@
  * @param {number[]} nums
  * @return {number}
  */
- //dp[i]表示以nums[i]结尾的连续子数组的最大的和
- //dp[i] =
+//dp[i]表示以nums[i]结尾的连续子数组的最大的和
+//dp[i] =
 //        dp[i-1]+nums[i];if(dp[i-1]>=0)
 //        nums[i];if(dp[i-1]<0)
 //dp[0] =nums[0];
 //res=max(dp[0],dp[1],...,dp[n-1])
 //方法一:动态规划
-var maxSubArray = function(nums) {
-  const n=nums.length;
-  const dp=new Array(n);
-  dp[0]=nums[0];
-  for(let i=1;i<n;i++){
-     dp[i]=dp[i-1]>=0?dp[i-1]+nums[i]:nums[i];
+var maxSubArray = function (nums) {
+  const n = nums.length;
+  const dp = new Array(n);
+  dp[0] = nums[0];
+  for (let i = 1; i < n; i++) {
+    dp[i] = dp[i - 1] >= 0 ? dp[i - 1] + nums[i] : nums[i];
   }
-  let res=Number.MIN_SAFE_INTEGER;
-  for(let i=0;i<n;i++){
-    res=Math.max(res,dp[i])
+  let res = Number.MIN_SAFE_INTEGER;
+  for (let i = 0; i < n; i++) {
+    res = Math.max(res, dp[i])
   }
   return res
- };
+};
 
 
- //方法二：
- /**
- * @param {number[]} nums
- * @return {number}
- */
- //dp[i]表示以nums[i]结尾的连续子数组的最大的和
- //dp[i] =
+//方法二：
+/**
+* @param {number[]} nums
+* @return {number}
+*/
+//dp[i]表示以nums[i]结尾的连续子数组的最大的和
+//dp[i] =
 //        dp[i-1]+nums[i];if(dp[i-1]>=0)
 //        nums[i];if(dp[i-1]<0)
 //dp[0] =nums[0];
 //res=max(dp[0],dp[1],...,dp[n-1])
-var maxSubArray = function(nums) {
-  return help(nums,0,nums.length-1)
+var maxSubArray = function (nums) {
+  return help(nums, 0, nums.length - 1)
 };
 
-function help(nums,left,right){
-    if(left==right){return nums[left]}
- const mid=(left+right)>>1;
- return Math.max(help(nums,left,mid),help(nums,mid+1,right),cross(nums,left,mid,right))
+function help(nums, left, right) {
+  if (left == right) { return nums[left] }
+  const mid = (left + right) >> 1;
+  return Math.max(help(nums, left, mid), help(nums, mid + 1, right), cross(nums, left, mid, right))
 }
-function cross(nums,left,mid,right){
-   let sum=0;
-   let leftSumMax=Number.MIN_SAFE_INTEGER;
-   for(let i=mid;i>=left;i--){
-    sum+=nums[i];
-    leftSumMax =Math.max(leftSumMax,sum)
-   }
+function cross(nums, left, mid, right) {
+  let sum = 0;
+  let leftSumMax = Number.MIN_SAFE_INTEGER;
+  for (let i = mid; i >= left; i--) {
+    sum += nums[i];
+    leftSumMax = Math.max(leftSumMax, sum)
+  }
 
-   sum=0;
-   let rightSumMax=Number.MIN_SAFE_INTEGER;
-      for(let i=mid+1;i<=right;i++){
-    sum+=nums[i];
-    rightSumMax =Math.max(rightSumMax,sum)
-   }
-   return leftSumMax+rightSumMax
+  sum = 0;
+  let rightSumMax = Number.MIN_SAFE_INTEGER;
+  for (let i = mid + 1; i <= right; i++) {
+    sum += nums[i];
+    rightSumMax = Math.max(rightSumMax, sum)
+  }
+  return leftSumMax + rightSumMax
 }
 
