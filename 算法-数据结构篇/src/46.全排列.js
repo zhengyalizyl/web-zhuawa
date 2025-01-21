@@ -9,31 +9,31 @@
  * @param {number[]} nums
  * @return {number[][]}
  */
-let used=[];
-let path=[];
-let res=[];
-var permute = function(nums) {
- const n=nums.length;
- used=new Array(n);
- path=[];
- res=[];
-dfs(nums,0);
-return res;
+let used = [];
+let path = [];
+let res = [];
+var permute = function (nums) {
+    const n = nums.length;
+    used = new Array(n);
+    path = [];
+    res = [];
+    dfs(nums, 0);
+    return res;
 };
 
-function dfs(nums,i){
-   if(i==nums.length){
-       res.push([...path]);
-       return 
-   }
-   for(let j=0;j<nums.length;j++){
-       if(used[j]){
-           continue;
-       }
-       path.push(nums[j]);
-       used[j]=true;
-       dfs(nums,i+1);
+function dfs(nums, i) {
+    if (i == nums.length) {
+        res.push([...path]);
+        return
+    }
+    for (let j = 0; j < nums.length; j++) {
+        if (used[j]) {
+            continue;
+        }
+        path.push(nums[j]);
+        used[j] = true;
+        dfs(nums, i + 1);
         path.pop();
-        used[j] =false;
-   }
+        used[j] = false;
+    }
 }

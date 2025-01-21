@@ -14,7 +14,7 @@ var trap = function (height) {
   const n = height.length;
   let sum = 0;
 
-//i代表第几个柱子，因为右边的柱子i=n-1,没有右边的最大值,i=0,左边的没有最大值
+  //i代表第几个柱子，因为右边的柱子i=n-1,没有右边的最大值,i=0,左边的没有最大值
   for (let i = 1; i < n - 1; i++) {
     let leftMax = 0; //i左边的波峰
     for (let j = 0; j < i; j++) {
@@ -34,26 +34,26 @@ var trap = function (height) {
 
 //方法二：
 //先把leftMax，rightMax缓存起来
-var trap = function(height) {
-  const n=height.length;
-  let sum=0;
-  const leftMaxList=new Array(n);
-  const rightMaxList=new Array(n);
-  leftMaxList[0]=0;
-  for(let i=1;i<n;i++){
-   leftMaxList[i] =Math.max(leftMaxList[i-1],height[i-1]);
+var trap = function (height) {
+  const n = height.length;
+  let sum = 0;
+  const leftMaxList = new Array(n);
+  const rightMaxList = new Array(n);
+  leftMaxList[0] = 0;
+  for (let i = 1; i < n; i++) {
+    leftMaxList[i] = Math.max(leftMaxList[i - 1], height[i - 1]);
   }
 
-  rightMaxList[n-1]=0;
-  for(let i=n-2;i>=0;i--){
-    rightMaxList[i] =Math.max(rightMaxList[i+1],height[i+1])
+  rightMaxList[n - 1] = 0;
+  for (let i = n - 2; i >= 0; i--) {
+    rightMaxList[i] = Math.max(rightMaxList[i + 1], height[i + 1])
   }
 
-//i代表第几个柱子，因为右边的柱子i=n-1,没有右边的最大值,i=0,左边的没有最大值
-  for(let i=1;i<n-1;i++){
-   let leftMax=leftMaxList[i];
-   let rightMax=rightMaxList[i];
-  sum+= Math.max(Math.min(leftMax,rightMax) -height[i],0)
+  //i代表第几个柱子，因为右边的柱子i=n-1,没有右边的最大值,i=0,左边的没有最大值
+  for (let i = 1; i < n - 1; i++) {
+    let leftMax = leftMaxList[i];
+    let rightMax = rightMaxList[i];
+    sum += Math.max(Math.min(leftMax, rightMax) - height[i], 0)
   }
   return sum
 }
