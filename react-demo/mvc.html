@@ -1,0 +1,85 @@
+<html>
+  <head>
+    <title>my mvc</title>
+  </head>
+
+  </head>
+  <body>
+    <h1>
+       mvc demo
+    </h1>
+    <div id="app">
+      <div id="num"></div>
+       <div>
+          <button id="btnAdd">+</button>
+          <button id="btnSub">-</button>
+       </div>
+    </div>
+  </body>
+  <script>
+    const MY_MVC={}
+       MY_MVC.Model=function(){
+         let count=0;
+         this.add=function(){
+            count++;
+            return count;
+         }
+         this.minus=function(){
+            count--;
+            return count;
+         }
+         this.sub=function(){
+            count--;
+            return count;
+         }
+         this.getVal=function(){
+          return count;
+         }
+
+         const views=[];
+         this.registry=function(view){
+          views.push(view);
+         }
+          this.notify=function(){
+            views.forEach((view)=>{
+              view.render(model);
+            })
+          }
+       }
+    MY_MVC.View=function(){
+      const eleNum=document.getElementById('num');
+      const btnAdd=document.getElementById('btnAdd');
+      const btnSub=document.getElementById('btnSub');
+      this.render=function(model){
+        eleNum.innerHTML=model.getVal();
+      }
+        
+       btnAdd.addEventListener('click',function(){
+        model.add();
+        model.render(model.getVal());
+      })
+      btnSub.addEventListener('click',function(){
+        model.minus();
+        model.render(model.getVal());
+      })
+    }
+      
+    MY_MVC.Controller=function(model,view){
+      let model;
+      let view;
+      const _this=this;
+      this.init =function(){
+          model=new MY_MVC.Model();
+          view=new MY_MVC.View();
+      }
+      this.add=function(){
+        model.add();
+        view.render(model.getVal());
+      }
+      this.minus=function(){
+        model.minus();
+        view.render(model.getVal());
+      }
+    }
+  </script>
+</html>
