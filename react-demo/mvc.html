@@ -24,10 +24,6 @@
             count++;
             return count;
          }
-         this.minus=function(){
-            count--;
-            return count;
-         }
          this.sub=function(){
             count--;
             return count;
@@ -40,13 +36,14 @@
          this.registry=function(view){
           views.push(view);
          }
+         const _this=this;
           this.notify=function(){
             views.forEach((view)=>{
-              view.render(model);
+              view.render(_this);
             })
           }
        }
-    MY_MVC.View=function(){
+    MY_MVC.View=function(ctrl){
       const eleNum=document.getElementById('num');
       const btnAdd=document.getElementById('btnAdd');
       const btnSub=document.getElementById('btnSub');
@@ -55,31 +52,35 @@
       }
         
        btnAdd.addEventListener('click',function(){
-        model.add();
-        model.render(model.getVal());
+        ctrl.add();
       })
       btnSub.addEventListener('click',function(){
-        model.minus();
-        model.render(model.getVal());
+        ctrl.sub();
       })
     }
       
-    MY_MVC.Controller=function(model,view){
+    MY_MVC.Controller=function(){
       let model;
       let view;
       const _this=this;
       this.init =function(){
           model=new MY_MVC.Model();
-          view=new MY_MVC.View();
+          view=new MY_MVC.View(_this);
+          model.registry(view);
+          model.notify();
       }
       this.add=function(){
         model.add();
-        view.render(model.getVal());
+        model.notify();
       }
-      this.minus=function(){
-        model.minus();
-        view.render(model.getVal());
+      this.sub=function(){
+        model.sub();
+        model.notify();
       }
-    }
+    };
+    (function(){
+      const ctrl=new MY_MVC.Controller();
+      ctrl.init();
+    })();
   </script>
 </html>
