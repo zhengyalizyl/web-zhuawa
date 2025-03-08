@@ -1,0 +1,15 @@
+version: '3.7'
+
+services:
+  miaoma-pg:
+    image: bitnami/postgresql:latest
+    container_name: miaoma-pg
+    restart: always
+    ports:
+       - '5432:5432'
+    environment:
+      POSTGRES_USER: miaoma
+      POSTGRES_PASSWORD: miaoma
+      POSTGRES_DB: miaoma
+
+    
