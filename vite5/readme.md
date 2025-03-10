@@ -35,8 +35,25 @@ pnpm create vite
    - 2. 插件协议、数据协议、定义方式、生命周期的钩子
 - 自定义插件
   - config
-  -  transform
-  -  generateBundle
+  - transform
+  - generateBundle
   
+### 我们有rspack这类构建工具，如果让你从零到一实现Vite全生态，具体思路是什么？
+- bundleless
+- 统一化的ast,统一工具链描述语言
+- vite -> oxc ->rolldown ->vitest 
+
+### 概述vite打包构成
+1. 初始化,vite.config.ts
+2. 解析入口，俩种解析形式
+   1. 应用构建,html script
+   2. 子包，构建产物,build
+3. 插件底座初始化，插件生命周期调用
+4. 优化处理
+5. 拆分
+6. 输出代码
+7. 资源优化
+
+
 
 
