@@ -17,9 +17,9 @@ function Home({}: Props) {
     setHide(isHide)
   }
   return (
-    <div className=' bg-gray-100 w-full'>
+    <div className='bg-gray-100 w-full'>
        <Navigation className="sticky top-0" hide={hide} />
-      <div className=' mx-auto max-w-5xl flex my-2 px-2'>
+      <div className='mx-auto max-w-5xl flex my-2 px-2'>
         <Card className='w-2/3' >
         <Tabs onChange={handleChange} />
         </Card>

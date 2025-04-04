@@ -1,12 +1,14 @@
 const path = require('path');
 const FileListPlugin = require('./plugins/fileList');
+const { optimize, Chunk } = require('webpack');
 module.exports = {
   entry: "./main.js",
   mode: "development",
   output: {
     path: path.resolve(__dirname, "./dist"),
-    filename: "bundle.[chunkhash].js",
-    publicPath: './'
+    filename: "[name].[chunkhash].js",
+    publicPath: './',
+    clean:true,
   },
   module: {
     rules: [
@@ -46,6 +48,12 @@ module.exports = {
   },
   plugins:[
     // new FileListPlugin()
-  ]
+  ],
+  optimization:{
+    minimize:true,
+    splitChunks:{
+      chunks:'all'
+    }
+  }
   
 }
