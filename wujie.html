@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Document</title>
+    <link rel="stylesheet" href="wujie.css" />
+  </head>
+  <body>
+    <!--加载子应用的div -->
+    <div id="container"></div>
+
+    <!-- 以前我们的js都是放到沙箱（自己实现）中跑的-> iframe
+      我们的css隔离（scopedCss） -> webComponent(shadowRoot)
+      渲染采用webComponent（拉取html模版 生成自定义组件插入到指定的dom中）
+
+-->
+
+    <script>
+      const strTmpWithCss = `
+  <!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    <link rel="stylesheet" href="wujie.css">
+</head>
+<body>   
+   <div >
+      hello wujie
+</div>
+<style>
+   div{
+      background: red;
+      color:#fff;
+      }
+  </style>
+</body>
+</html>
+  `;
+
+      const strScript = `
+    window.a=100;
+    const ele -document.querySelector('div');
+  `;
+
+      function createIframe() {
+        const iframe = document.createElement("iframe");
+        iframe.src = "about:blank";
+        document.body.appendChild(iframe);
+        return iframe;
+      }
+      function createSandbox() {
+        const sandbox = {
+          iframe: createIframe(),
+          shadowRoot: null,
+        };
+
+        return sandbox;
+      }
+
+      function injectTemplate(sandbox,template){
+        const wrapper =document.createElement('div');
+        wrapper.innerHTML = template;
+        sandbox.shadowRoot.appendChild(wrapper);
+
+      }
+
+      function runScriptSandbox(sandbox,script){
+        const iframeWindow = sandbox.iframe.contentWindow;
+        const scriptElement=iframeWindow.document.createElement('script');
+
+        const headElement=iframeWindow.document.querySelector('head');
+
+        //我们希望在脚本执行之前，有些方法用的是父应用
+        //dcouemnt.querySelector('div') 应该用的不是iframe中的 ->shadowRoot去弄
+        // 添加弹框的时候 document.createElement().appendChild() ->代理到全局的window
+
+        //iframe中路由管理 history.pushState ->将一些常用方法进行同步到主应用
+
+        Object.defineProperty(iframeWindow.Document.prototype,'querySelector',{
+          get(){
+            return new Proxy(sandbox.shadowRoot.querySelector.bind(sandbox.shadowRoot),{
+              apply(target, thisArg, argumentsList) {
+                return target.apply(sandbox.shadowRoot, argumentsList);
+              },
+            })
+          }
+        })
+        scriptElement.textContent =script;
+        headElement.appendChild(scriptElement);
+      }
+
+      function createCustomElement() {
+        class WujieApp extends HTMLElement {
+          connectedCallback() {
+            const sandbox = createSandbox();
+            sandbox.shadowRoot = this.attachShadow({ mode: "open" });
+            injectTemplate(sandbox,strTmpWithCss);
+            runScriptSandbox(sandbox,strScript);
+          }
+        }
+
+        window.customElements.define("wujie-app", WujieApp);
+        document.appendChild(document.createElement("wujie-app"));
+      }
+    </script>
+  </body>
+</html>

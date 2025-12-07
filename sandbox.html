@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Document</title>
+  </head>
+  <body>
+    <div id="app">app</div>
+    <script>
+      //  先保留a应用的属性，失活的时候，把修改的属性存起来，激活的时候还原回来
+      //快照 浪费内存，因为要给window拍照
+      class SnapshotSandbox {
+        constructor() {
+          this.active = false;
+          this.windowSnapshot = {};
+          this.modifyPropsMap = {};
+          this.propsWindowMap = new Map();
+        }
+        active() {
+          this.windowSnapshot = {};
+          Object.keys(window).forEach((prop) => {
+            this.windowSnapshot[prop] = window[prop];
+          });
+
+          Object.keys(this.modifyPropsMap).forEach((prop) => {
+            window[prop] = this.modifyPropsMap[prop];
+          });
+        }
+        inactive() {
+          this.modifyPropsMap = {}; //清空
+          Object.keys(window).forEach((prop) => {
+            if (window[prop] !== this.windowSnapshot[prop]) {
+              this.modifyPropsMap[prop] = window[prop];
+              window[prop] = this.windowSnapshot[prop];
+            }
+          });
+        }
+      }
+
+      let sandbox = new SnapshotSandbox();
+      sandbox.active();
+      window.a = 100;
+
+      sandbox.inactive();
+      console.log(window.a);
+    </script>
+
+    <script>
+      // proxy兼容性问题,只能单例的情况下使用，同时加载两个应用就会混乱
+      class LegacySandbox {
+        constructor() {
+          this.modifyPropsMap = new Map();
+          this.addedPropsMap = new Map();
+          this.currentPropsMap = new Map();
+
+          const fakeWindow = Object.create(null);
+          const proxy = new Proxy(fakeWindow, {
+            get: (target, key) => {
+              return window[key];
+            },
+            set: (target, key, value) => {
+              if (!window.hasOwnProperty(key)) {
+                //添加的属性
+                this.addedPropsMap.set(key, value);
+              } else if (!this.modifyPropsMap.has(key)) {
+                //保存修改前的值
+                this.modifyPropsMap.set(key, window[key]);
+              }
+              this.currentPropsMap.set(key, value);
+              window[key] = value;
+            },
+          });
+          this.proxy = proxy;
+        }
+        active() {
+          this.currentPropsMap.forEach((value, key) => {
+            this.setWindowProp(key, value);
+          });
+        }
+
+        setWindowProp(key, value) {
+          if (value === undefined) {
+            delete window[key];
+          } else {
+            window[key] = value;
+          }
+        }
+        inactive() {
+          this.modifyPropsMap.forEach((value, key) => {
+            this.setWindowProp(key, value);
+          });
+          this.addedPropsMap.forEach((value, key) => {
+            this.setWindowProp(key, undefined);
+          });
+        }
+      }
+
+      let sandbox1 = new LegacySandbox();
+      sandbox1.proxy.a = 100;
+      sandbox1.inactive();
+      console.log(window.a);
+      sandbox.active();
+      console.log(window.a);
+    </script>
+    <script>
+      //多个实例来实现
+      class ProxySandbox {
+        constructor() {
+          const fakeWindow = Object.create(null);
+
+          this.proxy = new Proxy(fakeWindow, {
+            get: (target, key) =>{
+              if(!this.sandboxRunning){
+                return window[key];
+              }
+              return key in target ? target[key] : window[key];
+            },
+            set: (target, key, value) => {
+              if(this.sandboxRunning){
+                target[key] = value;
+              }
+              return true;
+            },
+
+          });
+          this.sandboxRunning = false;
+          this.active();
+        }
+        active() {
+          if(!this.sandboxRunning){
+            this.sandboxRunning = true;
+          }
+      
+        }
+        inactive() {
+          this.sandboxRunning = false;
+        }
+      }
+      let sandbox2 =new ProxySandbox();
+      let sandbox3 = new ProxySandbox();
+    </script>
+  </body>
+</html>
