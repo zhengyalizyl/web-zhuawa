@@ -1,0 +1,62 @@
+{
+  "name": "electron-demo",
+  "productName": "electron-demo",
+  "version": "1.0.0",
+  "description": "My Electron application description",
+  "main": ".vite/build/index.js",
+  "scripts": {
+    "start": "electron-forge start",
+    "package": "electron-forge package",
+    "make": "electron-forge make",
+    "publish": "electron-forge publish"
+  },
+  "keywords": [],
+  "author": {
+    "name": "EricWXY",
+    "email": "ericwxy@foxmail.com"
+  },
+  "build": {
+    "appId": "com.ericwxy.diona",
+    "icon": "public/logo.ico"
+  },
+  "license": "MIT",
+  "devDependencies": {
+    "@electron-forge/cli": "7.8.1",
+    "@electron-forge/maker-deb": "7.8.1",
+    "@electron-forge/maker-rpm": "7.8.1",
+    "@electron-forge/maker-squirrel": "7.8.1",
+    "@electron-forge/maker-zip": "7.8.1",
+    "@electron-forge/plugin-auto-unpack-natives": "7.8.1",
+    "@electron-forge/plugin-fuses": "7.8.1",
+    "@electron-forge/plugin-vite": "7.8.1",
+    "@electron/fuses": "^1.8.0",
+    "@iconify-json/material-symbols": "^1.2.29",
+    "@iconify/vue": "^5.0.0",
+    "@tailwindcss/typography": "^0.5.19",
+    "@tailwindcss/vite": "^4.1.11",
+    "@types/electron-squirrel-startup": "^1.0.2",
+    "@types/node": "^24.0.8",
+    "@vitejs/plugin-vue": "^6.0.0",
+    "electron": "37.1.0",
+    "tailwindcss": "^4.1.11",
+    "typescript": "^5.8.3",
+    "vite": "^6.0.0"
+  },
+  "dependencies": {
+    "@vueuse/core": "^14.1.0",
+    "dexie": "^4.2.1",
+    "electron-log": "^5.4.3",
+    "electron-squirrel-startup": "^1.0.1",
+    "js-base64": "^3.7.8",
+    "markdown-it-highlightjs": "^4.2.0",
+    "naive-ui": "^2.43.2",
+    "openai": "^6.16.0",
+    "pinia": "^3.0.4",
+    "unplugin-auto-import": "^21.0.0",
+    "vfonts": "^0.0.3",
+    "vue": "^3.5.17",
+    "vue-i18n": "^11.2.8",
+    "vue-markdown-render": "^2.3.0",
+    "vue-router": "^4.6.4"
+  }
+}
